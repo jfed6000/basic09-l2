@@ -19,6 +19,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and roadmap.
 | `modules/` | Basic09 subroutine modules (`syscall`, `inkey`). |
 | `samples/` | Basic09 sample programs. |
 | `test/`    | Emulator tests (`run` script, command files, expected output). |
+| `os9/`     | OS-9 side tools: `l2b09ctl`, a scripted editor stand-in for the protocol. |
 | `tools/`   | `emu-wildbits.sh` (headless MAME runner), `bootfile-add.py` (add drivers to OS9Boot). |
 | `docs/`    | Architecture and roadmap. |
 | `build/`   | Build output (not tracked). |
@@ -32,6 +33,7 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
     make l2b09              # build/l2b09run, the l2basic09 runtime
     make p1test             # P1 pipeline test, headless on Wildbits Jr2 under MAME
     make p2test             # l2b09run test: -t terminal, debugger over stdin/stderr, line numbers
+    make p3test             # protocol test: l2b09ctl drives l2b09run over pipes, with signals
     make loadtime           # benchmark: compile the 937-line startrek sample
     make NITROS9DIR=/path/to/nitros9
 
@@ -48,6 +50,7 @@ Emulator tests use that tree's MAME build (`mame/mame`, machine `wbjr2`) and its
 - Commands and the debugger use its standard input and standard error.
 - `-t` gives the program its own terminal, for example `-t=/vt2`.
 - The debugger reports where it stopped as `BREAK: PROCEDURE <name> line <n>`. Line 1 is the line after the `PROCEDURE` header.
+- For editors there is a line protocol with `%` event lines (`%READY`, `%DEBUG`, `%ERROR`, `%CERR`, `%BERR`, `%ASK`) and signals for break and abort. See [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ## Origin
 

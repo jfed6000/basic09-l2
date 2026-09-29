@@ -27,6 +27,8 @@ STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
         $(BUILD)/runb_6809 $(BUILD)/runb_6309
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey
 L2B09 = $(BUILD)/l2b09run
+OS9DIR = os9
+TOOLS = $(BUILD)/l2b09ctl
 
 # Test platform (Wildbits Jr2 under MAME for now; see tools/emu-wildbits.sh)
 PLATDIR  = $(NITROS9DIR)/recipes/wildbits/l2
@@ -35,9 +37,11 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 pipes check p1test p2test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test loadtime clean
 
-all: stock subs l2b09
+all: stock subs l2b09 tools
+
+tools: $(TOOLS)
 
 l2b09: $(L2B09)
 
@@ -69,6 +73,10 @@ $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
 
+# OS-9 side tools (test clients)
+$(BUILD)/%: $(OS9DIR)/%.asm $(OS9DIR)/defsfile | $(BUILD)
+	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) $(CURDIR)/$< -o$(CURDIR)/$@
+
 # Pipe modules are not in the stock Wildbits SD boot; tests load them at runtime
 pipes: $(PIPEMODS)
 
@@ -84,6 +92,9 @@ p1test: stock pipes
 
 p2test: l2b09 pipes
 	tools/emu-wildbits.sh test/p2
+
+p3test: l2b09 tools pipes
+	tools/emu-wildbits.sh test/p3
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09

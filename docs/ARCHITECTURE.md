@@ -37,9 +37,7 @@ Goal: a Level 2 environment in which:
         program I/O -> /vtM (paths 0,1);  commands/debugger -> the control pipes
 ```
 - **Hand-off format:** source text. The runtime compiles it with the stock compiler, so it keeps full symbols for the debugger. Recompiling is slow (937 lines take about 20 s at 6.29 MHz), so the runtime stays running between runs and the editor re-sends only the procedures it changed; LOAD replaces procedures by name. Packed modules still run in RunB for production use.
-- **Protocol:** plain text lines, easy to test by piping a command file into the runtime (`list cmds ! l2b09run`).
-  - Editor to runtime: `LOAD`, `RUN proc args`, `BREAK`, `STEP n`, `CONT`, `TRON/TROFF`, `PRINT expr`, `LET`, `STATE`, `QUIT`.
-  - Runtime to editor: `READY`, `STOPPED proc line`, `ERROR code proc line`, `EXITED`.
+- **Protocol:** plain text lines; see [PROTOCOL.md](PROTOCOL.md). The editor sends Basic09 and debugger commands. The runtime answers with free text plus `%` event lines (`%READY`, `%DEBUG`, `%ERROR`, `%CERR`, `%BERR`, `%ASK`). BREAK and ABORT are the signals `S$Intrpt` and `S$Abort`.
 - **Mapping back to source lines:** LOAD turns every source line after a `PROCEDURE` header into exactly one I-code line, including blank and comment lines. So "procedure P, line N" is file line (line of `PROCEDURE P`) + N, and no separate line table is needed. `l2b09run` reports `BREAK: PROCEDURE <name> line <n>` (P2). This holds for loaded source only; PACK drops DIM/REM lines.
 - **Debugger process:** start with it in the same process as the runtime, using the existing hook, with its command paths redirected to a pipe or a second terminal. A truly separate debugger process would only need a thin front-end. Moving the debug engine out of the runtime would need `F$CpyMem` for reads and a stub for writes. That adds a lot of complexity for little gain, so it is deferred.
 
@@ -95,11 +93,14 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
   - **Line numbers:** the debugger header is `BREAK: PROCEDURE <name> line <n>` (`PAPRLN`/`ACTLIN` in `editor`). `<n>` is the line holding the current statement, so it is right for `\`-joined statements and for errors in called procedures, both of which are tested.
   - **Found, left for P3:** the debugger's `PRINT` output goes to the program terminal, not the command channel, because it runs as a direct statement through `I.OPTH`.
   - **Dropped: debug-pack.** It was meant to keep symbols in a packed module. The runtime compiles source instead, which keeps symbols anyway, and incremental reloads make up for compile time. Revisit only if restart times become a problem.
-- **P3 – Runtime control channel.** `l2b09run` gets:
-  - the debugger's `BASINP`/`BASOUT` on anonymous pipes created by the parent (editor) before `F$Fork`;
-  - program paths `I.IPTH`/`I.OPTH` on a `/vtN` the runtime opens itself;
-  - the text protocol above;
-  - `BREAK` via `F$Send` and the existing `INTCPT`/`G.SIGN`.
+- **P3 – Runtime control channel (done).** The protocol is specified in [PROTOCOL.md](PROTOCOL.md). `make p3test` passes all 8 checks: `os9/l2b09ctl`, an editor stand-in, forks `l2b09run` with anonymous pipes on its stdin and stderr and drives a whole session. `l2b09run` is 22,677 bytes, and `make check` still shows the stock builds are byte-identical.
+  - **Event lines:** `%READY`, `%DEBUG <proc> <line>`, `%ERROR`/`%CERR`/`%BERR <code> <proc> <line>` and `%ASK Rewrite?`. They replace the `B:`/`D:` prompts, which had no newline, and the `Ready` line.
+    - Events are written by `L2EVNT`, a new comand entry point `X$L2EV` that the binder and interpreter reach through the jump tables. It builds the line on the stack, because during LOAD the I/O buffer holds the source line.
+    - `L2LINE` turns an I-code pointer into a procedure line number. `LSTERR` keeps the last error code printed (`PRTERR`), so LOAD's `%CERR` can report it (`L2INSR`).
+  - **Output on the command channel:** the debugger's PRINT/LET output (`DIREXQ` points `I.OPTH` at the command channel while it runs), and compiler error lines (`compil.asm` `PRTLIN`), which used to go to the program's stdout.
+  - **BREAK/ABORT** need no new code. `INTCPT` already routes `S$Intrpt` to the debugger and `S$Abort` to HALT. Both were tested by signalling a running loop.
+  - **Found:** a second PACK fails with error 51 in stock Basic09 too, because PACK strips the workspace copy. Documented in PROTOCOL.md.
+  - **Test harness note:** if an `expect` never matches, `l2b09ctl` blocks until the emulator stops, and the output files are cut off because they were never closed. So a hang shows up as missing or short files.
 - **P4 – `farmem` subroutine module** plus a sample and a benchmark.
 - **P5 – Editor integration.** This is either a minimal test client or the real editor, depending on where the editor ends up.
 - **P6 – Transparent code banking .**

@@ -1,0 +1,8 @@
+ctl.out   < %DEBUG p3main
+ctl.out   < %READY
+ctl.out   < %CERR 12 p3calc 2
+ctl.out   < %BERR 74 p3calc 3
+ctl.out   exit 000
+term.out  p3main: start
+term.out  p3calc x=5
+ctl.out   < %ASK Rewrite?

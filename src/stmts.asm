@@ -58,6 +58,10 @@ J$CVIO jsr M.CNVIO
  ifne INCLUDED&EDITOR
 J$DBUG jsr M.COMAND
  fcb X$DBUG Enter DEBUG state
+ ifne L2B09
+J$L2EV jsr M.COMAND
+ fcb X$L2EV Write a protocol event line
+ endc
 J$PBLN jsr M.COMAND
  fcb X$PBLN Print a bound line
 J$TEXP jsr M.COMAND
@@ -1773,7 +1777,16 @@ DEBUG equ *
  lbsr J$PBLN Print line
  ldb I.ERR Get error code
  lbsr J$EREX Print error message
+ ifne L2B09
+ ldb I.ERR
+ ldy I.ICPT
+ leax <L2ERRE,PCR "%ERROR <code> <proc> <line>"
+ lbsr J$L2EV
+ endc
  lbra J$DBUG call debugger; then return
+ ifne L2B09
+L2ERRE fcs "%ERROR"
+ endc
  else
  lbsr J$KALL kill all external procs
  ldb I.ERR Get error code

@@ -1,0 +1,6 @@
+PROCEDURE p3calc
+DIM x:INTEGER
+x:=2+
+GOTO 50
+PRINT "p3calc x="; x
+END

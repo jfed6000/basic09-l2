@@ -195,6 +195,9 @@ CMDENT equ *
  fdb DEBUG-CMDENT  Enter debug mode
  fdb TRCEXP-CMDENT Trace expression
  fdb PRTEXP-CMDENT Print (opstack) expression
+ ifne L2B09
+ fdb L2EVNT-CMDENT Write a protocol event line
+ endc
  endc
 
 ***************
@@ -1122,7 +1125,12 @@ CR.RET fcb V$CR
 DIRHDR fcb $A
  fcs "  Name      Proc-Size  Data-Size"
 
+ ifne L2B09
+OVWRIT fcc "%ASK Rewrite?"
+ fcb V$CR
+ else
 OVWRIT fcc "Rewrite?: "
+ endc
 OVWLEN equ *-OVWRIT
 RNGERR fcc "RANGE"
  fcb $87
@@ -1135,7 +1143,11 @@ CALLBY fcs "called by"
 OKMSG fcs "ok"
 DBGPMT fcs "D:"
 EDTPMT fcs "E:"
+ ifne L2B09
+CMDPMT fcs "%READY"
+ else
 CMDPMT fcs "B:"
+ endc
 NOTFND fcs "can't find:"
 
  ttl Basic09 Command module
@@ -1348,8 +1360,10 @@ COMAND leax CPYRIT,PCR
  leax B09NAM,PCR Basic09 message
  bsr CMDER1 print "Basic09"
 COMAN0 bsr SETUP
+ ifeq L2B09
  leax READY,PCR Ready message
  bsr CMDER1 (prtlin) print message
+ endc
  leax CMDPMT,PCR command mode prompt
  leay CMDVRB,PCR command verb table
  clr PRTCTL
@@ -1379,7 +1393,14 @@ COMAN0 bsr SETUP reserve opstack
 
 RUNCMD pshs X,Y Save regs
  clr G.SIGN any signal now is ignored
+ ifne L2B09
+ cmpx #0 no prompt (caller wrote an event line)?
+ beq RUNCMD02
+ lbsr PRTLIN prompt is a whole line
+RUNCMD02 equ *
+ else
  lbsr PRTSTR print prompt
+ endc
  bsr EXNLIN reset I/O buffer
  lda BASINP get working path number
  ifne L2B09
@@ -1736,7 +1757,11 @@ LOAD2 ldb G.SIGN (abort) signal?
  ldy I.IOBG
  ldd I.ICLM
  std I.ICPT At end of icode-
+ ifne L2B09
+ lbsr L2INSR -insert this line; report a compile error
+ else
  lbsr INSERT -insert this line
+ endc
  bra LOAD2 Endloop
 LOAD3 ldx I.IOBG
  pshs X,Y Save next procedure name ptr
@@ -2707,6 +2732,27 @@ L2TERM clra
  clra
  OS9 I$Dup terminal becomes path 1 too
 L2TER9 rts
+
+***************
+* Subroutine L2INSR
+*   LOAD's INSERT, plus a "%CERR <code> <proc> <line>" event
+*   when the line compiled to an error line
+
+* Passed: (Y)=Source line; (D)=I.ICPT=End of I-Code
+
+L2INSR pshs D,X where this line goes
+ lbsr INSERT
+ ldx ,S
+ lbsr CHKERR did it compile to an error line?
+ bne L2INS9 ..no
+ pshs Y
+ ldb LSTERR
+ tfr X,Y
+ leax <L2CERR,PCR
+ lbsr L2EVNT
+ puls Y
+L2INS9 puls D,X,PC
+L2CERR fcs "%CERR"
  endc
 
 * End of Command routines

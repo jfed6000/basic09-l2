@@ -4,7 +4,7 @@ term.out  fib(5)=5.
 term.out  p2err: about to divide
 cmd.err   p2err
 cmd.err   ERROR #
-cmd.err   D:
+cmd.err   %DEBUG p2err 5
 cmd.err   PROCEDURE p2fib
 plain.out p2main: program output
 plain.err PROCEDURE p2fib

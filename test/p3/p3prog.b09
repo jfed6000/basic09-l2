@@ -1,0 +1,11 @@
+PROCEDURE p3main
+DIM n:INTEGER
+PRINT "p3main: start"
+n:=0
+LOOP
+n:=n+1
+IF n>30000 THEN
+n:=0
+ENDIF
+ENDLOOP
+END

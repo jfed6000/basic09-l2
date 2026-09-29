@@ -31,6 +31,10 @@ J$EXIT jsr M.COMAND
  fcb X$EXIT Abortive exit; recovering stack
 J$RPLC jsr M.COMAND
  fcb X$RPLC Replace I-Code
+ ifne L2B09
+J$L2EV jsr M.COMAND
+ fcb X$L2EV Write a protocol event line
+ endc
 
 J$EXDS jsr M.COMPIL
  fcb X$EXDS Expand desr tbl
@@ -365,7 +369,16 @@ ERROR pshs D,X,Y save registers
  leas 5,S Return scratch
  ldb  ,S get error code
  lbsr J$EREX Print error message
+ ifne L2B09
+ ldb ,S error code
+ ldy 4,S I-Code ptr
+ leax <L2BERR,PCR "%BERR <code> <proc> <line>"
+ lbsr J$L2EV
+ endc
 ERRO10 puls D,X,Y,PC and return
+ ifne L2B09
+L2BERR fcs "%BERR"
+ endc
 
 ***************
 * Subroutine PRT4HX

@@ -427,6 +427,7 @@ InpSprtr rmb 1 Input item separator
 BufOvf rmb 1 I/O Buffer Overflow flag
  ifne L2B09
 CMDIN rmb 1 Home command input path (0 unless -t moved stdin)
+LSTERR rmb 1 Last error code printed (for protocol events)
  endc
 
  pag

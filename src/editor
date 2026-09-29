@@ -34,7 +34,11 @@ DEBUG1 lbsr NEWLIN Clean up I/O buffer
  else
  lbsr PAPRCN Print active procedure name
  endc
+ ifne L2B09
+DEBUG2 lbsr L2DPMT "%DEBUG <proc> <line>"; (X)=0
+ else
 DEBUG2 leax DBGPMT,PCR Get prompt string
+ endc
  leay DBGVRB,PCR Get debug verb table ptr
  lbsr RUNCMD Execute debug command
  bcc DEBUG2 Repeat
@@ -232,7 +236,19 @@ LSTB99 puls X,Y,U,PC Restore registers and return
 * Subroutine Direxq
 *   Process Direct Execution statement
 
-DIREXQ ldx I.APRC
+DIREXQ equ *
+ ifne L2B09
+ lda I.OPTH
+ pshs A
+ lda #CMDOUT direct statement output to the command channel
+ sta I.OPTH
+ bsr DIREX0
+ puls A (keeps carry)
+ sta I.OPTH
+ rts
+DIREX0 equ *
+ endc
+ ldx I.APRC
  tst P.STAT,X is this a compiled procedure?
  bpl DIREX1 ..no; ok!
  coma COMPILER Can't handle compiled state
@@ -390,7 +406,11 @@ PRTEXT puls D,X,Y,PC return
 * Subroutine PRTERR
 *   Print error message
 
-PRTERR OS9 F$PErr Use system error routine
+PRTERR equ *
+ ifne L2B09
+ stb LSTERR remember it for protocol events
+ endc
+ OS9 F$PErr Use system error routine
  rts
 
  ifne INCLUDED&EDITOR
@@ -966,19 +986,134 @@ PAPRLN leax PRCEDR,PCR get "PROCEDURE"
 
 * Returns: (D)=Line number (1 = first line of procedure)
 
-ACTLIN pshs X,Y
+ACTLIN pshs Y
+ ldy I.ICPT
+ bsr L2LINE
+ puls Y,PC
+
+***************
+* Subroutine L2LINE
+*   Line number of the statement at (Y) in the procedure at I.ICBG
+
+* Passed: (Y)=I-Code ptr
+* Returns: (D)=Line number (1 = first line of procedure)
+
+L2LINE pshs X,Y,U
+ tfr Y,U target
  ldx #0
  ldy I.ICBG
-ACTLI1 leax 1,X line (X) starts at (Y)
+L2LIN1 leax 1,X line (X) starts at (Y)
  lbsr NXTONE (Y)=start of next line
- cmpy I.ICPT
- bhi ACTLI2 ..current statement is on line (X)
+ pshs U
+ cmpy ,S++
+ bhi L2LIN2 ..target is on line (X)
  cmpy I.ICLM
- blo ACTLI1
-ACTLI2 tfr X,D
- puls X,Y,PC
+ blo L2LIN1
+L2LIN2 tfr X,D
+ puls X,Y,U,PC
+
+***************
+* Subroutine L2EVNT  (X$L2EV)
+*   Write a protocol event line on the command channel:
+*     <event> [<code>] [<procedure> <line>]
+*   for example "%ERROR 45 p2err 5".  The line is built on the
+*   stack; the I/O buffer may hold a source line being loaded.
+
+* Passed: (X)=Event name (high bit set on last char)
+*         (B)=Error code, 0 = none
+*         (Y)=I-Code ptr in the active procedure, 0 = no location
+* Destroys: CC
+
+L2EVSZ equ 64 line buffer size
+L2EVNT pshs D,X,Y,U
+ leas -L2EVSZ,S
+ leau ,S
+ bsr L2ECPY event name
+ ldb L2EVSZ+1,S error code
+ beq L2EV10
+ lda #V$SPAC
+ sta ,U+
+ clra
+ bsr L2EDEC
+L2EV10 ldy L2EVSZ+4,S icode ptr
+ beq L2EV20
+ lda #V$SPAC
+ sta ,U+
+ ldx I.APRC
+ leax P.NAME,X
+ bsr L2ECPY procedure name
+ lda #V$SPAC
+ sta ,U+
+ bsr L2LINE
+ bsr L2EDEC line number
+L2EV20 lda #V$CR
+ sta ,U+
+ tfr U,D
+ leax ,S
+ pshs X
+ subd ,S++ length
+ tfr D,Y
+ lda #CMDOUT
+ OS9 I$WritLn
+ leas L2EVSZ,S
+ puls D,X,Y,U,PC
+
+* Copy string at (X) to (U), at most 40 chars
+L2ECPY ldb #40
+L2ECP1 lda ,X+
+ bmi L2ECP2 last char
+ sta ,U+
+ decb
+ bne L2ECP1
+ rts
+L2ECP2 anda #$7F
+ sta ,U+
+ rts
+
+* Append (D) in decimal at (U)
+L2EDEC pshs D,X,Y
+ leax <L2TEN,PCR
+ ldy #0 no digit written yet
+L2EDE1 lda #'0-1
+ sta ,U
+ ldd ,S
+L2EDE2 inc ,U
+ subd ,X
+ bhs L2EDE2
+ addd ,X
+ std ,S remainder
+ ldd ,X++ divisor
+ cmpd #1
+ beq L2EDE3 units digit always written
+ lda ,U
+ cmpa #'0
+ bne L2EDE3
+ cmpy #0
+ beq L2EDE1 drop leading zero
+L2EDE3 leau 1,U
+ ldy #1
+ ldd -2,X
+ cmpd #1
+ bne L2EDE1
+ puls D,X,Y,PC
+L2TEN fdb 10000,1000,100,10,1
+
+***************
+* Subroutine L2DPMT
+*   Debugger prompt: a "%DEBUG <proc> <line>" event
+
+* Returns: (X)=0 (no prompt string for RUNCMD)
+
+L2DPMT pshs B,Y
+ leax <L2DBGE,PCR
+ clrb
+ ldy I.ICPT
+ lbsr L2EVNT
+ ldx #0
+ puls B,Y,PC
 
 LINMSG fcs "line"
+L2DBGE fcs "%DEBUG"
  endc
 
 * End of Decompiler routines

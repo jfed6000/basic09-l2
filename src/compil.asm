@@ -224,7 +224,11 @@ ERRO07 sta ,X+ put spaces in i/o buffer
 ERRXIT lbra J$EXIT Exit
 
 PRTLIN ldy #256 PRINT to carriage return
+ ifne L2B09
+ lda #CMDOUT command channel, not the program terminal
+ else
  lda I.OPTH
+ endc
  OS9 I$WritLn PRINT line
  rts (IGNORE Any errors)
 

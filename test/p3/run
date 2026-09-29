@@ -1,0 +1,7 @@
+* l2basic09 P3: an editor-like client drives l2b09run over pipes
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/l2b09ctl <script.ctl >ctl.out >>ctl.err
+echo == done

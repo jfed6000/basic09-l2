@@ -22,6 +22,9 @@ X$PBLN rmb 2 Print a bound line
 X$DBUG rmb 2 Enter debug state
 X$TEXP rmb 2 Trace expression address
 X$TEXR rmb 2 Trace result
+ ifne L2B09
+X$L2EV rmb 2 Write a protocol event line
+ endc
  endc
 
 *** Compiler Entries
