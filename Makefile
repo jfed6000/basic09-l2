@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p6test p7test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p6test p7test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -150,18 +150,20 @@ p7test: l2b09
 loadtime: l2b09
 	tools/emu-wildbits.sh test/loadtime
 
-# An SD card image for trying the editor on a Wildbits K2: the stock K2
+# SD card images for trying the editor on a Wildbits K2 or Jr2: the stock
 # image with the pipe modules added to OS9Boot, l2b09ed, l2b09run and the
 # subroutine modules in CMDS, and examples/ in /dd/l2b09
-K2IMG = $(BUILD)/l2b09_k2.dsk
+K2IMG  = $(BUILD)/l2b09_k2.dsk
+JR2IMG = $(BUILD)/l2b09_jr2.dsk
 k2img: $(K2IMG)
+jr2img: $(JR2IMG)
 
-$(K2IMG): $(TOOLS) $(L2B09) $(SUBS) $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe $(wildcard examples/*)
-	cp $(PLATDIR)/l2_wildbitsk2.dsk $@.tmp
-	os9 copy -r $@.tmp,OS9Boot $(BUILD)/k2boot.orig
-	tools/bootfile-add.py $(BUILD)/k2boot.orig $(BUILD)/k2boot \
+$(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe $(wildcard examples/*)
+	cp $< $@.tmp
+	os9 copy -r $@.tmp,OS9Boot $(BUILD)/$*boot.orig
+	tools/bootfile-add.py $(BUILD)/$*boot.orig $(BUILD)/$*boot \
 	    $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe
-	os9 copy -r $(BUILD)/k2boot $@.tmp,OS9Boot
+	os9 copy -r $(BUILD)/$*boot $@.tmp,OS9Boot
 	for m in l2b09ed l2b09run syscall inkey farmem; do \
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done

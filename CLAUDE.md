@@ -22,7 +22,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
 | `make p1test` … `p4test`, `p5atest` … `p5jtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
-| `make k2img` | `build/l2b09_k2.dsk`: the stock K2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
+| `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the stock K2 or Jr2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
 - A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files, and a `gen` script whose output is copied in unchanged (binary).
