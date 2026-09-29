@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""P5.3 test data: Make, Run and the error jump through l2b09run.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+prog = '''PROCEDURE main
+PRINT "main: start"
+RUN sub(3)
+PRINT "main: end"
+END
+PROCEDURE sub
+PARAM n:INTEGER
+DIM x:INTEGER
+x:=n*2+
+PRINT "sub x="; x
+END
+PROCEDURE crash
+DIM z:INTEGER
+z:=0)
+PRINT 5/z
+END
+'''
+expect = '''PROCEDURE main
+PRINT "main: start"
+RUN sub(3)
+RUN crash
+PRINT "main: end"
+END
+PROCEDURE sub
+PARAM n:INTEGER
+DIM x:INTEGER
+x:=n*2+1
+PRINT "sub x="; x
+END
+PROCEDURE crash2
+DIM z:INTEGER
+z:=0
+REM PRINT 5/z
+END
+'''
+keys = '''
+^b                          # Make: sends all three; errors in sub and crash
+^k "1"                      # the cursor is on the first error: x:=n*2+1
+^n ^k bs                    # the next error: z:=0
+^b                          # Make: sends sub and crash, not main
+^r                          # Run main
+^g "4" enter "RUN crash" enter
+^r                          # Make sends main; crash fails with error 45
+"REM "                      # at the start of the line of the error
+^g "13" enter ^k "2"        # rename crash to crash2
+^b                          # Make: kill crash, load crash2
+^s ^q
+'''
+# The protocol traffic: each Make sends only what changed
+log = '''# -t=/dd/l2b09/term.out
+< l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware
+
+< l2b09run
+< %READY
+> load l2b09ed.tmp
+< main
+< sub
+< x:=n*2+
+<        ^
+< ERROR #012
+< %CERR 12 sub 3
+< crash
+< z:=0)
+<     ^
+< ERROR #034
+< %CERR 34 crash 2
+< %READY
+> load l2b09ed.tmp
+< sub
+< crash
+< %READY
+> run main
+< %READY
+> load l2b09ed.tmp
+< main
+< %READY
+> run main
+< *000E      PRINT 5/z
+< ERROR #045
+< %ERROR 45 crash 3
+< BREAK: PROCEDURE crash line 3
+< %DEBUG crash 3
+> q
+< %READY
+> kill crash
+< %READY
+> load l2b09ed.tmp
+< crash2
+< %READY
+> bye
+'''
+
+# Second session: no -t (a terminal from the /vt factory), and a program
+# that sends BREAK (S$Intrpt) to its parent, the editor, which passes it
+# on to l2b09run as it would a BREAK typed on the program's terminal.
+brk = '''PROCEDURE brk
+TYPE regs=rcc,ra,rb,rdp:BYTE; rx,ry,ru:INTEGER
+DIM r:regs
+DIM c:BYTE
+DIM buf(512):BYTE
+DIM n:INTEGER
+c:=$0C
+RUN syscall(c,r)
+r.rx:=ADDR(buf)
+c:=$18
+RUN syscall(c,r)
+r.ra:=buf(2)
+r.rb:=3
+c:=$08
+RUN syscall(c,r)
+n:=0
+LOOP
+n:=n+1
+ENDLOOP
+END
+'''
+keys2 = '''
+^r                          # Run: the BREAK stops it; the editor quits the debugger
+^r                          # and it can run again
+^q
+'''
+
+files = {'prog.b09': prog, 'prog.exp': expect, 'log.exp': log, 'brk.b09': brk}
+for name, text in files.items():
+    with open(os.path.join(out, name), 'w', newline='') as f:
+        f.write(text.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
+with open(os.path.join(out, 'keys2.bin'), 'wb') as f:
+    f.write(compile_keys(keys2))

@@ -1,0 +1,11 @@
+* l2basic09 P5.3: l2b09ed Make, Run and the error jump through l2b09run
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+load /dd/l2b09/syscall
+echo >term.out
+/dd/l2b09/l2b09ed -t=/dd/l2b09/term.out -l=ed.log prog.b09 <keys.bin >/vt3 >>ed.err
+echo == one done
+load vt
+/dd/l2b09/l2b09ed -l=ed2.log brk.b09 <keys2.bin >/vt3 >>ed2.err
+echo == two done

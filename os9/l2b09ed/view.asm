@@ -107,6 +107,7 @@ v_draw              lbsr      t_curoff
 vd0                 bita      #RD.ALL
                     beq       vd1
                     lbsr      v_frame
+                    lbsr      w_draw
                     ldd       <tpos
                     std       <wp
                     ldd       <tpos+2
@@ -297,8 +298,8 @@ v_selend            tst       <vrev
 vse9                rts
 
 * v_stat: the bottom border (modified mark, line:column) and the hint line
-v_stat              ldb       <scrh               bottom border
-                    subb      #2
+v_stat              ldb       <wtop               bottom border
+                    addb      <wrows
                     clra
                     lbsr      t_xy
                     lda       <glyphs+GL.BL2

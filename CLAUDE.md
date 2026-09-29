@@ -20,7 +20,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5etest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest` … `p5ftest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
@@ -51,6 +51,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - The pipe modules must be in OS9Boot (use `bootmods`); loading them at runtime fails with 237.
   - Named pipes don't work on NitrOS-9's IOMan.
   - Pipes can't be polled.
+  - A signal that arrives during a waiting pipe read ends it with `E$EOF`, just like the real end of the pipe.
 - **OS-9 shell:**
   - `>>` redirects stderr; it does not append. It also fails with 218 if the file already exists.
   - `!` is a pipe, even inside `echo`.

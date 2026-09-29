@@ -85,19 +85,22 @@ msrch               fdb       c_find-cmdtab
                     fcn       "Go to line..."
                     fcn       "^G"
                     fdb       $FFFF
-mrun                fdb       c_nyi-cmdtab
+mrun                fdb       c_run-cmdtab
                     fcn       "Run"
                     fcn       "^R"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_user-cmdtab
                     fcn       "User screen"
                     fcn       "F5"
                     fdb       $FFFF
-mcomp               fdb       c_nyi-cmdtab
+mcomp               fdb       c_make-cmdtab
                     fcn       "Make"
                     fcn       "^B"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_nexterr-cmdtab
                     fcn       "Next error"
                     fcn       "^N"
+                    fdb       c_msgwin-cmdtab
+                    fcn       "Messages"
+                    fcn       "F6"
                     fdb       $FFFF
 mdbg                fdb       c_nyi-cmdtab
                     fcn       "Step"
@@ -695,6 +698,10 @@ helptx              fcn       "Arrows                    move"
                     fcn       "Alt+F E S R C D O H       menus: File Edit Search Run Compile"
                     fcn       "                          Debug Options Help"
                     fcn       "  in a menu:              arrows, Enter or the first letter; Esc"
+                    fcn       "^B                        make: load the changed procedures"
+                    fcn       "^R                        make, then run the first procedure"
+                    fcn       "^N, F6                    next message, message window"
+                    fcn       "F5                        the program's screen"
                     fcn       "F1                        this help"
                     fcn       " "
                     fcn       "Press any key."
@@ -769,6 +776,8 @@ bn1                 beq       bn2
                     leax      ,y                  (sets Z; tfr would not)
                     bra       bn1
 bn2                 lbsr      u_clear
+                    lbsr      ms_clear            messages were about the old text
+                    lbsr      w_hide
                     ldd       #0
                     std       <nlines
                     lbsr      f_load

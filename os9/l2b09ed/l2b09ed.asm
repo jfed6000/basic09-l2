@@ -6,9 +6,14 @@
 * are cached in memory, so a file can be much larger than the editor's
 * 64K address space.
 *
-* usage: l2b09ed [-c=<pages>] [-h] [<file>]
+* usage: l2b09ed [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>]
+*                [-h] [<file>]
 *
 *   -c=<pages>  number of 2K pages cached in memory (3-24, default 12)
+*   -t=<term>   the program's terminal (default: a free one from /vt)
+*   -b=<kb>     passed on to l2b09run: far memory for procedure code
+*   -m=<kb>     l2b09run's data size
+*   -l=<log>    log the runtime protocol to a file
 *   -h          at the end of the key input, sleep instead of quitting
 *               (tests use it to take a screen snapshot)
 *
@@ -203,6 +208,34 @@ msel                rmb       1                   selected item
 mcnt                rmb       1                   items in it
 mcol                rmb       1                   its column
 mwid                rmb       1                   its width
+child               rmb       1                   l2b09run's process id (0 = not running)
+rpa                 rmb       1                   path: commands to it (pipe A)
+rpb                 rmb       1                   path: its output (pipe B)
+upath               rmb       1                   path to the program's terminal (0 = none)
+uterm               rmb       1                   that is a terminal we can show
+lgpath              rmb       1                   protocol log (0 = none)
+running             rmb       1                   a program runs: signals go on to l2b09run
+rtmem               rmb       1                   -m: its data size in pages (0 = default)
+nproc               rmb       1                   procedures in ptab
+nsend               rmb       1                   Make: procedures sent
+nerr                rmb       1                   errors with an event in a load
+nerrl               rmb       1                   "ERROR #" lines in it
+lderr               rmb       1                   the last of those
+evcode              rmb       1                   event: error code (0 = none)
+evline              rmb       2                   event: line in the procedure
+evproc              rmb       2                   event: procedure name (in rline)
+curp                rmb       2                   mk_scan: the procedure being scanned
+h1                  rmb       2                   its signature
+h2                  rmb       2
+hlen                rmb       2
+mkp                 rmb       4                   mk_scan: position
+mkln                rmb       2                   its line
+nmsg                rmb       1                   messages
+msgtop              rmb       1                   first one in the window
+msgsel              rmb       1                   the selected one
+msgon               rmb       1                   the message window is shown
+msgfoc              rmb       1                   it has the focus
+gotsig              rmb       1                   a signal came (rt_icpt)
 dpend               equ       .
 
                     org       256
@@ -215,6 +248,12 @@ fntsav              rmb       NGLYPH*8            font characters under our glyp
 fstr                rmb       62                  search text
 rstr                rmb       62                  replacement text
 mbuf                rmb       40                  a message built at run time
+tname               rmb       40                  the program's terminal
+bopt                rmb       8                   -b value
+rline               rmb       258                 a line to or from l2b09run
+nbuf                rmb       NAMEMAX             mk_isproc: a procedure name
+ptab                rmb       MAXPROC*PR.SIZE     procedures l2b09run holds
+mtab                rmb       MAXMSG*MS.SIZE      messages
 utab                rmb       NUNDO*UR.SIZE       undo records
 outbuf              rmb       OUTSZ
 desctab             rmb       NDESC*DS.SIZE
@@ -258,6 +297,7 @@ st1                 clr       ,x+
                     lbsr      getmem              room for the cache buffers
                     lbsr      pg_init
                     lbsr      t_init              raw keys, screen size
+                    lbsr      rt_init             signals, log, the program's terminal
                     lbsr      sw_open
                     lbsr      f_load
                     bcc       st2
@@ -266,15 +306,21 @@ st2                 lbsr      buf_top
                     lbsr      t_cls
                     lbra      m_loop
 
-* getargs: [-c=<n>] [<file>] -> ncache, fname
+* getargs: [-c=<n>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>] [-h]
+* [<file>] -> ncache, tname, bopt, rtmem, inbuf (the log), hold, fname
 getargs             ldb       #NCDEF
                     stb       <ncache
+                    ldx       <base               the data area is not cleared
+                    clr       fname,x
+                    clr       inbuf,x
+                    clr       tname,x
+                    clr       bopt,x
                     ldx       <argp
 ga1                 lda       ,x+
                     cmpa      #C$SPAC
                     beq       ga1
                     cmpa      #C$CR
-                    beq       ga9
+                    lbeq      ga9
                     cmpa      #'-
                     bne       ga5
                     lda       ,x+
@@ -283,10 +329,36 @@ ga1                 lda       ,x+
                     bne       ga1a
                     inc       <hold
                     bra       ga1
-ga1a                cmpa      #'C
+ga1a                ldb       ,x+                 the rest are -<letter>=<value>
+                    cmpb      #'=
                     bne       ga4
-                    lda       ,x+
-                    cmpa      #'=
+                    ldy       <base
+                    cmpa      #'T
+                    bne       ga1b
+                    leay      tname,y
+                    ldb       #40
+                    bra       ga_tok
+ga1b                cmpa      #'B
+                    bne       ga1c
+                    leay      bopt,y
+                    ldb       #8
+                    bra       ga_tok
+ga1c                cmpa      #'L
+                    bne       ga1d
+                    leay      inbuf,y
+                    ldb       #64
+                    bra       ga_tok
+ga1d                cmpa      #'M
+                    bne       ga1e
+                    lbsr      getnum              kilobytes to pages
+                    cmpd      #64
+                    blo       ga1f
+                    ldd       #63
+ga1f                lslb
+                    lslb
+                    stb       <rtmem
+                    bra       ga1
+ga1e                cmpa      #'C
                     bne       ga4
                     lbsr      getnum
                     cmpb      #NCMIN
@@ -306,7 +378,9 @@ ga4                 lda       ,x+                 skip an unknown option
 ga5                 leax      -1,x                the file name
                     ldy       <base
                     leay      fname,y
-                    ldb       #63
+                    ldb       #64
+* ga_tok: copy the word at X to Y (at most B-1 characters, then a 0)
+ga_tok              decb
 ga6                 lda       ,x+
                     cmpa      #C$SPAC
                     beq       ga7
@@ -317,7 +391,7 @@ ga6                 lda       ,x+
                     bne       ga6
 ga7                 clr       ,y
                     leax      -1,x
-                    bra       ga1
+                    lbra      ga1
 ga9                 rts
 
 * getnum: decimal number at X -> D; X past it
@@ -364,13 +438,15 @@ gm9                 rts
 
 * fatal: B = error.  Put the terminal back and exit.
 fatal               pshs      b
+                    lbsr      rt_done
                     lbsr      t_done
                     lbsr      sw_close
                     puls      b
                     os9       F$Exit
 
 * quit: leave the editor
-quit                lbsr      t_done
+quit                lbsr      rt_done
+                    lbsr      t_done
                     lbsr      sw_close
                     clrb
                     os9       F$Exit
@@ -384,6 +460,8 @@ quit                lbsr      t_done
                     use       clip.asm
                     use       search.asm
                     use       undo.asm
+                    use       msg.asm
+                    use       rt.asm
 
                     emod
 eom                 equ       *

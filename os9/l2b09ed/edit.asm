@@ -86,11 +86,15 @@ cmdtab              fcb       C$CR
                     fcb       EK.F1
                     fdb       c_help-cmdtab
                     fcb       $02                 ^B make
-                    fdb       c_nyi-cmdtab
+                    fdb       c_make-cmdtab
                     fcb       $12                 ^R run
-                    fdb       c_nyi-cmdtab
+                    fdb       c_run-cmdtab
                     fcb       $0E                 ^N next error
-                    fdb       c_nyi-cmdtab
+                    fdb       c_nexterr-cmdtab
+                    fcb       EK.F1+4             F5 user screen
+                    fdb       c_user-cmdtab
+                    fcb       EK.F1+5             F6 message window
+                    fdb       c_msgwin-cmdtab
                     fcb       $05                 ^E evaluate
                     fdb       c_nyi-cmdtab
                     fcb       $17                 ^W watch

@@ -4,9 +4,13 @@
 
 It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only the key tables and a few screen details are machine-specific, so a CoCo 3 port is possible.
 
-    l2b09ed [-c=<pages>] [-h] [<file>]
+    l2b09ed [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>] [-h] [<file>]
 
 - **`-c=<pages>`:** number of 2K pages cached in memory, 3–24 (default 12). If memory is short it uses fewer, down to 3.
+- **`-t=<term>`:** the terminal the program runs on. The default is a free window from the `/vt` factory (loaded by the stock startup). A file works too; there is then no user screen.
+- **`-b=<kb>`:** passed on to `l2b09run`, which banks procedure code into that much far memory (ARCHITECTURE.md, P6).
+- **`-m=<kb>`:** `l2b09run`'s data size, like the shell's `#<kb>k` (at most 63).
+- **`-l=<log>`:** write the protocol traffic to a file: `> ` for what the editor sends, `< ` for what comes back, and `# ` for the parameters `l2b09run` was started with.
 - **`-h`:** at the end of the key input, sleep instead of quitting. Tests use it to take a screen snapshot of a menu or dialog.
 - **`<file>`:** the file to edit. A missing file starts empty and is created on the first save. With no name, the first save asks for one.
 
@@ -20,7 +24,7 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 | P5.2b | Selection and clipboard | done |
 | P5.2c | Find and replace | done |
 | P5.2d | Undo and redo | done |
-| P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | |
+| P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | done |
 | P5.4 | Debugger UI: current line, step, continue, evaluate, watches | |
 | P5.5 | `l2b09run`: line breakpoints, run to cursor, step over | |
 
@@ -53,10 +57,10 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Options ▸ Match case | Searches match case (off by default) | P5.2c |
 | Esc | Cancel (menu, dialog, selection) | P5.2a/b |
 | ^B | Make (load the changed procedures) | P5.3 |
-| ^R | Run | P5.3 |
-| ^N | Next error | P5.3 |
+| ^R | Run (Make, then run the first procedure) | P5.3 |
+| ^N | Next message (and its line) | P5.3 |
 | F5 | User screen (the program's window) | P5.3 |
-| F6 | Switch between the edit and message windows | P5.3 |
+| F6 | Into the message window, and back | P5.3 |
 | F7 | Step | P5.4 |
 | ^E | Evaluate / modify | P5.4 |
 | ^W | Add a watch | P5.4 |
@@ -95,6 +99,13 @@ The screen uses the CoCo/Wildbits VTIO control codes: `$02` cursor XY, `$0C` cle
     rows 2..h-3  ║ text                                          ║
     row h-2      ╚*═ 1234:56 ═══════════════════════════════════╝          * = modified, line:column
     row h-1       F1 Help  ^S Save  ...                                     hints or a message (reverse)
+
+With the message window open, the text window ends 7 rows higher, and the message window fills those rows above the hint line:
+
+    row h-9      ╚*═ 1234:56 ═══════════════════════════════════╝
+    row h-8      ┌─────────────────── Message ───────────────────┐          double frame while it has the focus
+    rows h-7..h-3│ Line 9, sub: Error 12 Illegal Statement ...    │          the selected message is reversed
+    row h-2      └───────────────────────────────────────────────┘
 
 - **Text window:** the rows and columns inside the frame. Tabs expand to every 8th column. A line wider than the window scrolls the whole window sideways.
 - **Menus:** Alt+letter opens a menu under its title in a single-line box. Up/Down move (skipping separators), Left/Right go to the next menu, Enter or an item's first letter runs it, and Esc closes the menu. Commands that come in later phases are in the menus already and say "Not available yet".
@@ -149,6 +160,25 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Cursor:** after an undo or redo the cursor is at the change and the window is centred on it.
 - **Page budget:** undo text shares the 512 pages with the text and the clipboard. If an edit needs a page and none is left, the undo history is given up to free its pages. If a deletion's text does not fit, the deletion still happens without a record.
 
+## Make and Run
+
+- **The runtime:** the first Make forks `l2b09run -t=<term> [-b=<kb>]` with two pipes (PROTOCOL.md, "Connecting"). It keeps running until the editor quits, which sends `bye` and waits for it to exit. If it ends on its own (a program's `BYE`), the bottom line says so, with its exit status, and the next Make starts a new one.
+- **Blocking:** pipes cannot be polled, so the editor waits for each reply. Make shows "Making..." while `l2b09run` compiles.
+- **Procedures:** a line `PROCEDURE <name>` (any case, spaces before it) starts a procedure, which runs to the next such line. Text before the first one is not sent.
+- **What Make sends:** a table holds each procedure `l2b09run` has, with a signature of the text it was loaded from: two 16-bit sums (of the bytes, and of those sums) and the length. Make scans the text and compares.
+  - A procedure whose signature changed, a new one, or one with a compile or bind error last time is written to `l2b09ed.tmp` (in the current directory, deleted on exit), and all of them go in one `load l2b09ed.tmp`.
+  - A name that is no longer in the text gets `kill <name>` first.
+  - The scan reads the page buffers directly and looks for `PROCEDURE` only at the start of each line. It does not depend on which pages were edited, so undoing an edit makes the procedure unchanged again.
+  - If a load fails without an event (an `ERROR #` line with no `%CERR` or `%BERR`), every procedure in it is sent again next time, and the message window says so.
+- **Messages:** each `%CERR`, `%BERR` and `%ERROR` becomes a message: `Line <n>, <proc>: Error <code> <text>`. The file line is the line of the procedure's `PROCEDURE` line plus the event's line. The text comes from `/dd/sys/errmsg`, which has the Basic09 errors. Up to 32 messages are kept.
+- **After a Make with errors:** the message window opens (7 rows at the bottom, taken from the text window) and the cursor goes to the first error. ^N goes to the next one. F6 (or Compile ▸ Messages) moves into the window: Up/Down choose a message, Enter goes to its line, F6 goes back, and Esc closes the window. A clean Make closes it and says how many procedures it loaded, or "up to date".
+- **Run:** Make, then `run <first procedure in the text>`. While it runs, the program's terminal is shown (`$1B $21` written to a path the editor keeps open to it); when `%READY` comes back, the editor's own window is shown again.
+  - A runtime error (`%ERROR`) becomes a message and the cursor goes to its line. The debugger stop that follows (`%DEBUG`) is left with `q` until P5.4 adds the debugger.
+  - A break with no error is shown as `Line <n>, <proc>: Stopped`.
+- **BREAK:** SCF sends the keyboard interrupt to the last process that used the terminal. That is `l2b09run` once the program has done I/O there, but it can be the editor, which selected the window. So the editor has a signal handler that passes BREAK and abort on to `l2b09run` while a program runs.
+  - A signal ends a waiting pipe read with `E$EOF` (pipeman returns the 0 bytes read so far). The handler sets a flag so the read is tried again instead of taken for the end of the pipe.
+- **User screen:** F5 (Run ▸ User screen) shows the program's terminal until a key is pressed there.
+
 ## Testing
 
 - **Scripted keys:** `tools/keys.py` compiles a readable key script (`"text"`, `up`, `^g`, `pgdn*3`, …) into the bytes the editor reads. When path 0 is not a terminal, `SS.KySns` fails, so keys that need modifier bits are sent as `$FF <kysns> <char>`.
@@ -159,4 +189,5 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5ctest` (P5.2b):** a 64 KB file with a 4-page cache. It covers typing over a selection, cut and paste of lines, word selection, a selection across lines deleted, an upward selection, Esc and plain moves ending a selection, a 300-line cut pasted inside a line, and select all, copy and two pastes (the result is 196 KB). The saved file must match the model.
 - **`make p5dtest` (P5.2c):** a match across a page boundary, typing over a match, find next, Match case on and off, Replace answered Y/N/Esc, then Replace answered A (1,443 replacements), and a search that finds nothing. The result must match the model.
 - **`make p5etest` (P5.2d):** undo and redo of grouped typing, Delete and Backspace, ^D, cut and paste, 1,500 replacements undone 60 times (only 50 records are kept), select-all delete undone and redone, and an edit that ends redo. The result must match the model, which follows the same grouping rules.
+- **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make (`kill` plus one load). The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, the editor leaves the debugger, and a second Run sends nothing new.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

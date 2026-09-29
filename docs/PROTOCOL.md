@@ -1,6 +1,6 @@
 # l2b09run command-channel protocol
 
-This document is for the editor author. It defines how an editor drives `l2b09run`: loading source, running it, debugging it, and getting error locations back. `os9/l2b09ctl.asm` is a working client, and `test/p3/script.ctl` shows a full session.
+This document is for the editor author. It defines how an editor drives `l2b09run`: loading source, running it, debugging it, and getting error locations back. `os9/l2b09ctl.asm` is a small working client, and `test/p3/script.ctl` shows a full session. The editor, `l2b09ed` (`os9/l2b09ed/rt.asm`, EDITOR.md "Make and Run"), is the full one.
 
 ## Connecting
 
@@ -48,7 +48,8 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
       file line = (file line of "PROCEDURE <proc>") + <line>
 
   This holds for source loaded with `load`. It does not hold for packed modules, or for source whose Basic09 line numbers are out of order (the loader moves such lines).
-- **End of session:** when `l2b09run` exits (`bye`, or a program's `BYE`), pipe B reaches end of file. `F$Wait` returns its exit status.
+- **End of session:** when `l2b09run` exits (`bye`, or a program's `BYE`), pipe B reaches end of file (`E$EOF`). `F$Wait` returns its exit status.
+- **Signals and pipe reads:** a signal that arrives while the editor waits in a pipe read ends the read with `E$EOF` and 0 bytes, just like the end of the pipe (pipeman). An editor with a signal handler must tell the two apart, for example with a flag set by the handler, and read again.
 - **Editor gone:** if pipe A reaches end of file, `l2b09run` quits the debugger (as `q`) if it is in it, then exits as for `bye`, freeing its far memory.
 
 ## Editor to runtime
@@ -69,6 +70,8 @@ Send these with `F$Send` to the runtime's process id (from `F$Fork`).
 | Signal | Effect |
 |---|---|
 | `S$Intrpt` (3) | Break: the running program stops at the next statement, followed by `%DEBUG`. |
+
+A BREAK typed on the program's terminal goes to the last process that used that terminal. That is not always `l2b09run`: an editor that writes to the terminal (for example to select the window) can get it, and should then pass it on with `F$Send`.
 | `S$Abort` (2) | Abort: the program stops, followed by `%READY`. |
 
 ## Example (from test/p3)

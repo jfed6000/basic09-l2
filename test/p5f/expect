@@ -1,0 +1,10 @@
+same ed.log log.exp
+same prog.b09 prog.exp
+term.out  main: start
+term.out  sub x=7
+term.out  main: end
+ed2.log   # -t=/vt
+ed2.log   < BREAK: PROCEDURE brk
+ed2.log   > q
+ed2.log   > bye
+run.out   == two done
