@@ -1,0 +1,8 @@
+# Lines (fixed strings) that must appear in the named output file
+run.out   . p1main
+run.out   fib(10)=55.
+run.out   1899 primes
+run.out   l2b09 P1: main done
+b09.err   sieve
+b09a.err  PROCEDURE p1fib
+b09a.err  r:=a

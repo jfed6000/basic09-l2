@@ -2,7 +2,8 @@
 
 **Name:** the project is called `l2basic09`. Nothing in any name refers to a specific machine, because it may also run on a CoCo 3.
 - Deliverable names follow the same rule: `l2b09c` (compiler), `l2b09run` (runtime/debugger), `farmem`.
-- Machine-specific code sits behind conditionals, the way `wildbits`/`H6309` already do.
+- Machine-specific code sits behind conditionals, the way `wildbits` already does.
+- **6809 only.** There will be no 6309 version. The existing `H6309` conditionals in the Microware source still build, but new code does not need to support them.
 - MMU window sizes come from `DAT.BlSz`, so nothing is hard-coded to one machine. Wildbits and the CoCo 3 both use 8K blocks.
 - Wildbits is the first test target, with the CoCo 3 port kept in mind.
 
@@ -24,21 +25,20 @@ Goal: a Level 2 environment in which:
 - **The debugger needs the compiler and decompiler.** `PRINT`/`LET` compile an expression, and `LIST` decompiles. So "runtime + debugger" is really "everything except the interactive line editor/command shell". It is smaller, but not RunB-small.
 - **PACK throws away what a debugger needs.** PACK (`DUMP` routine, `comand.asm:1739`) rebinds with `SMASH` cleared, which removes REMs, DIMs and symbol names. A "debug pack" that keeps symbols is a small change.
 - **Unpacked procedures are already module-shaped.** Workspace procedures are already laid out like modules (`P.MHDR`, `P.SYMB`, `P.DSCB`, and so on). That makes a disk format for debuggable modules natural.
-- **The kernel side is already there.** The Level 2 kernel has `F$AllRAM`, `F$MapBlk`, `F$ClrBlk`, `F$CpyMem`, `F$GPrDsc`, and there is `pipeman_named`. Wildbits has 8K blocks (`defs/wildbits.d`), and `vt1`–`vt8` give multiple terminals. The `samples/mapblk` sample already maps blocks from Basic09 through the `wild` module.
-- **One thing to check:** `pipeman`/`piper`/`pipe` appear under `DRIVEWIRE_BOOTMODS` in `recipes/wildbits/wildbits.mak`. Confirm pipes are in the normal Wildbits boot.
+- **The kernel side is already there.** The Level 2 kernel has `F$AllRAM`, `F$MapBlk`, `F$ClrBlk`, `F$CpyMem`, `F$GPrDsc`, and there are pipes (see the P1 findings for the limits). Wildbits has 8K blocks (`defs/wildbits.d`), and `vt1`–`vt8` give multiple terminals. The `samples/mapblk` sample already maps blocks from Basic09 through the `wild` module.
 
 ## Proposed architecture
 ```
  [Editor process, vtN]      text .b09 source; could be a new full-screen editor
-        |  control pipe (/pipe/l2b09ctl) + F$Send signals for BREAK
+        |  editor forks runtime; anonymous pipes on its stdin/stdout + F$Send for BREAK
         v
  [l2b09c compiler]  text -> I-code -> "debug module" (symbols + line table kept) -> /r0 or file
         v
  [l2b09run runtime/debugger process, own 64K, own vt]  F$Load module, run.
-        program I/O -> its terminal;  debugger I/O -> control/event pipe or a second vt
+        program I/O -> a /vtN it opens itself;  debugger I/O -> the control pipes
 ```
 - **Hand-off format:** a module file. The Level 2 module directory is system-wide, so `F$Load` gives the runtime the code without a shared-memory trick.
-- **Protocol:** plain text lines, easy to test with `echo > /pipe/...`.
+- **Protocol:** plain text lines, easy to test by piping a command file into the runtime (`list cmds ! l2b09run`).
   - Editor to runtime: `LOAD`, `RUN proc args`, `BREAK`, `STEP n`, `CONT`, `TRON/TROFF`, `PRINT expr`, `LET`, `STATE`, `QUIT`.
   - Runtime to editor: `READY`, `STOPPED proc line`, `ERROR code proc line`, `EXITED`.
 - **Mapping back to source lines:** Basic09 has no mandatory line numbers, so the compiler must emit an I-code-offset → source-line table in the debug module. This is new, and it is the key enabler for an editor that jumps to the error.
@@ -74,13 +74,19 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
   - `syscall.asm`/`inkey.asm` are in `modules/`, and the stock samples are in `samples/`.
   - The build takes only the defs directory from `NITROS9DIR`, which defaults to `~/projects/wild/joust/nitros9_complete/nitros9`.
   - `make` builds all five stock variants (6809, 6309, wildbits, and both RunBs). `basic09_wildbits`, `runb_6809` and `basic09_6809` are verified byte-for-byte; the 6309 builds have not been compared yet. `make check` compares `basic09_wildbits` and `runb_6809` against the prebuilt copies in nitros9_complete. `basic09_6809` was checked against a build from that tree.
-- **P1 – Prove the pipeline with stock binaries.** Drive stock basic09 from a script (`load`, `pack`, `bye`) to produce a module, then run it with RunB in a second vt.
-  - Deliverable: a shell/script `l2b09make`, and notes on timing.
+- **P1 – Prove the pipeline with stock binaries (done).** `make p1test` runs `test/p1` headless under MAME via `tools/emu-wildbits.sh`. All checks pass.
+  - What it does: stock basic09, driven by a command file (`load`, `pack*`, `bye`), compiles a three-procedure program into packed modules. RunB runs them (Fibonacci, then an 8K sieve). The same program also runs with its I/O on `/vt2`. basic09 is also driven through an anonymous pipe (`list cmds ! basic09`), including a decompiling `LIST`.
+  - Timing (emulated 6.29 MHz, RTC resolution 1 s): compiling and packing about 1 s; the program about 4 s. Host time for a whole boot and test is about 5 s.
+  - **Pipes must be in OS9Boot.** Loading `pipeman`/`piper`/`pipe` at runtime fails with `E$NoRAM` (237). The system map has no free 8K DAT slot to map a loaded driver into (IOMan attach / `F$FreeHB`); its free pages sit inside blocks that are already mapped. `tools/bootfile-add.py` inserts modules before `Krn` (the stock pipe modules take the file from 30,464 to 31,232 bytes, of 32,256 allowed; `pipeman_named` would reach 32,000). `bootos9` requires the file to end at `$FE00` with `Krn` at `$EE00`, including the 35 bytes that follow `Krn`.
+  - **Named pipes do not work.** `pipeman_named` (Level 2 source) assembles and handles anonymous pipes. But a second process opening an existing named pipe fails with error 190: the `OldPipe` path checks and rewrites IOMan's stack frame (`IOMAGIC`), and NitrOS-9's IOMan does not lay out its stack the way that code assumes. The control channel therefore uses anonymous pipes, with the editor as the runtime's parent (P3).
+  - **RunB details.** RunB links its module by name, so a packed file must be `load`ed (or be in the exec dir) first. It also needs a memory size (for example `runb #24k`) when a program has large arrays.
+  - **Not yet automated.** An OS-9-side `l2b09make` script was not written, because the OS-9 shell has no parameter substitution. `l2b09c` (P2) replaces it.
 - **P2 – Build variants.**
   - Split the `INCLUDED` flags into `EDITOR` (interactive shell + line editor) and a new `DEBUG`/`COMPILER`. The aim is to build `l2b09c` (headless compile + debug-pack) and `l2b09run` (runtime + debugger, no editor).
   - Add debug-pack (skip `SMASH`, keep symbols) plus the line table.
 - **P3 – Runtime control channel.** `l2b09run` gets:
-  - the debugger's `BASINP`/`BASOUT` on a named pipe;
+  - the debugger's `BASINP`/`BASOUT` on anonymous pipes created by the parent (editor) before `F$Fork`;
+  - program paths `I.IPTH`/`I.OPTH` on a `/vtN` the runtime opens itself;
   - the text protocol above;
   - `BREAK` via `F$Send` and the existing `INTCPT`/`G.SIGN`.
 - **P4 – `farmem` subroutine module** plus a sample and a benchmark.
@@ -96,7 +102,7 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
 ## Risks and open questions
 - **Stock compatibility.** I-code stays compatible with stock RunB until P6. Far arrays are opt-in.
 - **Where the editor lives.** The editor itself (here or a separate project) is undecided. The pipe protocol makes this independent of everything else.
-- **Pipes on Wildbits.** Confirm pipes in the Wildbits boot, and how `/vtN` is opened from a forked process.
+- **Pipes on Wildbits.** Pipes are not in the stock SD boot, so l2basic09 needs a boot file with them (see P1). A CoCo 3 port needs the same check. Named pipes would mean porting `pipeman_named` to NitrOS-9's IOMan.
 - **Syscall cost.** `F$MapBlk` costs a syscall per remap, so `farmem` should be measured on hardware or in MAME.
 
 ## Verification

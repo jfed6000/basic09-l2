@@ -27,8 +27,14 @@ STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
         $(BUILD)/runb_6809 $(BUILD)/runb_6309
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey
 
+# Test platform (Wildbits Jr2 under MAME for now; see tools/emu-wildbits.sh)
+PLATDIR  = $(NITROS9DIR)/recipes/wildbits/l2
+PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
+           -I$(PLATDIR) -I$(NITROS9DIR)/level2/wildbits -I$(NITROS9DIR)/level2/modules/kernel
+PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
+
 .NOTPARALLEL:
-.PHONY: all stock subs check clean
+.PHONY: all stock subs pipes check p1test clean
 
 all: stock subs
 
@@ -55,6 +61,19 @@ $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
+
+# Pipe modules are not in the stock Wildbits SD boot; tests load them at runtime
+pipes: $(PIPEMODS)
+
+$(BUILD)/pipeman_named: $(NITROS9DIR)/level2/modules/pipeman_named.asm | $(BUILD)
+	cd $(BUILD) && $(PLATAS) $< -o$(CURDIR)/$@
+
+$(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe: $(BUILD)/%: $(NITROS9DIR)/level1/modules/%.asm | $(BUILD)
+	cd $(BUILD) && $(PLATAS) $< -o$(CURDIR)/$@
+
+# P1: compile with stock basic09 from a script, run the packed module with runb
+p1test: stock pipes
+	tools/emu-wildbits.sh test/p1
 
 # Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
 check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809

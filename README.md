@@ -18,6 +18,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and roadmap.
 | `src/`     | Microware modular Basic09/RunB source (comand, compil, binder, stmts, exprsn, cnvio) and the module build script. See `src/MICROWARE.md`. |
 | `modules/` | Basic09 subroutine modules (`syscall`, `inkey`). |
 | `samples/` | Basic09 sample programs. |
+| `test/`    | Emulator tests (`run` script, command files, expected output). |
+| `tools/`   | `emu-wildbits.sh` (headless MAME runner), `bootfile-add.py` (add drivers to OS9Boot). |
 | `docs/`    | Architecture and roadmap. |
 | `build/`   | Build output (not tracked). |
 
@@ -27,9 +29,12 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
 
     make                    # stock basic09/runb variants + subroutine modules into build/
     make check              # byte-compare stock builds with the NitrOS-9 tree's prebuilt copies
+    make p1test             # P1 pipeline test, headless on Wildbits Jr2 under MAME
     make NITROS9DIR=/path/to/nitros9
 
 `NITROS9DIR` defaults to `~/projects/wild/joust/nitros9_complete/nitros9`.
+
+Emulator tests use that tree's MAME build (`mame/mame`, machine `wbjr2`) and its Level 2 image (`recipes/wildbits/l2/l2_wildbitsjr2.dsk`). The image is copied into `build/emu/<test>/` and never modified. Only 6809 builds are targeted; the 6309 variants are stock leftovers.
 
 ## Origin
 
