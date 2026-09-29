@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test p6test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test p6test p7test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -101,6 +101,9 @@ p4test: stock l2b09 subs
 
 p6test: l2b09
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6
+
+p7test: l2b09
+	EMU_SECONDS=300 tools/emu-wildbits.sh test/p7
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09

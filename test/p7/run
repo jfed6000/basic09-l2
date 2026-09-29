@@ -1,0 +1,22 @@
+* l2basic09 P7: far arrays (DIM x(n):FAR type)
+-x
+chd /dd/l2b09
+mfree >mfree1
+/dd/l2b09/l2b09run #24k <p7.cmds >p7.out >>p7.err
+mfree >mfree2
+echo == same program with code banking too
+/dd/l2b09/l2b09run #24k -b=64 p7prog.b09 <bye.cmds >p7b.out >>p7b.err
+echo == an error, then end of file in the debugger
+/dd/l2b09/l2b09run #24k p7prog.b09 p7crash <empty.cmds >eof.out >>eof.err
+echo == BYE from a program with far arrays
+/dd/l2b09/l2b09run #24k bye.b09 >bye.out >>bye.err
+mfree >mfree3
+echo == benchmark
+date -t
+/dd/l2b09/l2b09run #24k p7bench.b09 p7bn <bye.cmds >bench1.out >>bench1.err
+date -t
+/dd/l2b09/l2b09run #24k p7bench.b09 p7bf <bye.cmds >bench2.out >>bench2.err
+date -t
+/dd/l2b09/l2b09run #24k p7bench.b09 p7ba <bye.cmds >bench3.out >>bench3.err
+date -t
+mfree >mfree4

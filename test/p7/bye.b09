@@ -1,0 +1,7 @@
+PROCEDURE p7bye
+DIM b(20000):FAR REAL
+b(1):=1.
+b(19999):=2.
+PRINT "p7: bye with far arrays"
+BYE
+END

@@ -20,6 +20,7 @@ STMTENT equ *
  ifne L2B09
  fdb L2RSLV-STMTENT Resolve procedure ptr
  fdb L2MAPW-STMTENT Map far block into the code window
+ fdb L2FALL-STMTENT Free all far arrays
  endc
 
 ***************
@@ -55,6 +56,10 @@ J$FLOT jsr M.EXPRSN
  fcb X$FLOT Float integer
 J$EXPI jsr M.EXPRSN
  fcb X$EXPI Initialize expression
+ ifne L2B09
+J$FMAP jsr M.EXPRSN
+ fcb X$FMAP Map far block into the data window
+ endc
 
 J$CVIO jsr M.CNVIO
  fcb X$CVIO  Call cnvio
@@ -315,6 +320,9 @@ ENDSTM ldb  ,X get next TOKEN
  beq ENDS10 ..yes; don't print anything
  lbsr PRTSTM Print message if there is one
 ENDS10 lbsr TOFSTM Turn off trace
+ ifne L2B09
+ lbsr L2FPOP free this procedure's far arrays
+ endc
  ldu I.ASTR Get storage base address
  lds U.S,U Reset stack
  ldu U.U,U Get caller's storage address
@@ -800,7 +808,11 @@ FORRL ldd ,X++ Get storage offset
 * Global: I.ASTR, I.DSCR, I.SIZE
 
 ASGSTM jsr J$EVAL Get destination address
-ASGST0 cmpa #S.STR need to save size?
+ASGST0 equ *
+ ifne L2B09
+ lbsr L2PIN note a far destination
+ endc
+ cmpa #S.STR need to save size?
  bcs *+6 branch if not
  pshs U save address
  ldu I.SIZE get size
@@ -818,7 +830,11 @@ ASGST0 cmpa #S.STR need to save size?
 * Local: A,U,CC Destroyed
 * Global: None
 
-ASGDIS puls A Get TYPE
+ASGDIS equ *
+ ifne L2B09
+ lbsr L2UNPN map a far destination back in
+ endc
+ puls A Get TYPE
  asla TYPE*2
  leau <ASGBRA,PCR Get ptr to bra table
  jmp A,U
@@ -1327,7 +1343,11 @@ ASGV40 addd I.ASTR Make offset into ptr
  tfr D,U
  lda -3,X Get TOKEN
  suba #T.SBYT Change TOKEN to TYPE
-ASGV50 puls Y Get return address
+ASGV50 equ *
+ ifne L2B09
+ lbsr L2PIN note a far destination
+ endc
+ puls Y Get return address
  cmpa #S.STR need to save size?
  bcs *+6 branch if not
  pshs U save address
@@ -1682,6 +1702,9 @@ CHNSTM jsr J$EVAL Get module name
  ldy 1,Y extract name address
  pshs x,y,u
  lbsr J$KALL kills all external procs
+ ifne L2B09
+ lbsr L2FALL far arrays would outlive the process
+ endc
  puls x,y,u
  bsr SYSSUB Set up for system call
  sts TEMP borrow compiler's TEMP variable
@@ -2084,6 +2107,9 @@ RPAR20 ldu 1,Y Get ptr to string
  bra RPAR30
 RPAR25 leax 1,X Skip complex TOKEN
  jsr J$EVAL Call eval
+ ifne L2B09
+ lbsr L2NEAR far elements can't be passed by reference
+ endc
 RPAR30 puls Y Retrieve count ptr
  inc  ,Y Count parameter
  cmpa #S.STR need to save size?
@@ -2221,6 +2247,210 @@ L2MWE stb 1,S
  puls D,Y,U
  orcc #1
  rts
+
+ ttl FAR ARRAYS
+ pag
+***************
+* Far array handles (see binder)
+
+* A far array's handle is 6 bytes of procedure storage, cleared by
+* EXECUT on every call and filled when the array is first used:
+*   0  first block (0 = not allocated yet)
+*   2  next (older) handle; FARLST is the newest
+*   4  block count
+* Procedure calls nest, so the newest handles always belong to the
+* innermost procedure.
+
+***************
+* Subroutine L2FREL
+*   Free one far array's blocks; unmap the data window first if it
+*   holds one of them
+
+* Passed: (U)=Handle
+
+L2FREL pshs D,X,U
+ ldd  ,U
+ beq L2FRL9 ..never allocated
+ ldd DWBLK
+ beq L2FRL2 ..nothing mapped
+ subd  ,U
+ blo L2FRL2 ..below this array
+ tsta
+ bne L2FRL2 ..above it
+ cmpb 4,U
+ bhs L2FRL2 ..above it
+ bsr L2UNMW
+L2FRL2 ldx  ,U
+ ldb 4,U
+ OS9 F$DelRAM
+ clr  ,U
+ clr 1,U
+L2FRL9 puls D,X,U,PC
+
+***************
+* Subroutine L2FPOP
+*   Free the far arrays of the procedure that is returning
+
+L2FPOP pshs D,X,U
+ ldx I.APRC
+ ldd P.VARC,X
+ addd I.ASTR end of its storage
+ pshs D
+L2FPP1 ldu FARLST
+ beq L2FPP9
+ cmpu  ,S
+ bhs L2FPP9 ..a caller's
+ bsr L2FREL
+ ldd 2,U
+ std FARLST
+ bra L2FPP1
+L2FPP9 leas 2,S
+ puls D,X,U,PC
+
+***************
+* Subroutine L2FALL  (X$FALL)
+*   Free all far arrays: no procedure is running any more
+
+L2FALL pshs D,U
+L2FAL1 ldu FARLST
+ beq L2FAL2
+ bsr L2FREL
+ ldd 2,U
+ std FARLST
+ bra L2FAL1
+L2FAL2 bsr L2UNMW
+ puls D,U,PC
+
+***************
+* Subroutine L2UNMW
+*   Unmap the data window; put the top slot's guard back
+
+L2UNMW pshs D,X,U
+ ldu DWADR
+ beq L2UMW9 ..nothing mapped
+ ldb #1
+ OS9 F$ClrBlk
+ clr DWADR
+ clr DWADR+1
+ clr DWBLK
+ clr DWBLK+1
+ ldx GRDBLK
+ beq L2UMW9
+ ldb #1
+ OS9 F$MapBlk back into the top slot
+L2UMW9 puls D,X,U,PC
+
+***************
+* Subroutine L2INWN
+*   Is (U) in the data window?  Carry set if so.
+
+L2INWN pshs D
+ ldd DWADR
+ beq L2IW8 ..no window
+ pshs D
+ tfr U,D
+ subd ,S++
+ blo L2IW8
+ cmpd #L2BLSZ
+ bhs L2IW8
+ puls D
+ orcc #1
+ rts
+L2IW8 puls D
+ andcc #$FE
+ rts
+
+***************
+* Subroutine L2NEAR
+*   A parameter passed by reference must not be a far element:
+*   the data window moves on under it
+
+* Passed: (U)=Parameter address
+
+L2NEAR bsr L2INWN
+ bcs L2NR1
+ rts
+L2NR1 ldb #M$IARG Err: illegal argument
+ lbra EXCERR
+
+***************
+* Subroutine L2PIN
+*   An assignment destination (U) is about to be held while the
+*   expression is evaluated.  If it is a far element, note its
+*   block, so that L2UNPN can map it back in before the store.
+
+L2PIN pshs D
+ bsr L2INWN
+ bcc L2PN8
+ ldd DWADR
+ std DSTADR
+ ldd DWBLK
+ bra L2PN9
+L2PN8 clra
+ clrb
+L2PN9 std DSTBLK
+ puls D,PC
+
+***************
+* Subroutine L2UNPN
+*   Before ASGDIS stores: if the destination is a far element and
+*   the expression mapped another block (or the window moved),
+*   map its block back and move the address to match.
+
+* Stack: 2,S=TYPE, then the address (after the size for strings
+*        and records)
+
+L2UNPN pshs D,X,U
+ ldd DSTBLK
+ beq L2UP9 ..near destination
+ clr DSTBLK
+ clr DSTBLK+1
+ cmpd DWBLK
+ bne L2UP1
+ ldx DWADR
+ cmpx DSTADR
+ beq L2UP9 ..still in place
+L2UP1 pshs D
+ lda 10,S TYPE
+ cmpa #S.RCRD a far record from the window?
+ bne L2UP15
+ ldu 1,Y
+ lbsr L2INWN
+ bcc L2UP15
+ ldd I.STSP ..yes; copy it out first
+ addd 3,Y
+ bcs L2UPOV
+ pshs D
+ cmpy ,S++ room below the opstack?
+ blo L2UPOV
+ ldx I.STSP
+ stx 1,Y the copy is the source now
+ ldd 3,Y
+ pshs D byte count
+L2UP12 lda ,U+
+ sta ,X+
+ ldd  ,S
+ subd #1
+ std  ,S
+ bne L2UP12
+ leas 2,S
+L2UP15 puls D
+ lbsr J$FMAP (X)=window
+ lbcs EXCERR
+ leax 9,S address of the address
+ ldd DWADR
+ subd DSTADR how far the window moved
+ pshs D
+ lda 10,S TYPE
+ cmpa #S.STR
+ puls D
+ bcs L2UP2
+ leax 2,X after the size
+L2UP2 addd  ,X
+ std  ,X
+L2UP9 puls D,X,U,PC
+L2UPOV ldb #M$STOV Err: string stack overflow
+ lbra EXCERR
  endc
 
 * End of Statement Interpreter routines

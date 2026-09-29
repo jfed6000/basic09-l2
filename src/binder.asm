@@ -505,7 +505,11 @@ PDIM1 sta DEFNAS set definition
 PDECLR ldd I.ICLM get bottom of free space
  pshs D,X save beginning of component list & x
  std PCOMPT set beginning of component list
-PDECL1 bsr PID Process id
+PDECL1 equ *
+ ifne L2B09
+ clr FARFLG near unless the type says FAR
+ endc
+ bsr PID Process id
  ldb ,Y+ get next token
  cmpb #T.COMA is there another?
  beq PDECL1 Yes; go get it
@@ -514,7 +518,12 @@ PDECL1 bsr PID Process id
  leay -1,Y Back up to unknown
  ldb #1 set flag for implicit typing
  bra PDECL3
-PDECL2 lbsr PVTYPE Process explicit type
+PDECL2 equ *
+ ifne L2B09
+ lbsr L2PVTY Process explicit type, with optional FAR
+ else
+ lbsr PVTYPE Process explicit type
+ endc
  clrb set Flag for explicit typing
 PDECL3 pshs B,Y save flag & I-Code ptr
  ldx 3,S get beginning of component list
@@ -654,7 +663,13 @@ PVTYP4 std ELMSIZ set size
 
 * save as PDECLR
 
+ ifne L2B09
+DEFVAR tst FARFLG far declaration?
+ lbne L2FDEF
+DEFVA0 ldb ,X+ get dimension count
+ else
 DEFVAR ldb ,X+ get dimension count
+ endc
  beq DEFV07 bra if simple
  pshs B save count
  aslb shift For symbol tbl type
@@ -753,6 +768,10 @@ DIMMUL pshs D save multiplier
  adda 2,Y add previous partial
  bcs DIMERR bra if overflow
  std 2,Y put in descr area
+ ifne L2B09
+ inca $FFxx marks a far array (and is too big anyway)
+ beq DIMERR
+ endc
  puls D,PC Restore size & return
 DIMERR lda #M$ASO Err - array size overflow
  lbsr ERROR
@@ -2271,6 +2290,10 @@ ALCCXV bsr ALCCMX get description area for structure
  bra ALCSV1 Finish variable allocation
 
 ALCARV bsr ALCARR Do array prep
+ ifne L2B09
+ cmpa #$FF far array?
+ lbeq L2FALS ..yes; only a handle, with the procedure links
+ endc
  bra ALCSV1 Finish
 
 ALCSMP leay 1,X get ptr storage offset
@@ -2447,7 +2470,11 @@ DONE25 leax  ,U copy symbol tbl ptr
  std 1,X Update offset
  bra DONE70
 DONE30 cmpa #S.PARM parameter?
+ ifne L2B09
+ lbne L2FDON ..No; far array handles move like links
+ else
  bne DONE55 ..No
+ endc
  ldb SHAPE array parameter?
  bne DONE45 ..Yes
  lda TYPE get type
@@ -2484,6 +2511,234 @@ DONE75 lda ,U+ get next byte of name
 DONE80 cmpu I.STBG end of symbol tbl?
  bcs DONE25 ..No
  rts
+
+ ifne L2B09
+ ttl FAR ARRAYS
+ pag
+***************
+* Far arrays (DIM x(n):FAR type)
+
+* A far array's elements live in whole 8K blocks outside the
+* process's 64K, allocated when the procedure first uses it and
+* freed when the procedure returns.  Its description is laid out
+* like a normal array's, except:
+*   offset      the procedure storage offset of a 6-byte handle,
+*               kept with the procedure links so that EXECUT
+*               clears it on every call
+*   total size  $FF, block count (a near array can never be this
+*               big: DIMMUL rejects it)
+*   after the dimensions (and string length or record size):
+*               elements per block
+* Elements never straddle blocks: each block holds a whole number
+* of elements, within its first L2TOPU bytes, so that the data
+* window can be in the top slot.
+
+***************
+* Subroutine L2PVTY
+*   PVTYPE, after an optional FAR
+
+L2PVTY lda  ,Y get type token
+ cmpa #T.FAR FAR?
+ bne L2PVT9
+ leay 1,Y skip it
+ inc FARFLG
+L2PVT9 lbra PVTYPE
+
+***************
+* Subroutine L2FDEF
+*   DEFVAR for a far declaration; same as DEFVAR
+
+L2FDEF lda DEFNAS
+ cmpa #S.VAR only DIM variables can be far
+ bne L2FDE1
+ tst  ,X only arrays
+ bne L2FD10
+L2FDE1 lda #M$IDS Err: illegal declarative statement
+ lbsr ERROR
+ clr FARFLG bind the rest as near
+ lbra DEFVA0
+
+L2FD10 ldb ,X+ get dimension count
+ pshs B save count
+ aslb shift For symbol tbl type
+ aslb
+ aslb
+ stb SHAPE
+ lsrb shift Back
+ lsrb count*2
+ leax B,X get ptr to next variable
+ addb #6 offset, block count, elements per block
+ pshs X,U save variable stack ptr & symbol ptr
+ lda TYPE
+ cmpa #S.STR string or record?
+ bcs L2FD12
+ addb #2 its length or size
+L2FD12 clra
+ cmpd G.VARS enough room?
+ lbhi QuitBind ..No; abort
+ lbsr J$EXDS get description area
+ ldx  ,S get variable stack ptr
+ leau 4,Y dimensions go here
+ ldd #1 element count (24 bits) starts at one
+ pshs D
+ clr ,-S
+* 0,S=element count, 3,S=var stack ptr, 5,S=symbol ptr, 7,S=dim count
+L2FD20 ldd ,--X get subscript
+ std ,U++ put in descr area
+ lbsr L2MU24 count := count * subscript
+ bcs L2FDER ..too many elements
+ dec 7,S
+ bne L2FD20
+ lda TYPE
+ cmpa #S.STR
+ bcs L2FD30 simple type
+ bhi L2FD25 record
+ ldd ELMSIZ string max length
+ bra L2FD27
+L2FD25 ldd SYMPTR rcd descr offset (DONE makes it the size)
+L2FD27 std ,U++
+L2FD30 ldd ELMSIZ element size
+ beq L2FDER
+ cmpd #L2TOPU must fit in a block
+ bhi L2FDER
+ lbsr L2EPB (D)=elements per block
+ std  ,U
+ clr ,-S block count
+L2FD32 lda 1,S elements left?
+ ora 2,S
+ ora 3,S
+ beq L2FD36 ..no
+ inc  ,S one more block
+ beq L2FDE2 ..more than 255
+ ldd 2,S
+ subd  ,U
+ std 2,S
+ lda 1,S
+ sbca #0
+ sta 1,S
+ bcc L2FD32
+L2FD36 ldb ,S+ (B)=block count
+ bne L2FD40
+ bra L2FDER no elements
+L2FDE2 leas 1,S
+L2FDER pshs Y
+ ldy 13,S I-Code ptr (PDECLR's), for the error's line
+ lda #M$ASO Err: array size overflow
+ lbsr ERROR
+ puls Y
+ ldb #1
+L2FD40 lda #$FF far array mark
+ std 2,Y
+ leas 3,S drop element count
+ tfr Y,D copy descr ptr
+ puls X,U Restore ptrs
+ subd I.DSCR Make ptr into offset
+ std 1,U put in symbol tbl
+ leas 1,S Return scratch
+ ldy I.APRC
+ lda P.STAT,Y
+ ora #P.FAR procedure has far arrays
+ sta P.STAT,Y
+ lbra DEFV10
+
+***************
+* Subroutine L2MU24
+*   Multiply the 24-bit count at 2,S (caller's 0,S) by (D)
+
+* Returns: carry set on overflow
+
+L2MU24 pshs D multiplier
+ clra
+ clrb
+ pshs D
+ pshs A result
+ ldb #16
+ pshs B bit count
+* 0,S=bit count, 1,S=result, 4,S=multiplier, 8,S=count
+L2MU10 asl 3,S result := result * 2
+ rol 2,S
+ rol 1,S
+ bcs L2MUOV
+ asl 5,S next multiplier bit
+ rol 4,S
+ bcc L2MU20
+ ldd 2,S result := result + count
+ addd 9,S
+ std 2,S
+ lda 1,S
+ adca 8,S
+ sta 1,S
+ bcs L2MUOV
+L2MU20 dec  ,S
+ bne L2MU10
+ ldd 2,S count := result
+ std 9,S
+ lda 1,S
+ sta 8,S
+ leas 6,S
+ andcc #$FE
+ rts
+L2MUOV leas 6,S
+ orcc #1
+ rts
+
+***************
+* Subroutine L2EPB
+*   Elements per block: (D) := L2TOPU / (D)
+
+L2EPB pshs D,X divisor
+ ldd #L2TOPU
+ pshs D quotient (starts as the dividend)
+ clra
+ clrb remainder
+ ldx #16
+L2EP10 asl 1,S
+ rol  ,S
+ rolb
+ rola
+ cmpd 2,S
+ blo L2EP20
+ subd 2,S
+ inc 1,S
+L2EP20 leax -1,X
+ bne L2EP10
+ puls D
+ leas 2,S
+ puls X,PC
+
+***************
+* Subroutine L2FALS
+*   ALCSTO for a far array: allocate its handle with the procedure
+*   links.  The offset is relative to them until DONE adds the
+*   variable storage size.
+
+* Passed: (Y)=Description area ptr
+
+L2FALS ldd NEXRUN
+ std  ,Y
+ addd #6 handle size
+ std NEXRUN
+ rts
+
+***************
+* Subroutine L2FDON
+*   DONE for a far array: relocate its handle like a procedure link
+
+L2FDON cmpa #S.VAR
+ bne L2FDN9
+ ldb SHAPE
+ beq L2FDN9
+ ldd 1,U get description offset
+ addd I.DSCR
+ tfr D,X
+ lda 2,X
+ cmpa #$FF far?
+ bne L2FDN9
+ ldd  ,X
+ addd NEXALC Adjust for variable allocation
+ std  ,X
+L2FDN9 lbra DONE55
+ endc
 
  endc
 * End of Binder

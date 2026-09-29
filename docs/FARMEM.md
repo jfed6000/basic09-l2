@@ -33,7 +33,10 @@
 ## Things to know
 
 - **Always `free`.** Blocks from `F$AllRAM` do not belong to the process. If a program ends without `free`, including when it stops on an error, the blocks stay allocated until the system restarts. Use `ON ERROR` to make sure `free` runs.
-- **Leave an 8K slot free.** `farmem` maps one block at a time into an 8K window of the program's address space, and keeps it mapped between calls. So the program needs one free 8K slot of its 64K. For example, `l2b09run #24k` (24K code + 24K data) leaves two free slots. If there is no room, `get`/`put` fail with error 207 (`E$MemFul`).
+- **Leave an 8K slot free.** `farmem` maps one block at a time into an 8K window of the program's address space, and keeps it mapped between calls. So the program needs one free 8K slot of its 64K, besides the slot the `farmem` module itself is linked into. If there is no room, `get`/`put` fail with error 207 (`E$MemFul`).
+  - Under stock Basic09 or RunB, `#24k` leaves enough room.
+  - Under `l2b09run`, use `#16k`. Its code (24K) cannot use the top slot, which `l2b09run` keeps for its own windows (ARCHITECTURE.md, P7).
+- **In `l2b09run`, prefer far arrays.** `DIM x(n):FAR type` ([FARARRAYS.md](FARARRAYS.md)) needs no descriptor, `get`/`put` or `free`, and is faster.
 - **Cost.**
   - A `get`/`put` within the block already mapped costs about 0.5 ms at 6.29 MHz, mostly Basic09's `RUN` overhead.
   - Moving to a different block adds two system calls, about 0.3–0.4 ms.

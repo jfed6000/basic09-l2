@@ -244,6 +244,8 @@ J$L2RS jsr M.STMTS
  fcb X$L2RS resolve procedure ptr
 J$L2MW jsr M.STMTS
  fcb X$L2MW map far block into the code window
+J$FALL jsr M.STMTS
+ fcb X$FALL free all far arrays
  endc
 
  ttl KEYWORD Table
@@ -276,11 +278,19 @@ EXP equ *
 LOG equ *
 LOG10 equ *
  fcs "???"
+ ifne L2B09
+ fdb 103 Number of entries, when trig functions aren't used
+ else
  fdb 102 Number of entries, when trig functions aren't used
+ endc
  fcb 2
 
  else
+ ifne L2B09
+ fdb 115 Number of entries in keytab (with FAR)
+ else
  fdb 114 Number of entries in keytab
+ endc
  fcb 2 number of skip bytes per entry
  endc
 
@@ -521,6 +531,10 @@ UPDATE fcs "UPDATE"
 EXEC fcs "EXEC"
  fcb T.DIR,RESRVD
 DIRECT fcs "DIR"
+ ifne L2B09
+ fcb T.FAR,RESRVD
+FARKW fcs "FAR"
+ endc
 
  ttl DECOMPILE Table
  pag
@@ -734,6 +748,10 @@ DCMTBL equ *
  fdb '#*256 Cnum '#'
  fcb Z$SUB
  fdb SK2-* Lbne invisible goto
+ ifne L2B09
+ fcb Z$SUB
+ fdb DCFAR-* Far
+ endc
 
 * Operand Tokens
 
@@ -1274,6 +1292,7 @@ START15 lda #$7E JMP Opcode
 
  ifne L2B09
  lbsr L2OPTS Parse l2b09run options
+ lbsr L2GARD keep the data window out of the top slot
  lda CMDIN
  sta BASINP Command input from home path
  endc
@@ -1365,7 +1384,11 @@ COMAND leax CPYRIT,PCR
  bsr CMDER1 print copyright msg
  leax B09NAM,PCR Basic09 message
  bsr CMDER1 print "Basic09"
-COMAN0 bsr SETUP
+COMAN0 equ *
+ ifne L2B09
+ lbsr J$FALL no program is running any more
+ endc
+ bsr SETUP
  ifeq L2B09
  leax READY,PCR Ready message
  bsr CMDER1 (prtlin) print message
@@ -1424,6 +1447,11 @@ RUNCMD05 clr BASINP Default back to standard input
  bcc RUNC10 ..continue if no error
  cmpb #E$EOF End of file?
  bne RUNC90 ..no; reprompt
+ ifne L2B09
+ leax DBGVRB,PCR
+ cmpx 2,S in the debugger?
+ lbeq HALT ..yes; quit to command mode (where EOF means BYE)
+ endc
  ifne H6309
  ldq #'b*$1000000+'y*$10000+'e*$100+V$CR default to "BYE" command
  stq  ,Y
@@ -1819,8 +1847,8 @@ DUMP01 ldy  ,Y get proc addr
  lbne ERABRT ..no; illegal to compile
  ifne L2B09
  lda P.STAT,Y
- bita #P.BANK PACK rebinds in place: not for banked procedures
- lbne ERABRT
+ bita #P.BANK+P.FAR PACK rebinds in place: not for banked procedures;
+ lbne ERABRT RunB has no far arrays
  endc
  lda P.STAT,Y
  rora any errors in procedure?
@@ -2271,6 +2299,7 @@ ERABRT ldb #M$ERST
 
 BYEBYE bsr KILALL kill all external procedures
  ifne L2B09
+ lbsr J$FALL give back far arrays
  lbsr L2FREE give back the far procedure store
  endc
  clrb
@@ -2844,10 +2873,55 @@ L2STO2 puls D (D)=kilobytes
  clr FAROFS+1
  ldd FARBAS
  lbsr J$L2MW reserve the window now
+ bcs L2STO9
+ ldd #L2BLSZ
+ cmpx #-L2BLSZ in the top slot?
+ bne L2STO8
+ ldd #L2TOPU ..yes; only its lower part is ours
+L2STO8 std WINLIM
+ andcc #$FE
  rts
 L2STOE ldb #E$IllArg
  coma
 L2STO9 rts
+
+***************
+* Subroutine L2GARD
+*   F$MapBlk returns the highest free slot.  When l2b09run's code
+*   does not reach the top slot (F$Link keeps a module out of it
+*   if the module would run into $FD00), that slot is free, but its
+*   top pages are fixed (not affected by the DAT), so a subroutine
+*   module's window there (farmem, graphics) would write into them.
+*   The code window (-b) may use it, within WINLIM; otherwise keep
+*   the top slot filled with a second mapping of our own first
+*   data block (GRDBLK), which nothing touches.  The far data
+*   window takes its place when mapped (far blocks never use
+*   their top part) and gives it back when unmapped.  F$Exit frees
+*   only the data blocks, so the extra mapping needs no clean-up.
+
+L2GARD pshs D,X,Y,U
+ ldd G.WSPA room for a process descriptor copy?
+ addd G.WSPS
+ subd G.PRCA
+ cmpd #512
+ blo L2GAR9
+ OS9 F$ID (A)=our process ID
+ bcs L2GAR9
+ ldx G.PRCA the empty procedure area
+ OS9 F$GPrDsc
+ bcs L2GAR9
+ ldx P$DATImg,X our first data block
+ ldb #1
+ OS9 F$MapBlk
+ bcs L2GAR9
+ cmpu #-L2BLSZ top slot?
+ bne L2GAR8
+ stx GRDBLK ..yes; keep it filled
+ bra L2GAR9
+L2GAR8 equ *
+ ldb #1 no; the code is there already
+ OS9 F$ClrBlk
+L2GAR9 puls D,X,Y,U,PC
 
 ***************
 * Subroutine L2FREE
@@ -2892,10 +2966,10 @@ L2BANK pshs D,X,Y,U
  cmpd ,S++
  lbne L2BNK9
  ldd P.SIZE,X
- cmpd #$2000
+ cmpd WINLIM
  lbhi L2BNK9 ..bigger than the window
  addd FAROFS
- cmpd #$2000
+ cmpd WINLIM
  bls L2BNK1 ..fits in the current block
  lda FARIDX
  inca next block

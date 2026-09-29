@@ -1,0 +1,32 @@
+PROCEDURE p7bn
+DIM nr(1000):REAL
+DIM i:INTEGER
+DIM s:REAL
+s:=0.
+FOR i:=1 TO 10000
+s:=s+nr(1)
+NEXT i
+PRINT "bench 10000 near"
+END
+
+PROCEDURE p7bf
+DIM fr(3000):FAR REAL
+DIM i:INTEGER
+DIM s:REAL
+s:=0.
+FOR i:=1 TO 10000
+s:=s+fr(1)
+NEXT i
+PRINT "bench 10000 far one block"
+END
+
+PROCEDURE p7ba
+DIM fr(3000):FAR REAL
+DIM i:INTEGER
+DIM s:REAL
+s:=0.
+FOR i:=1 TO 5000
+s:=s+fr(1)+fr(2000)
+NEXT i
+PRINT "bench 10000 far alternating blocks"
+END

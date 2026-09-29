@@ -100,6 +100,9 @@ T.ASGN rmb 1 ':='
 T.ASG1 rmb 1 '='
 T.CNUM rmb 1 '#'
 T.LBNE rmb 1 Invisible goto
+ ifne L2B09
+T.FAR rmb 1 Far (DIM x(n):FAR type)
+ endc
 
 * Operand Tokens
 
@@ -435,6 +438,14 @@ FARCNT rmb 1 Blocks in the store
 FARIDX rmb 1 Store block being filled
 FAROFS rmb 2 Next free offset in that block
 L2APRC rmb 2 Top-level procedure (stub) of the current RUN
+FARLST rmb 2 Newest allocated far array handle (0 = none)
+DWADR rmb 2 Data window address (0 = none mapped)
+DWBLK rmb 2 Far block mapped in the data window
+DSTBLK rmb 2 Block of a far assignment destination (0 = near)
+DSTADR rmb 2 Data window address when that destination was taken
+FARFLG rmb 1 Binder: the declaration being bound is FAR
+WINLIM rmb 2 Usable size of the code window
+GRDBLK rmb 2 Block keeping the top slot filled (0 = no guard)
  endc
 
  pag
@@ -464,6 +475,10 @@ P.BANK equ $20 P.STAT bit: banked procedure; this is its stub
 *  A stub is the procedure header and name, followed by the far
 *  block number (2 bytes) and offset in that block (2 bytes) of the
 *  real image.
+P.FAR equ $10 P.STAT bit: procedure has far arrays (not packable)
+L2BLSZ equ $2000 MMU block size (8K on Wildbits and CoCo 3)
+L2TOPU equ $1D00 Usable part of the top slot: $FD00-$FFFF is fixed on
+*                 Wildbits ($FE00-$FFFF on the CoCo 3)
  endc
 
 * Procedure Invocation Temporaries

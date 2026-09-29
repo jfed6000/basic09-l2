@@ -1,0 +1,131 @@
+PROCEDURE p7main
+TYPE pt=px,py:REAL; pn:INTEGER
+DIM big(14000):FAR REAL
+DIM img(320,240):FAR BYTE
+DIM nm(3000):FAR STRING[20]
+DIM pts(2000):FAR pt
+DIM p:pt
+DIM i,x,y,bad,e,f:INTEGER
+DIM s:REAL
+(* 14000 reals: 70000 bytes, 1484 per block, 10 blocks *)
+FOR i:=1 TO 14000
+big(i):=i
+NEXT i
+s:=0.
+FOR i:=1 TO 14000
+s:=s+big(i)
+NEXT i
+PRINT "p7: real sum "; s
+(* destination in block 0, operands in blocks 9 and 4 *)
+big(1):=big(13999)+big(7000)
+PRINT "p7: pin "; big(1)
+(* 76800 bytes: element numbers past 65535 *)
+bad:=0
+FOR y:=1 TO 240 STEP 7
+FOR x:=1 TO 320 STEP 3
+img(x,y):=MOD(x+y,256)
+NEXT x
+NEXT y
+img(320,240):=77
+FOR y:=1 TO 240 STEP 7
+FOR x:=1 TO 320 STEP 3
+IF img(x,y)<>MOD(x+y,256) THEN
+bad:=bad+1
+ENDIF
+NEXT x
+NEXT y
+PRINT "p7: bytes bad"; bad; " last"; img(320,240)
+(* strings: 371 per block *)
+bad:=0
+FOR i:=1 TO 3000 STEP 11
+nm(i):="n"+STR$(i)
+NEXT i
+FOR i:=1 TO 3000 STEP 11
+IF nm(i)<>"n"+STR$(i) THEN
+bad:=bad+1
+ENDIF
+NEXT i
+nm(3000):="last"
+nm(2):=nm(2993)
+PRINT "p7: str bad"; bad; " "; nm(2); " "; nm(3000); " "; nm(1)
+(* records: 12 bytes, 618 per block *)
+FOR i:=1 TO 2000 STEP 3
+pts(i).px:=i \pts(i).py:=-i \pts(i).pn:=i
+NEXT i
+pts(2):=pts(1999)
+p:=pts(1000)
+pts(1998):=p
+PRINT "p7: rec "; pts(2).pn; " "; p.pn; " "; pts(1998).py; " "; pts(1999).px
+(* READ, GET and PUT store straight into far elements *)
+READ big(9000),nm(500)
+PRINT "p7: read "; big(9000); " "; nm(500)
+CREATE #f,"p7rec":UPDATE
+PUT #f,pts(1999)
+SEEK #f,0
+GET #f,pts(5)
+CLOSE #f
+DELETE "p7rec"
+PRINT "p7: getput "; pts(5).pn; " "; pts(5).py
+(* by value is fine; by reference, ADDR and whole arrays are not *)
+RUN p7val(big(20)+0.)
+ON ERROR GOTO 100
+x:=ADDR(big(1))
+100 PRINT "p7: addr error"; ERR
+ON ERROR GOTO 110
+RUN p7val(big(2))
+110 PRINT "p7: byref error"; ERR
+ON ERROR GOTO 120
+s:=big(14001)
+120 PRINT "p7: range error"; ERR
+ON ERROR GOTO 130
+x:=SIZE(big)
+130 PRINT "p7: whole error"; ERR
+ON ERROR
+PRINT "p7: size "; SIZE(big(1)); " "; SIZE(nm(1)); " "; SIZE(pts(1))
+(* each call gets its own arrays; they are freed on return *)
+s:=0.
+FOR i:=1 TO 50
+RUN p7loc(i,s)
+NEXT i
+PRINT "p7: local "; s
+RUN p7rec(1)
+PRINT "p7: main done"
+END
+DATA 4.5,"dat"
+
+PROCEDURE p7val
+PARAM r:REAL
+PRINT "p7: byval "; r
+END
+
+PROCEDURE p7loc
+PARAM n:INTEGER; s:REAL
+DIM loc(5000):FAR INTEGER
+loc(n):=n
+loc(4999):=n*2
+s:=s+loc(n)+loc(4999)
+END
+
+PROCEDURE p7rec
+PARAM d:INTEGER
+DIM a(3000):FAR INTEGER
+a(1):=d
+a(2999):=d*10
+IF d<5 THEN
+RUN p7rec(d+1)
+ENDIF
+IF a(1)<>d OR a(2999)<>d*10 THEN
+PRINT "p7: recursion broke at"; d
+ELSE
+PRINT "p7: depth"; d; " ok"
+ENDIF
+END
+
+PROCEDURE p7crash
+DIM c(9000):FAR REAL
+DIM z:INTEGER
+c(1):=1.5
+c(8999):=2.5
+z:=0
+z:=5/z
+END

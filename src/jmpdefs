@@ -61,6 +61,7 @@ X$TROF rmb 2 Turn off trace mode
  ifne L2B09
 X$L2RS rmb 2 Resolve procedure ptr (map banked procedure)
 X$L2MW rmb 2 Map far block into the code window
+X$FALL rmb 2 Free all far arrays
  endc
 
 *** Expression Interpreter Entries
@@ -73,6 +74,9 @@ X$FDIV rmb 2 Real divide
 X$FCMP rmb 2 Real compare
 X$FIX rmb 2 Fix real
 X$FLOT rmb 2 Float integer
+ ifne L2B09
+X$FMAP rmb 2 Map far block into the data window
+ endc
 
 *** Conversion & I/O Entries
  org 0

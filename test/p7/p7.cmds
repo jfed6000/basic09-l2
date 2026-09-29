@@ -1,0 +1,10 @@
+load p7prog.b09
+run p7main
+run p7crash
+print c(8999)
+q
+list p7main
+save* p7save
+pack p7main
+load p7bad.b09
+bye

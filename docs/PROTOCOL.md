@@ -27,6 +27,7 @@ Full usage: `l2b09run [#mem] [-b=<kb>] [-t=<terminal>] [<file> [<procedure>[(<pa
 
 - **`#mem` first.** Put the shell's `#mem` straight after the command name; Shell+ rejects it in front of an argument.
 - **`-b=<kb>`** banks procedure code into <kb> kilobytes of far memory (ARCHITECTURE.md, P6), so programs larger than the workspace can be loaded, run and debugged. Line numbers, LIST, SAVE and the debugger work the same with banking. PACK does not.
+- **Far arrays** (`DIM x(n):FAR type`, [FARARRAYS.md](FARARRAYS.md)) need nothing from the editor. The debugger's `print` and `let` work on their elements. PACK refuses procedures that use them (error 51).
 
 ## Runtime to editor
 
@@ -48,6 +49,7 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 
   This holds for source loaded with `load`. It does not hold for packed modules, or for source whose Basic09 line numbers are out of order (the loader moves such lines).
 - **End of session:** when `l2b09run` exits (`bye`, or a program's `BYE`), pipe B reaches end of file. `F$Wait` returns its exit status.
+- **Editor gone:** if pipe A reaches end of file, `l2b09run` quits the debugger (as `q`) if it is in it, then exits as for `bye`, freeing its far memory.
 
 ## Editor to runtime
 

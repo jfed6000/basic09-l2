@@ -3,7 +3,7 @@
 A Level 2 (NitrOS-9) Basic09 development environment built from the original Microware Basic09 source.
 - **Goal:** an editor process drives `l2b09run` (compiler, runtime and debugger) over pipes, and programs can use memory beyond 64K.
 - **Design and roadmap:** `docs/ARCHITECTURE.md`. It records what each phase (P0–P7) did and what was found.
-- **Reference specs:** `docs/PROTOCOL.md` (the editor/runtime protocol) and `docs/FARMEM.md`.
+- **Reference specs:** `docs/PROTOCOL.md` (the editor/runtime protocol), `docs/FARMEM.md` and `docs/FARARRAYS.md`.
 
 ## Ground rules
 
@@ -20,7 +20,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p6test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
@@ -57,4 +57,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **Stock Basic09 quirks:**
   - A second PACK fails with 51, because PACK strips the workspace copy.
   - `DATE$` prints 2026 as `<6`.
-- **Hung tests.** A test that hangs (for example an `expect` that never matches) shows up as short or missing output files, because the files are never closed.
+- **Hung tests.** A test that hangs (for example an `expect` that never matches) shows up as short or missing output files, because the files are never closed. `run.out` is empty too if any later step hangs. To watch progress, run `l2b09run -t=/term` in a scratch test: `mame.log` ends with a screen snapshot.
+- **The top 8K slot is not all RAM.** On Wildbits, `$FD00-$FFFF` is fixed whatever is mapped in slot 7 (on the CoCo 3, `$FE00-$FFFF`). `F$MapBlk` returns the highest free slot, so a window there must stay below `$1D00`.
+  - `F$Link` keeps a module out of slot 7 once the module passes 23,808 bytes. `l2b09run` is past that, which is why `L2GARD` exists (ARCHITECTURE.md, P7).
+  - Watch `build/l2b09run`'s size: getting it back under the limit frees a slot.
+- **Record field names share the symbol table** with variables. `TYPE pt=x,y:REAL` makes `x` unusable as a variable in that procedure (error 76).

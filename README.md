@@ -21,7 +21,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and roadmap.
 | `test/`    | Emulator tests (`run` script, command files, expected output). |
 | `os9/`     | OS-9 side tools: `l2b09ctl`, a scripted editor stand-in for the protocol. |
 | `tools/`   | `emu-wildbits.sh` (headless MAME runner), `bootfile-add.py` (add drivers to OS9Boot). |
-| `docs/`    | Architecture and roadmap. |
+| `docs/`    | Architecture and roadmap, the editor protocol, farmem and far arrays. |
 | `build/`   | Build output (not tracked). |
 
 ## Building
@@ -36,6 +36,7 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
     make p3test             # protocol test: l2b09ctl drives l2b09run over pipes, with signals
     make p4test             # farmem: 256K of far records, stock RunB, leak check, benchmark
     make p6test             # code banking: 48K program in a 24K workspace, debugger, LIST/SAVE
+    make p7test             # far arrays: REAL/BYTE/STRING/record arrays past 64K, errors, leaks, benchmark
     make loadtime           # benchmark: compile the 937-line startrek sample
     make NITROS9DIR=/path/to/nitros9
 
@@ -52,6 +53,7 @@ Emulator tests use that tree's MAME build (`mame/mame`, machine `wbjr2`) and its
 - Commands and the debugger use its standard input and standard error.
 - `-t` gives the program its own terminal, for example `-t=/vt2`.
 - `-b=<kb>` keeps procedure code in <kb> kilobytes of far memory, mapped in when a procedure runs. Programs bigger than the workspace then load and run unchanged.
+- `DIM big(14000):FAR REAL` puts an array's elements outside the 64K; it is used with normal syntax, and freed when its procedure returns. See [docs/FARARRAYS.md](docs/FARARRAYS.md).
 - The debugger reports where it stopped as `BREAK: PROCEDURE <name> line <n>`. Line 1 is the line after the `PROCEDURE` header.
 - For editors there is a line protocol with `%` event lines (`%READY`, `%DEBUG`, `%ERROR`, `%CERR`, `%BERR`, `%ASK`) and signals for break and abort. See [docs/PROTOCOL.md](docs/PROTOCOL.md).
 

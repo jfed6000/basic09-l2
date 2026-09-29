@@ -1,0 +1,37 @@
+p7.out    p7: real sum 98007000
+p7.out    p7: pin 20999
+p7.out    p7: bytes bad0 last77
+p7.out    p7: str bad0 n2993 last n1
+p7.out    p7: rec 1999 1000 -1000. 1999.
+p7.out    p7: read 4.5 dat
+p7.out    p7: getput 1999 -1999
+p7.out    p7: byval 20
+p7.out    p7: addr error67
+p7.out    p7: byref error67
+p7.out    p7: range error55
+p7.out    p7: whole error65
+p7.out    p7: size 5 20 12
+p7.out    p7: local 3825
+p7.out    p7: depth1 ok
+p7.out    p7: main done
+p7.err    %ERROR 45 p7crash 6
+p7.err    2.5
+p7save    DIM big(14000):FAR REAL
+p7save    DIM pts(2000):FAR pt
+p7save    DIM nm(3000):FAR STRING[20]
+p7b.out   p7: getput 1999 -1999
+p7b.out   p7: local 3825
+p7b.out   p7: main done
+eof.err   %ERROR 45 p7crash 6
+eof.err   %READY
+bye.out   p7: bye with far arrays
+same      mfree1 mfree2
+same      mfree1 mfree3
+same      mfree1 mfree4
+bench1.out bench 10000 near
+bench2.out bench 10000 far one block
+bench3.out bench 10000 far alternating blocks
+p7.err    %BERR 72 p7bad 1
+p7.err    %BERR 72 p7bad 2
+p7.err    %BERR 73 p7bad 3
+p7.err    ERROR #051

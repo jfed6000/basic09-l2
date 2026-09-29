@@ -16,6 +16,9 @@ EXPRENT equ *
  fdb RLCMP-EXPRENT Real compare
  fdb FIX-EXPRENT Teat for real & make integer
  fdb FLOAT-EXPRENT Test for integer & make real
+ ifne L2B09
+ fdb L2FMAP-EXPRENT Map far block into the data window
+ endc
 
 ***************
 * External Subroutine Refs
@@ -341,7 +344,14 @@ VARR02 ldd ,X++ Get symbol table offset
  tfr D,U Copy array description ptr
  ldd  ,U Get array base offset
  std I.OFFS Save it
+ ifne L2B09
+ lda 2,U
+ cmpa #$FF far array mark?
+ lbeq L2FVRF
+L2VR01 lda 1,S Get subscript count
+ else
  lda 1,S Get subscript count
+ endc
  bne VARR03 bra if count > 0
  lda #S.RCRD Treat unsubscripted array as record
  sta  ,S return TYPE
@@ -2903,6 +2913,9 @@ VALFNC ldd I.IOBG Get I/O buffer ptrs
 *   Variable Address Function
 
 ADRFNC lbsr EVAL20 Call eval recursively
+ ifne L2B09
+ lbsr L2NOFR no ADDR of far elements
+ endc
  leay -OPSIZE,Y Make room on opstack
  stu 1,Y Store variable addr
 ADRF10 lda #S.INT Set TYPE
@@ -4385,6 +4398,256 @@ INIT1 ldd ,X++ Copy values
  stx J$EVAL+3
  endc
  puls B,X,Y,PC
+
+ ifne L2B09
+ ttl FAR ARRAYS
+ pag
+***************
+* Subroutine L2FVRF
+*   VARREF for a far array element (see binder for the layout)
+
+* The element is found as in VARREF, but with a 24-bit element
+* number; the procedure's handle gives the array's first block
+* (allocating the blocks on first use).  Block = element number /
+* elements per block; the element's block is mapped into the data
+* window and U points at it there.
+
+* Input: as VARREF, at VARR03; (U)=Array description ptr
+*        0,S=TYPE, 1,S=subscript count
+
+L2FVRF tst DEFNAS parameter?
+ lbeq L2VR01 ..yes; not far
+ tst I.VRFL field?
+ lbeq L2VR01 ..yes; not far
+ ldb 1,S subscript count
+ bne L2FV05
+ ldb #M$IES Err: a far array must be subscripted
+ lbra EVLERR
+L2FV05 pshs X,U save I-Code ptr & descr ptr
+ leau 4,U get dimension ptr
+ clra element number (24 bits) := 0
+ clrb
+ pshs D
+ pshs A
+* 0,S=element number, 3,S=I-Code ptr, 5,S=descr ptr, 7,S=TYPE
+* 8,S=subscript count
+ bra L2FV20
+L2FV10 ldd  ,U Get dimension
+ lbsr L2FMUL element number := element number * dimension
+L2FV20 ldd 1,Y Get subscript
+ subd I.BASE Get subscript-base
+ cmpd ,U++ in range?
+ bcs L2FV25 bra if so
+ ldb #M$SORG Err: subscript out of range
+ lbra EVLERR
+L2FV25 addd 1,S element number += subscript-base
+ std 1,S
+ bcc L2FV27
+ inc  ,S
+L2FV27 leay OPSIZE,Y Pop subscript
+ dec 8,S
+ bne L2FV10 bra if more
+ lda 7,S Get TYPE
+ cmpa #S.STR string or record?
+ bcs L2FV30
+ ldd ,U++ its size
+ bra L2FV32
+L2FV30 leax VARSIZ,PCR simple type sizes
+ ldb A,X
+ clra
+L2FV32 std I.SIZE element size
+ pshs D
+ ldd  ,U elements per block
+ clr ,-S
+ lsra D := D * 128, as 24 bits
+ rorb
+ ror  ,S
+ pshs D
+ clr ,-S block number
+* 0,S=block number, 1,S=elements per block * 128 (24 bits)
+* 4,S=element size, 6,S=element number, 9,S=I-Code ptr
+* 11,S=descr ptr, 13,S=TYPE
+ ldx #8 block number < 256: eight quotient bits
+L2FV50 asl  ,S
+ ldd 7,S element number -= divisor if it fits
+ subd 2,S
+ tfr D,U
+ lda 6,S
+ sbca 1,S
+ bcs L2FV55
+ sta 6,S
+ stu 7,S
+ inc  ,S
+L2FV55 lsr 1,S divisor := divisor / 2
+ ror 2,S
+ ror 3,S
+ leax -1,X
+ bne L2FV50
+* element number is now the index within its block (< 8K)
+ lda 8,S offset := index * element size
+ ldb 5,S
+ mul
+ pshs D
+ lda 9,S
+ ldb 7,S
+ mul
+ addb  ,S
+ stb  ,S
+ lda 10,S
+ ldb 6,S
+ mul
+ addb  ,S
+ stb  ,S
+* 0,S=offset in block, 2,S=block number, 13,S=descr ptr
+ ldd I.OFFS Get handle offset
+ addd I.ASTR
+ tfr D,U (U)=handle
+ ldd  ,U allocated?
+ bne L2FV60 ..yes
+ ldx 13,S
+ lbsr L2FALC
+ ldd  ,U
+L2FV60 addb 2,S add block number
+ adca #0
+ bsr L2FMAP (X)=data window
+ bcs L2FVER
+ tfr X,D
+ addd  ,S++
+ tfr D,U (U)=element address
+ leas 9,S drop work area
+ puls X Retrieve I-Code ptr
+ leas 2,S
+ lbra VARR18
+L2FVER lbra EVLERR
+
+***************
+* Subroutine L2FMUL
+*   (24-bit number at 2,S) := itself * (D), modulo 2^24
+
+L2FMUL pshs D
+ lda 6,S low * low
+ ldb 1,S
+ mul
+ pshs D
+ clr ,-S
+* 0,S=result, 3,S=multiplier, 7,S=number
+ lda 8,S middle * low
+ ldb 4,S
+ mul
+ addd  ,S
+ std  ,S
+ lda 9,S low * high
+ ldb 3,S
+ mul
+ addd  ,S
+ std  ,S
+ lda 7,S high * low
+ ldb 4,S
+ mul
+ addb  ,S
+ stb  ,S
+ lda 8,S middle * high
+ ldb 3,S
+ mul
+ addb  ,S
+ stb  ,S
+ ldd 1,S
+ std 8,S
+ lda  ,S
+ sta 7,S
+ leas 5,S
+ rts
+
+***************
+* Subroutine L2FALC
+*   Allocate a far array's blocks
+
+* Passed: (U)=Handle, (X)=Array description ptr
+
+L2FALC pshs D,X
+ ldb 3,X block count
+ OS9 F$AllRAM
+ bcs L2FVER
+ std  ,U first block
+ ldd FARLST link it in
+ std 2,U
+ stu FARLST
+ ldb 3,X
+ stb 4,U
+ puls D,X,PC
+
+***************
+* Subroutine L2FMAP  (X$FMAP)
+*   Map far block (D) into the data window.  The window goes
+*   wherever F$MapBlk puts it (the top slot, in place of the
+*   guard, if there is one); nothing keeps a pointer into it
+*   except an assignment's destination, which L2UNPN moves.
+
+* Returns: (X)=Window address; carry set, (B)=error on failure
+
+L2FMAP cmpd DWBLK already there?
+ bne L2FM1
+ ldx DWADR
+ bne L2FM9
+L2FM1 pshs D,Y,U
+ ldu DWADR
+ bne L2FM15 ..replace the mapped block
+ ldu GRDBLK
+ beq L2FM2 ..no guard either
+ ldu #-L2BLSZ take the guard's place
+L2FM15 ldb #1
+ OS9 F$ClrBlk
+ clr DWADR
+ clr DWADR+1
+ clr DWBLK
+ clr DWBLK+1
+L2FM2 ldx  ,S
+ ldb #1
+ OS9 F$MapBlk (U)=where it went
+ bcs L2FME
+ stu DWADR
+ ldd  ,S
+ std DWBLK
+ puls D,Y,U
+ ldx DWADR
+L2FM9 andcc #$FE
+ rts
+L2FME stb 1,S
+ puls D,Y,U
+ orcc #1
+ rts
+
+***************
+* Subroutine L2INWN
+*   Is (U) in the data window?  Carry set if so.
+
+L2INWN pshs D
+ ldd DWADR
+ beq L2IW8 ..no window
+ pshs D
+ tfr U,D
+ subd ,S++
+ blo L2IW8
+ cmpd #L2BLSZ
+ bhs L2IW8
+ puls D
+ orcc #1
+ rts
+L2IW8 puls D
+ andcc #$FE
+ rts
+
+***************
+* Subroutine L2NOFR
+*   ADDR of a far element would be meaningless: the window moves
+
+L2NOFR bsr L2INWN
+ bcs L2NF1
+ rts
+L2NF1 ldb #M$IARG Err: illegal argument
+ lbra EVLERR
+
+ endc
 
 * End of Exprsn
 

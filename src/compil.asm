@@ -324,7 +324,11 @@ DIM2 lbsr COMMA is it followed by a comma?
  beq DIM
  cmpa #T.COL Does the variable have type suffix?
  bne DIM3 ..No; go look for a semi-colon
+ ifne L2B09
+ lbsr L2FARP get type token, after an optional FAR
+ else
  bsr LINSYM get type token
+ endc
  ldb SYMTYP
  cmpb #VARIAB is it a var ref token?
  beq DIM25 ..Yes; ok-user type
@@ -1801,6 +1805,18 @@ SEARC6 tst -1,X is this the last char to search?
  bpl SEARC3 ..No - go back and compare next char
  sty 3,S Table entry found - update TRGPTR
 SEARC9 puls A,X,Y,U,PC return
+
+ ifne L2B09
+***************
+* Subroutine L2FARP
+*   Get a DIM type token, allowing FAR in front of it
+
+L2FARP lbsr INSYM get type token
+ cmpa #T.FAR FAR?
+ bne L2FAR9
+ lbsr INSYM ..yes; the type follows
+L2FAR9 rts
+ endc
 
 * end of Compiler
 

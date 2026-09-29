@@ -117,7 +117,7 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
   - **Limits:**
     - Blocks from `F$AllRAM` are not owned by the process, so a program that ends without `free` leaks them until reboot.
     - The window needs one free 8K slot in the program's 64K.
-    - Both limits are documented in FARMEM.md. P7 (language-level far arrays) could remove the need for `free` by having the runtime free on exit.
+    - Both limits are documented in FARMEM.md. P7's far arrays have no `free`: the runtime frees them when the procedure returns.
   - **Harness:** `expect` files can now say `same <fileA> <fileB>` (used for the mfree comparison).
 - **P5 – Editor integration.** This is either a minimal test client or the real editor, depending on where the editor ends up.
 - **P6 – Transparent code banking (done).** `l2b09run -b=<kb>` keeps loaded procedures in far memory and maps each one in when it runs. Programs are unchanged. `make p6test` passes all 13 checks, including a program with about 48K of compiled code: it fails with "memory full" (32) in a 24K workspace without `-b`, and loads and runs with `-b=128` (1,355 lines in about 11 s, 22,232 bytes still free). `l2b09run` is 23,182 bytes.
@@ -134,19 +134,63 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
     - in different blocks: 7 s, about 0.8 ms extra per call and return (four system calls).
     - Small procedures are packed into blocks in load order, so procedures that call each other a lot should be next to each other in the source.
   - **Limits:**
-    - Procedures over 8K stay in the workspace.
+    - Procedures over 8K stay in the workspace. Since P7, when the code window is in the top slot, the limit is 7,424 bytes (see P7).
     - Far space is never reused: a reloaded procedure takes new space, and when the store is full, new procedures stay in the workspace.
     - `S$Kill` or `CHAIN` leak the store (as with farmem).
     - RENAME of a banked procedure leaves the old name in its far copy, which is what error messages show.
     - `DIR` shows stub sizes.
   - **Possible later steps:** a 16K or two-window scheme to cut cross-block calls; placing procedures together by call graph; reusing far space.
-- **P7 – Opt-in far arrays .**
-  - Marked in `DIM` and used with normal syntax.
-  - The far flag is carried in the symbol type/descriptor (`compil`/`binder`); `X$VREF` in `exprsn.asm` maps the element into a data window.
-  - `ADDR` and passing a far array to an assembly subroutine are errors.
+- **P7 – Opt-in far arrays (done).** `DIM big(14000):FAR REAL` keeps the elements in whole 8K blocks outside the 64K, and the array is used with normal syntax. User documentation is in [FARARRAYS.md](FARARRAYS.md). `make p7test` passes all 37 checks. `l2b09run` is 24,382 bytes, and all five stock variants are still byte-identical.
+  - **Syntax and I-code.** `FAR` is a new secondary token, `T.FAR`, placed after `T.LBNE`. The three "hole in token defs" adjustments, the decompile table (`DCFAR`), the skip table and the keyword table were extended to match. Statement tokens are unchanged, so stock I-code keeps its numbering.
+  - **No new symbol-table bits.** A far array is an ordinary `S.VAR` array whose descriptor holds:
+    - total size `$FF`/*blocks*. A near array can never be that big: `DIMMUL` now rejects `$FFxx`.
+    - elements per block, after the dimensions.
+    - as storage offset, a 6-byte handle allocated with the procedure links (`NEXRUN`). `DONE` relocates it like a link, so `EXECUT` clears it on every call.
+    - `P.FAR` in `P.STAT` marks the procedure, and PACK refuses it (RunB has no far arrays).
+  - **Access** (`L2FVRF`, reached from `VARREF`):
+    - It computes a 24-bit element number from the subscripts, in the same order as `VARREF` (first subscript fastest).
+    - An 8-step division gives the block and the index within it; elements never straddle blocks.
+    - The block goes into the data window (`L2FMAP`: `F$ClrBlk` + `F$MapBlk`, cached in `DWBLK`).
+    - The first access allocates the blocks (`F$AllRAM`) and links the handle into `FARLST`.
+  - **Freeing.**
+    - `ENDSTM` (the only procedure exit) frees the handles of the returning call: the newest ones, since calls nest.
+    - Returning to command level (`COMAN0`), BYE and CHAIN free all of them, so an error you quit from leaks nothing.
+  - **The one hard case: pointers held across a remap.** Only an assignment keeps an element address while it evaluates more code: the destination is taken first, then the expression runs.
+    - `L2PIN` notes a far destination's block, and `L2UNPN` maps it back (and moves the address, if the window moved) just before `ASGDIS` stores.
+    - That covers LET, READ and INPUT.
+    - A whole far record as the source (`far := far`, across blocks) is copied to the string stack first.
+    - Everything else copies values out at once: numbers to the opstack, strings to the string stack.
+    - Passing a far element by reference (`RPARAM`) and `ADDR` fail with error 67.
+    - An unsubscripted far array fails with error 65.
+  - **Debugger.** `DIREX1` treated any non-zero `P.STAT` after binding a direct statement as a binder error, and cleared it. With `P.FAR` set, the debugger's PRINT silently did nothing, and PACK would have been allowed afterwards. `L2BSTM` now keeps the status and tests only the error bit.
+  - **Found: the top slot is not a full 8K** (`defs/wildbits.d`). On Wildbits, `$FD00-$FFFF` is fixed whatever block is mapped in slot 7 (on the CoCo 3, `$FE00-$FFFF`).
+    - `F$Link` keeps a module out of slot 7 if the module's last block is used past `$1D00`, so a module over 23,808 bytes loses the top slot.
+    - P7 took `l2b09run` past that size (P6 was 23,182 bytes). Its code now sits in slots 4–6, and slot 7 stays free, but only up to `$FCFF`.
+    - `F$MapBlk` returns the highest free slot. The first far window there wrote element 1486 into `$FD01` and hung the machine.
+    - The fix, `L2GARD` at startup:
+      - The code window (`-b`) may use slot 7, but then banks at most `$1D00` bytes per block (`WINLIM`).
+      - Otherwise slot 7 is filled with a second mapping of the process's own first data block. `F$Exit` frees only the data slots, so the extra mapping needs no clean-up, even after `S$Kill`.
+      - The far data window replaces that guard when it maps a block, and puts it back when it unmaps. Far blocks are packed only up to `L2TOPU` (`$1D00`), so they are safe there.
+    - This keeps subroutine modules that map blocks (`farmem`, graphics) out of slot 7.
+    - The cost is one address slot compared with P6: under `l2b09run`, `farmem` now needs `#16k` (P4's test was changed from `#24k`).
+    - **Parked: the proper fix is in the kernel.** The Wildbits `F$Link` fix only covers linking modules. `F$MapBlk` gets its slot from `F$FreeHB`, which excludes slot 7 only for picothing.
+      - Plan: in `fmapblk.asm` (KrnP2), under `IFNE wildbits`, treat slot 7 as occupied during the search.
+      - Then remove `L2GARD`, the `L2TOPU` packing of far blocks and `WINLIM`.
+      - Waiting for other kernel work to land first.
+      - The lost slot remains until `l2b09run` is back under 23,808 bytes.
+  - **Also fixed:** end of file on the command input inside the debugger printed `What?` forever, because the stand-in `bye` is not a debugger command. It now quits to command mode, where end of file means BYE. This matters to editors whose pipe closes.
+  - **Measured** (10,000 reads, one-second clock): near 3 s; far within one block 3 s; far alternating between two blocks 8 s (two system calls per change).
+  - **Limits:**
+    - 255 blocks and 32,767 per dimension per array.
+    - Elements up to 7,424 bytes.
+    - About 9% of each block unused.
+    - One far window, so alternating blocks is slow.
+    - Far arrays are local to a call. There are no far globals, but a far array can be passed down by value one element at a time.
+    - `S$Kill` leaks the blocks, as with farmem.
 
 ## Risks and open questions
-- **Stock compatibility.** I-code stays compatible with stock RunB until P6. Far arrays are opt-in.
+- **Stock compatibility.** I-code stays compatible with stock RunB until P6. Far arrays are opt-in, and PACK refuses procedures that use them.
+- **`l2b09run` size.** Past 23,808 bytes the code cannot use the top slot (P7). It is 24,382 bytes now; shrinking it under the limit would give one address slot back.
 - **Where the editor lives.** The editor itself (here or a separate project) is undecided. The pipe protocol makes this independent of everything else.
 - **Pipes on Wildbits.** Pipes are not in the stock SD boot, so l2basic09 needs a boot file with them (see P1). A CoCo 3 port needs the same check. Named pipes would mean porting `pipeman_named` to NitrOS-9's IOMan.
 - **Syscall cost.** `F$MapBlk` costs a syscall per remap, so `farmem` should be measured on hardware or in MAME.

@@ -266,10 +266,14 @@ DIREX1 ldy I.IOBG
  ldx ICDPTR
  stx I.ICLM
  stx I.STBG
+ ifne L2B09
+ lbsr L2BSTM Bind compiled statement; (A)=binder errors
+ else
  lbsr J$BSTM Bind compiled statement
  ldx I.APRC
  lda P.STAT,X
  clr P.STAT,X
+ endc
  tsta ANY Binder errors?
  bne RSCRIT ..Yes; avoid running
  leax <RSCRIT,PCR
@@ -502,7 +506,11 @@ INCHK4 lda ,S+ Pop the descr
 LKTOKE leax DCMTBL,PCR Get tbl addr
  tstb
  bpl LKTOK1
+ ifne L2B09
+ subb #T.SBYT-T.FAR-1 Adjust for hole in token defs
+ else
  subb #T.SBYT-T.LBNE-1
+ endc
 LKTOK1 lda #3 3 bytes/entry
  mul
  leax D,X Form addr
@@ -1114,6 +1122,29 @@ L2DPMT pshs B,Y
 
 LINMSG fcs "line"
 L2DBGE fcs "%DEBUG"
+
+***************
+* Subroutine L2BSTM
+*   Bind a direct statement in the active procedure.  The binder
+*   marks errors in P.STAT; keep the procedure's own status bits
+*   (P.FAR) instead of clearing them all afterwards.
+
+* Returns: (A)=Non-zero if the statement had binder errors
+
+L2BSTM pshs B,X
+ ldx I.APRC
+ ldb P.STAT,X
+ clr P.STAT,X
+ lbsr J$BSTM
+ ldx I.APRC
+ lda P.STAT,X
+ stb P.STAT,X
+ puls B,X,PC
+
+***************
+* Decompile FAR (no space after the ':' before it)
+DCFAR leax FARKW,PCR
+ lbra STRSPC Output it, then a space
  endc
 
 * End of Decompiler routines
@@ -1988,7 +2019,11 @@ UNBIN3 ldx I.DSCR Get description area ptr
  pag
 UNBIC1 ldb ,Y+ Get next token
  bpl UNBIC2
+ ifne L2B09
+ subb #T.SBYT-T.FAR-1 Adjust for hole in token defs
+ else
  subb #T.SBYT-T.LBNE-1 Adjust for hole in token defs
+ endc
 UNBIC2 clra
  leax SKPTBL,PCR Get address of table
  ldb D,X
@@ -2121,7 +2156,11 @@ FNDVA7 leas 2,S Return scratch
 
 NXTTOK tstb
  bpl NXTADJ
+ ifne L2B09
+ subb #T.SBYT-T.FAR-1 Adjust for hole in token defs
+ else
  subb #T.SBYT-T.LBNE-1 Adjust for hole in token defs
+ endc
 NXTADJ leax <SKPTBL,PCR
  clra
  ldb D,X
@@ -2314,6 +2353,9 @@ SKPTBL equ *
  fcb N$SKP0+U$SKP0 T.ASG1
  fcb N$SKP0+U$SKP0 T.CNUM
  fcb N$SKP2+U$SKP2 T.LBNE
+ ifne L2B09
+ fcb N$SKP0+U$SKP0 T.FAR
+ endc
 
 * Operand Tokens
  fcb N$SKP2+U$SVAR T.SBYT
