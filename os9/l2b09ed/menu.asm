@@ -150,6 +150,9 @@ mopt                fdb       c_indent-cmdtab
                     fdb       c_colour-cmdtab
                     fcn       "Syntax colours"
                     fcn       ""
+                    fdb       c_kwcase-cmdtab
+                    fcn       "Keyword case"
+                    fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
                     fcn       "Keys"

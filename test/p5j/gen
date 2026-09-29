@@ -54,7 +54,26 @@ psub = '''PROCEDURE ppsub
   PRINT "n="; n
 END
 '''
-files = {'pp.b09': main + sub, 'pp1.exp': pmain + sub, 'pp3.exp': main + sub,
+
+# pretty print writes keywords in lower case by default
+lmain = '''procedure ppmain
+  dim i,k:integer
+10 k=0
+  for i=1 to 3
+    if i=2 then
+      k=k+10
+    else
+      k=k+i
+    endif
+  next i
+  print "k="; k; "and a long line with many items to wrap"; i; k; i; k; i; k; "tail"
+  if k>99 then
+    end
+  endif
+  run ppsub(k)
+end
+'''
+files = {'pp.b09': main + sub, 'pp1.exp': lmain + sub, 'pp3.exp': main + sub,
          'pp4.exp': pmain + psub}
 for name, text in files.items():
     with open(os.path.join(out, name), 'w', newline='') as f:
@@ -72,7 +91,8 @@ alt-c "p"                   # again: the same text
 ^y                          # redo
 ^r                          # Make sends nothing; the breakpoint stops it
 ^r                          # to the end
-alt-c "a"                   # every procedure
+alt-o "k"                   # Options > Keyword case: capitals
+alt-c "a"                   # every procedure (ppmain changes case)
 %(sa)s "pp4.b09" enter
 ^g "16" enter ^k " " ^b     # ppmain changed (a space): Make compiles the pretty text
 ^q "n"

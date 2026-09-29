@@ -286,7 +286,11 @@ ppc9                ldu       <base               no CR: the line goes on in the
 ppc10               leas      2,s
                     ldx       <base               add it to the chain
                     leax      rline,x
-                    pshs      y
+                    ldu       <base               (keywords in lower case first)
+                    tst       kwup,u
+                    bne       ppc10a
+                    lbsr      pp_lower
+ppc10a              pshs      y
 ppc11               cmpx      ,s
                     bhs       ppc12
                     lda       ,x+
@@ -299,6 +303,112 @@ ppc11               cmpx      ,s
                     puls      y,pc                (carry)
 ppc12               andcc     #^Carry
                     puls      y,pc
+
+* pp_lower: the keywords in the text from X to Y in lower case.  Strings,
+* comments, numbers and names stay as they are.  Keeps all registers.
+pp_lower            pshs      d,x,y,u
+plw1                cmpx      4,s                 (Y on the stack: the end)
+                    lbhs      plw9
+                    lda       ,x
+                    cmpa      #'"                 a string
+                    beq       plw_str
+                    cmpa      #'(                 (* ... *)
+                    bne       plw2
+                    lda       1,x
+                    cmpa      #'*
+                    beq       plw_cmt
+                    bra       plw_next
+plw2                cmpa      #'$                 $hex
+                    beq       plw_num
+                    cmpa      #'0                 a number (with its E)
+                    blo       plw_next
+                    cmpa      #'9
+                    bls       plw_num
+                    lbsr      is_word             a word
+                    bcs       plw_word
+plw_next            leax      1,x
+                    bra       plw1
+plw_str             leax      1,x                 to the closing quote
+                    cmpx      4,s
+                    lbhs      plw9
+                    lda       ,x
+                    cmpa      #'"
+                    bne       plw_str
+                    bra       plw_next
+plw_cmt             leax      2,x                 to "*)"
+plwc1               cmpx      4,s
+                    lbhs      plw9
+                    ldd       ,x
+                    cmpd      #'**256+')
+                    beq       plwc2
+                    leax      1,x
+                    bra       plwc1
+plwc2               leax      2,x
+                    bra       plw1
+plw_num             leax      1,x                 digits, letters and "."
+                    cmpx      4,s
+                    lbhs      plw9
+                    lda       ,x
+                    cmpa      #'.
+                    beq       plw_num
+                    lbsr      is_word
+                    bcs       plw_num
+                    bra       plw1
+plw_word            ldu       <base               the word, upper case, to hlbuf
+                    leau      hlbuf,u
+                    clrb
+                    pshs      x
+plww1               cmpx      6,s
+                    bhs       plww3
+                    lda       ,x
+                    cmpa      #'$                 (LEFT$: the $ ends it, and is part)
+                    beq       plww2
+                    lbsr      is_word
+                    bcc       plww3
+                    cmpa      #'a
+                    blo       plww2
+                    cmpa      #'z
+                    bhi       plww2
+                    suba      #$20
+plww2               cmpb      #HLMAX
+                    bhs       plww2a
+                    sta       b,u
+plww2a              incb
+                    leax      1,x
+                    lda       -1,x
+                    cmpa      #'$
+                    bne       plww1
+plww3               cmpb      #HLMAX
+                    bhs       plww4
+                    clr       b,u
+plww4               tfr       x,y                 Y = the end of the word
+                    puls      x
+                    pshs      y
+                    lbsr      kw_find
+                    tstb
+                    beq       plww8               a name: as it is
+plww5               cmpx      ,s                  a keyword: lower case
+                    bhs       plww6
+                    lda       ,x
+                    cmpa      #'A
+                    blo       plww5a
+                    cmpa      #'Z
+                    bhi       plww5a
+                    adda      #$20
+                    sta       ,x
+plww5a              leax      1,x
+                    bra       plww5
+plww6               ldu       <base               REM: the rest is a comment
+                    ldd       hlbuf,u
+                    cmpd      #'R*256+'E
+                    bne       plww8
+                    ldd       hlbuf+2,u
+                    cmpd      #'M*256
+                    beq       plww9
+plww8               puls      x
+                    lbra      plw1
+plww9               leas      2,s
+plw9                puls      d,x,y,u,pc
 
 * pp_isend: Z if the text at X is the END statement
 pp_isend            pshs      d

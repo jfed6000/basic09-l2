@@ -403,6 +403,20 @@ kwf_no              clrb
                     leas      1,s
                     puls      x,y,u,pc
 
+* c_kwcase: pretty print writes keywords in lower case (the default) or
+* in capitals (Options)
+c_kwcase            ldx       <base
+                    com       kwup,x
+                    leax      kwlom,pcr
+                    ldy       <base
+                    tst       kwup,y
+                    beq       ckc1
+                    leax      kwupm,pcr
+ckc1                stx       <msgp
+                    rts
+kwlom               fcn       "Pretty print: keywords in lower case"
+kwupm               fcn       "Pretty print: keywords in capitals"
+
 * c_colour: syntax colours on or off (Options); the screen is cleared
 * in the new background
 c_colour            com       <nocolr
