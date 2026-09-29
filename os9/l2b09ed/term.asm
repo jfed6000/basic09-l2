@@ -40,11 +40,20 @@ ti1                 lda       ,x+
                     clrb
                     os9       I$SetStt
                     inc       <kbterm
-ti2                 lda       <scpath             screen size
+ti2                 ldx       <base               screen size, from a terminal only
+                    leax      rline,x             (a file answers SS.ScSiz without an
+                    lda       <scpath             error)
+                    clrb                          SS.Opt
+                    os9       I$GetStt
+                    bcs       ti2a
+                    lda       ,x
+                    cmpa      #DT.SCF
+                    bne       ti2a
+                    lda       <scpath
                     ldb       #SS.ScSiz
                     os9       I$GetStt
                     bcc       ti3
-                    ldx       #80
+ti2a                ldx       #80
                     ldy       #30
 ti3                 tfr       x,d
                     cmpb      #128

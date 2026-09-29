@@ -545,9 +545,11 @@ ww_draw             pshs      d,x,y,u
                     sta       <bx.h
                     lda       #GL.TL1
                     sta       <bx.st
+                    lbsr      fr_on
                     lbsr      bx_draw
                     leax      wttl,pcr
                     lbsr      bx_title
+                    lbsr      hl_norm
                     clrb
 wwd1                cmpb      <nwatch
                     bhs       wwd9

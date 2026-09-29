@@ -118,9 +118,11 @@ wdr0                tst       <msgon
                     beq       wdr1
                     lda       #GL.TL2
 wdr1                sta       <bx.st
+                    lbsr      fr_on
                     lbsr      bx_draw
                     leax      msgttl,pcr
                     lbsr      bx_title
+                    lbsr      hl_norm
                     clr       ,-s                 row in the window
 wdr2                ldb       ,s
                     addb      <msgtop

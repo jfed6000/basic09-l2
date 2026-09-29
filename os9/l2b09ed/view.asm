@@ -224,6 +224,7 @@ v_line              pshs      d,x,y,u
                     deca                          breakpoint mark
                     addb      <wtop
                     lbsr      t_xy
+                    lbsr      fr_on
                     lda       <glyphs+GL.V2
                     ldx       <vline
                     exg       d,x
@@ -357,6 +358,7 @@ v_stat              ldb       <wtop               bottom border
                     addb      <wrows
                     clra
                     lbsr      t_xy
+                    lbsr      fr_on
                     lda       <glyphs+GL.BL2
                     lbsr      t_ch
                     lda       <glyphs+GL.H2
@@ -395,6 +397,7 @@ vs1                 lbsr      t_ch
                     lbsr      t_rep
                     lda       <glyphs+GL.BR2
                     lbsr      t_ch
+                    lbsr      hl_norm
 * v_hint: the last row: a message, an error, or the key hints
 v_hint              ldx       <base
                     leax      sbuf,x
@@ -447,6 +450,7 @@ ss9                 rts
 * v_frame: menu bar, the top border with the file name, the side borders
 v_frame             lda       #$FF
                     lbsr      v_menubar
+                    lbsr      fr_on               frames in white
                     clra                          top border
                     ldb       #1
                     lbsr      t_xy
@@ -503,7 +507,7 @@ vfr2                clra
                     pshs      a
                     cmpb      ,s+
                     blo       vfr2
-                    rts
+                    lbra      hl_norm
 
 * v_menubar: the menu titles on row 0; menu A (or none if $FF) is shown
 * selected

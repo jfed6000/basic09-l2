@@ -18,6 +18,7 @@ CL.FN               equ       3                   functions: pale cyan
 CL.STR              equ       5                   strings: green
 CL.CMT              equ       15                  comments: light grey
 CL.NUM              equ       8                   numbers: orange
+CL.FRAME            equ       1                   window frames: white
 CL.MBFG             equ       0                   menu bar: black
 CL.MBBG             equ       15                  on light grey,
 CL.MSBG             equ       5                   the open menu's title on green
@@ -76,6 +77,7 @@ hls9                lda       hlnorm,x
 
 * hl_pair: foreground A, background B, now
 hl_pair             pshs      d
+                    sta       <hlout
                     lda       #$1B
                     lbsr      t_ch
                     lda       #$33
@@ -89,6 +91,16 @@ hl_pair             pshs      d
                     lda       ,s
                     lbsr      t_ch
                     puls      d,pc
+
+* fr_on: window frames in white, as in Turbo C (nothing with colours
+* off); hl_norm goes back.  Keeps all registers.
+fr_on               tst       <nocolr
+                    bne       fro9
+                    pshs      b
+                    ldb       #CL.FRAME
+                    lbsr      hl_col
+                    puls      b
+fro9                rts
 
 * mb_on, mb_sel, mb_off: the menu bar grey, as in Turbo C (the open
 * menu's title green), then back to the text's colours.  With colours
@@ -133,7 +145,7 @@ hl_done             ldx       <base
                     beq       hld9
                     lda       hlsfg,x
                     ldb       hlsbg,x
-                    bra       hl_pair
+                    lbra      hl_pair
 hld9                rts
 
 * hl_norm: back to the normal colour
