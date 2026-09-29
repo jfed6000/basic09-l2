@@ -148,6 +148,26 @@ tt                  rmb       2                   to page
 tk                  rmb       2                   offset change
 tmp                 rmb       2
 tmpc                rmb       2
+soff                rmb       2                   pg_splitat: offset
+selon               rmb       1                   a selection is active (apos to cpos)
+aline               rmb       2                   line of the selection anchor
+acol                rmb       2                   its display column
+sl                  rmb       2                   selection start line, column
+sc                  rmb       2
+el                  rmb       2                   selection end line, column
+ec                  rmb       2
+vline               rmb       2                   v_line: the line being drawn
+vrev                rmb       1                   v_line: reverse video is on
+cfirst              rmb       2                   clipboard page chain (0 = empty)
+ctail               rmb       2                   clipboard: last page / page being pasted
+cend                rmb       4                   clip_copy: end of the selection
+ccnt                rmb       2                   clip_copy: bytes left in this page
+ck                  rmb       2                   clip_copy: bytes this time
+pprev               rmb       2                   c_paste: page before the insertion
+pnext               rmb       2                   page after it (0 = end of the text)
+pfirst              rmb       2                   first page pasted
+ptpat               rmb       1                   the window top was at the cursor
+peof                rmb       1                   pasting at the end of the text
 argp                rmb       2                   parameters
 glyphs              rmb       NGLYPH              character for each GL.* glyph
 glyok               rmb       1                   our glyphs are in the font
@@ -337,6 +357,7 @@ quit                lbsr      t_done
                     use       view.asm
                     use       edit.asm
                     use       menu.asm
+                    use       clip.asm
 
                     emod
 eom                 equ       *

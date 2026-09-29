@@ -9,6 +9,7 @@ comment):
     pgup pgdn wleft wright          Ctrl+arrows
     top bottom                      Ctrl+Shift+Up/Down
     sup sdown sleft sright          Shift+arrows
+    swleft swright                  Ctrl+Shift+Left/Right
     home bs del esc enter tab
     f1 ... f8
     ^a ... ^z     Ctrl+letter
@@ -39,6 +40,7 @@ NAMED = {
     'sup': pfx(UP | SHF, 0x0C), 'sdown': pfx(DOWN | SHF, 0x0A),
     'sleft': pfx(LEFT | SHF, 0x08), 'sright': pfx(RIGHT | SHF, 0x09),
     'top': pfx(UP | CTRL | SHF, 0x0C), 'bottom': pfx(DOWN | CTRL | SHF, 0x0A),
+    'swleft': pfx(LEFT | CTRL | SHF, 0x08), 'swright': pfx(RIGHT | CTRL | SHF, 0x09),
     'home': b'\x01', 'bs': b'\x08', 'del': pfx(SHF, 0x18), 'esc': b'\x05',
     'enter': b'\x0d', 'tab': b'\x09',
 }

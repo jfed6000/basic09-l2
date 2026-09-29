@@ -44,31 +44,31 @@ cmdtab              fcb       C$CR
                     fcb       EK.DEL
                     fdb       c_del-cmdtab
                     fcb       EK.LEFT
-                    fdb       c_left-cmdtab
+                    fdb       k_left-cmdtab
                     fcb       EK.RIGHT
-                    fdb       c_right-cmdtab
+                    fdb       k_right-cmdtab
                     fcb       EK.UP
-                    fdb       c_up-cmdtab
+                    fdb       k_up-cmdtab
                     fcb       EK.DOWN
-                    fdb       c_down-cmdtab
+                    fdb       k_down-cmdtab
                     fcb       EK.PGUP
-                    fdb       c_pgup-cmdtab
+                    fdb       k_pgup-cmdtab
                     fcb       EK.PGDN
-                    fdb       c_pgdn-cmdtab
+                    fdb       k_pgdn-cmdtab
                     fcb       EK.WLEFT
-                    fdb       c_wleft-cmdtab
+                    fdb       k_wleft-cmdtab
                     fcb       EK.WRIGHT
-                    fdb       c_wright-cmdtab
+                    fdb       k_wright-cmdtab
                     fcb       EK.TOP
-                    fdb       c_top-cmdtab
+                    fdb       k_top-cmdtab
                     fcb       EK.BOTTOM
-                    fdb       c_bottom-cmdtab
+                    fdb       k_bottom-cmdtab
                     fcb       EK.HOME
-                    fdb       c_home-cmdtab
+                    fdb       k_home-cmdtab
                     fcb       $0A                 ^J start of line
-                    fdb       c_home-cmdtab
+                    fdb       k_home-cmdtab
                     fcb       $0B                 ^K end of line
-                    fdb       c_end-cmdtab
+                    fdb       k_end-cmdtab
                     fcb       $04                 ^D delete line
                     fdb       c_delln-cmdtab
                     fcb       $07                 ^G go to line
@@ -106,13 +106,27 @@ cmdtab              fcb       C$CR
                     fcb       $19                 ^Y redo
                     fdb       c_nyi-cmdtab
                     fcb       $03                 ^C copy
-                    fdb       c_nyi-cmdtab
+                    fdb       c_copy-cmdtab
                     fcb       $18                 ^X cut
-                    fdb       c_nyi-cmdtab
+                    fdb       c_cut-cmdtab
                     fcb       $16                 ^V paste
-                    fdb       c_nyi-cmdtab
+                    fdb       c_paste-cmdtab
                     fcb       $01                 ^A select all
-                    fdb       c_nyi-cmdtab
+                    fdb       c_selall-cmdtab
+                    fcb       EK.SUP
+                    fdb       c_sup-cmdtab
+                    fcb       EK.SDOWN
+                    fdb       c_sdown-cmdtab
+                    fcb       EK.SLEFT
+                    fdb       c_sleft-cmdtab
+                    fcb       EK.SRIGHT
+                    fdb       c_sright-cmdtab
+                    fcb       EK.SWLEFT
+                    fdb       c_swleft-cmdtab
+                    fcb       EK.SWRIGHT
+                    fdb       c_swright-cmdtab
+                    fcb       EK.ESC
+                    fdb       c_esc-cmdtab
                     fcb       0
 
 * Redraw requests
@@ -127,7 +141,10 @@ rd                  ora       <redraw
 
 * c_char: insert A
 c_tab               lda       #C$TAB
-c_char              lbsr      ed_ins
+c_char              pshs      a
+                    lbsr      sel_del
+                    puls      a
+                    lbsr      ed_ins
                     bcs       c_full
                     bra       rd_line
 c_full              leax      fullms,pcr
@@ -135,7 +152,8 @@ c_full              leax      fullms,pcr
                     rts
 
 * c_enter: new line, indented like the one it splits
-c_enter             ldu       <base
+c_enter             lbsr      sel_del
+                    ldu       <base
                     leau      wp,u
                     ldd       <cpos
                     std       ,u
@@ -174,7 +192,9 @@ ce4                 cmpx      #0
 ce5                 bra       rd_below
 
 * c_bs: delete the character before the cursor
-c_bs                ldu       <base
+c_bs                lbsr      sel_del
+                    bcs       cb9
+                    ldu       <base
                     leau      cpos,u
                     lbsr      p_prev
                     bcs       cb9
@@ -191,7 +211,9 @@ cb1                 lbsr      ed_del
 cb9                 rts
 
 * c_del: delete the character at the cursor
-c_del               ldu       <base
+c_del               lbsr      sel_del
+                    bcs       cd9
+                    ldu       <base
                     leau      cpos,u
                     lbsr      p_char
                     bcs       cd9
@@ -204,7 +226,8 @@ cd1                 lbsr      ed_del
 cd9                 rts
 
 * c_delln: delete the cursor line
-c_delln             ldu       <base
+c_delln             lbsr      sel_off
+                    ldu       <base
                     leau      cpos,u
                     lbsr      p_bol
 cdl1                lbsr      ed_del
@@ -409,7 +432,8 @@ prevch              ldu       <base
 pvc9                rts
 
 * c_goto: ask for a line number and go there
-c_goto              leax      gomsg,pcr
+c_goto              lbsr      sel_off
+                    leax      gomsg,pcr
                     lbsr      dlg_in
                     bcs       cg9
                     ldx       <base

@@ -17,7 +17,7 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 | P5.0 | Key and screen survey, this document | done |
 | P5.1 | Paged buffer, plain full-screen view, open, edit, save | done |
 | P5.2a | Turbo layout, menu bar and drop-down menus, dialog boxes, help, File commands | done |
-| P5.2b | Selection and clipboard | |
+| P5.2b | Selection and clipboard | done |
 | P5.2c | Find and replace | |
 | P5.2d | Undo and redo | |
 | P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | |
@@ -45,11 +45,11 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Alt+letter | Open a menu (File, Edit, Search, Run, Compile, Debug, Options, Help) | P5.2a |
 | F1 | Help | P5.2a |
 | F3, ^O | Open | P5.2a |
-| Shift+arrows, Ctrl+Shift+Left/Right | Select | P5.2 |
-| ^A ^C ^X ^V | Select all, copy, cut, paste | P5.2 |
+| Shift+arrows, Ctrl+Shift+Left/Right | Select (typing, Enter or paste replaces the selection; Backspace/Delete remove it) | P5.2b |
+| ^A ^C ^X ^V | Select all, copy, cut, paste | P5.2b |
 | ^Z / ^Y | Undo / redo | P5.2 |
 | ^F / ^L | Find / find next | P5.2 |
-| Esc | Cancel (menu, dialog, selection) | P5.2a |
+| Esc | Cancel (menu, dialog, selection) | P5.2a/b |
 | ^B | Make (load the changed procedures) | P5.3 |
 | ^R | Run | P5.3 |
 | ^N | Next error | P5.3 |
@@ -114,10 +114,23 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Positions** are (page, offset) pairs. The cursor, the window's top line, the selection anchor and a scratch position are tracked: splits, joins, inserts and deletes keep them on the same text. Positions are canonical: an offset equal to the page's byte count only occurs at the end of the text.
 - **Line numbers:** the per-page carriage-return counts make "go to line" a walk over the descriptors, followed by a scan of one page.
 
+## Selection and clipboard
+
+- **Selection:** it runs between an anchor (a tracked position, with its line and display column) and the cursor, and is drawn in reverse video. A selected line end shows as one reversed space. Any edit ends the selection first, so the anchor's line and column stay valid while it is active. A plain move, a go-to or Esc ends it.
+- **Deleting a selection** (`ed_delto`) works a page at a time. The first and last pages are cut with one move each, and whole pages in between are dropped without being read from the swap file.
+- **The clipboard** is a page chain of its own in the swap file (1,536 bytes per page), so it can hold any amount.
+- **Paste:**
+  - splits the cursor page once at the cursor;
+  - links copies of the clipboard pages in between;
+  - leaves the cursor after the pasted text;
+  - keeps the window's top line in place when the paste lands on it.
+
 ## Testing
 
 - **Scripted keys:** `tools/keys.py` compiles a readable key script (`"text"`, `up`, `^g`, `pgdn*3`, …) into the bytes the editor reads. When path 0 is not a terminal, `SS.KySns` fails, so keys that need modifier bits are sent as `$FF <kysns> <char>`.
 - **Test data:** a test directory's `gen` script writes generated files, which are copied into the image unchanged (see `tools/emu-wildbits.sh`).
 - **`make p5atest` (P5.1):** `test/p5a/gen` builds a 3,000-line, 129 KB file and a key script. It also runs the same operations through a Python model of the editor's commands to produce the expected file. The editor runs with `-c=3` (so it swaps constantly), with keys from the script and the screen on `/vt3`. It saves, and the result must match the model byte for byte.
   - **Covered:** go to line, typing, Enter with indent, Backspace joining lines, Delete, delete line (200 in a row: page joins and removals), 40 inserted lines (page splits), vertical moves keeping the column, word moves, start/end of the line, top/bottom, page down, save and quit.
+- **Model:** `tools/edmodel.py` holds the Python model of the editing commands, selection and clipboard included. A `Session` records the key script alongside the model, so p5a and p5c build both from one list of operations.
+- **`make p5ctest` (P5.2b):** a 64 KB file with a 4-page cache. It covers typing over a selection, cut and paste of lines, word selection, a selection across lines deleted, an upward selection, Esc and plain moves ending a selection, a 300-line cut pasted inside a line, and select all, copy and two pastes (the result is 196 KB). The saved file must match the model.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

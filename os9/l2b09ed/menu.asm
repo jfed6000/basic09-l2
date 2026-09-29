@@ -54,16 +54,16 @@ medit               fdb       c_nyi-cmdtab
                     fcn       "Redo"
                     fcn       "^Y"
                     fdb       0
-                    fdb       c_nyi-cmdtab
+                    fdb       c_cut-cmdtab
                     fcn       "Cut"
                     fcn       "^X"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_copy-cmdtab
                     fcn       "Copy"
                     fcn       "^C"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_paste-cmdtab
                     fcn       "Paste"
                     fcn       "^V"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_selall-cmdtab
                     fcn       "Select all"
                     fcn       "^A"
                     fdb       0

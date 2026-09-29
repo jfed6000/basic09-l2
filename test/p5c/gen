@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""P5.2b test data: selection, cut, copy and paste on a large file, with
+the expected result from tools/edmodel.py.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from edmodel import Session, source, write  # noqa: E402
+
+
+def main():
+    outdir = sys.argv[1]
+    text = source(1500)
+    s = Session(text)
+
+    s.goto(10)                                   # typing replaces a selection
+    s.key('sright', 5)
+    s.type('ABC')
+    s.goto(20)                                   # cut three lines, paste them later
+    s.key('sdown', 3)
+    s.key('^x')
+    s.goto(100)
+    s.key('^v')
+    s.goto(200)                                  # copy two words, paste at the end
+    s.key('swright', 2)
+    s.key('^c')
+    s.key('bottom')
+    s.key('^v')
+    s.goto(300)                                  # a selection across lines, deleted
+    s.key('right', 3)
+    s.key('sright', 100)
+    s.key('bs')
+    s.goto(50)                                   # a selection made upwards
+    s.key('right', 6)
+    s.key('sup', 2)
+    s.key('sleft')
+    s.key('del')
+    s.goto(7)                                    # Esc ends a selection
+    s.key('sright', 3)
+    s.key('esc')
+    s.type('q')
+    s.goto(8)                                    # so does a plain move
+    s.key('sright', 2)
+    s.key('right')
+    s.type('w')
+    s.goto(1000)                                 # a big cut: many pages
+    s.key('sdown', 300)
+    s.key('^x')
+    s.goto(5)                                    # pasted in the middle of a line
+    s.key('right', 4)
+    s.key('^v')
+    s.key('^a')                                  # everything, copied and pasted
+    s.key('^c')                                  # twice more at the top
+    s.key('top')
+    s.key('^v')
+    s.key('^v')
+    s.goto(3)                                    # Ctrl+Shift+Left selects words
+    s.key('^k')
+    s.key('swleft', 3)
+    s.key('^x')
+    s.key('enter')
+    s.key('^v')
+    s.raw('^s ^q')
+
+    write(outdir, 'sel.b09', text)
+    write(outdir, 'sel.exp', s.m.t)
+    write(outdir, 'keys.bin', s.keybytes())
+    print('sel.b09 %d bytes, sel.exp %d bytes' % (len(text), len(s.m.t)), file=sys.stderr)
+
+
+main()

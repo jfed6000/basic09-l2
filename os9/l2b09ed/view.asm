@@ -75,7 +75,10 @@ vf9                 rts
 * v_draw: redraw what the flags ask for, the status line and the cursor
 v_draw              lbsr      t_curoff
                     lda       <redraw
-                    bita      #RD.ALL
+                    tst       <selon
+                    beq       vd0
+                    lbsr      sel_bounds
+vd0                 bita      #RD.ALL
                     beq       vd1
                     lbsr      v_frame
                     ldd       <tpos
@@ -170,10 +173,15 @@ vpt9                puls      a,pc
 * v_line: draw window row B from the line at wp; wp moves to the next
 * line.  Carry if the text ended in this line.
 v_line              pshs      d,x,y,u
+                    clra
+                    addd      <topline
+                    std       <vline
+                    ldb       1,s
                     lda       <wleft
                     addb      <wtop
                     lbsr      t_xy
                     clr       <vcnt
+                    clr       <vrev
                     ldu       <base
                     leau      wp,u
                     ldx       #0                  display column
@@ -185,10 +193,12 @@ vl1                 lbsr      p_char
                     beq       vl_tab
                     cmpx      <leftcol
                     blo       vl2
+                    lbsr      v_selat
                     bsr       v_put
 vl2                 leax      1,x
                     bra       vl3
-vl_tab              tfr       x,y
+vl_tab              lbsr      v_selat
+                    tfr       x,y
                     lbsr      col_adv
                     pshs      x
 vlt1                cmpy      <leftcol
@@ -205,13 +215,60 @@ vl3                 lbsr      p_next
                     blo       vl1
                     lbsr      p_eol
                     bcs       vl_eof
-vl_eol              bsr       v_pad
+vl_eol              cmpx      <leftcol            a selected line end shows as a space
+                    blo       vle1
+                    lbsr      v_selat
+                    tst       <vrev
+                    beq       vle1
+                    lda       #C$SPAC
+                    lbsr      v_put
+vle1                lbsr      v_selend
+                    lbsr      v_pad
                     lbsr      p_next
                     andcc     #^Carry
                     puls      d,x,y,u,pc
-vl_eof              lbsr      v_pad
+vl_eof              lbsr      v_selend
+                    lbsr      v_pad
                     orcc      #Carry
                     puls      d,x,y,u,pc
+
+* v_selat: reverse video on or off for display column X of line vline,
+* by whether it is in the selection
+v_selat             tst       <selon
+                    beq       vsa9
+                    pshs      d
+                    ldd       <vline              before the start?
+                    cmpd      <sl
+                    blo       vsa_out
+                    bne       vsa1
+                    cmpx      <sc
+                    blo       vsa_out
+vsa1                ldd       <vline              at or after the end?
+                    cmpd      <el
+                    bhi       vsa_out
+                    bne       vsa_in
+                    cmpx      <ec
+                    bhs       vsa_out
+vsa_in              lda       #1
+                    bra       vsa2
+vsa_out             clra
+vsa2                cmpa      <vrev
+                    beq       vsa8
+                    sta       <vrev
+                    tsta
+                    beq       vsa3
+                    lbsr      t_rev
+                    bra       vsa8
+vsa3                lbsr      t_norm
+vsa8                puls      d
+vsa9                rts
+
+* v_selend: reverse video off
+v_selend            tst       <vrev
+                    beq       vse9
+                    clr       <vrev
+                    lbra      t_norm
+vse9                rts
 
 * v_stat: the bottom border (modified mark, line:column) and the hint line
 v_stat              ldb       <scrh               bottom border

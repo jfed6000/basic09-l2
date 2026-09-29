@@ -594,10 +594,19 @@ edd_eof             clra
 
 * pg_split: move the top half of full page X into a new page after it;
 * carry (errno) if there is no page left
-pg_split            pshs      d,x,y,u
+pg_split            pshs      d
+                    ldd       #PGHALF
+                    bsr       pg_splitat
+                    puls      d,pc
+
+* pg_splitat: move the text of page X from offset D on (D below the
+* byte count) into a new page after it; tracked positions follow the
+* text.  Carry (errno) if there is no page left.
+pg_splitat          pshs      d,x,y,u
+                    std       <soff
                     stx       <sd
                     lbsr      d_alloc
-                    bcs       psp_err
+                    lbcs      psp_err
                     stx       <sn
                     ldu       <sd
                     ldy       DS.NEXT,u           link the new page after X
@@ -613,9 +622,10 @@ psp1                stu       DS.PREV,x
                     tfr       y,u                 U = new page data
                     ldx       <sd
                     lbsr      pg_map
-                    leay      PGHALF,y            Y = top half of X
+                    ldd       <soff
+                    leay      d,y                 Y = the text that moves
                     ldd       DS.USED,x
-                    subd      #PGHALF
+                    subd      <soff
                     ldx       <sn
                     std       DS.USED,x
                     ldx       #0
@@ -638,22 +648,141 @@ psp3                leax      -1,x
                     ldd       DS.LINES,x
                     subd      <tmpc
                     std       DS.LINES,x
-                    ldd       #PGHALF
+                    ldd       <soff
                     std       DS.USED,x
                     lbsr      pg_dirty
                     ldd       <sd
                     std       <tf
-                    ldd       #PGHALF
+                    ldd       <soff
                     std       <tm
                     ldd       <sn
                     std       <tt
-                    ldd       #-PGHALF
+                    ldd       #0
+                    subd      <soff
                     std       <tk
                     lbsr      trk_move
                     andcc     #^Carry
                     puls      d,x,y,u,pc
 psp_err             orcc      #Carry
                     puls      d,x,y,u,pc
+
+* pg_cut: remove tk bytes from page X at offset D.  Line counts follow;
+* tracked positions inside the cut go to its start, those after it
+* move down.
+pg_cut              pshs      d,x,y,u
+                    lbsr      pg_map
+                    leau      d,y                 U = start of the cut
+                    ldd       <tk
+                    leay      d,u                 Y = end of the cut
+                    pshs      y
+                    ldy       #0                  carriage returns cut
+pct1                cmpu      ,s
+                    bhs       pct2
+                    lda       ,u+
+                    cmpa      #C$CR
+                    bne       pct1
+                    leay      1,y
+                    bra       pct1
+pct2                leas      2,s
+                    sty       <tmpc
+                    ldd       DS.LINES,x
+                    subd      <tmpc
+                    std       DS.LINES,x
+                    ldd       <nlines
+                    subd      <tmpc
+                    std       <nlines
+                    lbsr      pg_map              the rest of the page moves down
+                    ldd       ,s
+                    leau      d,y                 U = start of the cut
+                    addd      <tk
+                    leay      d,y                 Y = end of the cut
+                    ldd       DS.USED,x
+                    subd      ,s
+                    subd      <tk                 bytes after the cut
+                    beq       pct4
+                    pshs      x
+                    tfr       d,x
+pct3                lda       ,y+
+                    sta       ,u+
+                    leax      -1,x
+                    bne       pct3
+                    puls      x
+pct4                ldd       DS.USED,x
+                    subd      <tk
+                    std       DS.USED,x
+                    lbsr      pg_dirty
+                    ldd       ,s
+                    bsr       trk_cut
+                    puls      d,x,y,u,pc
+
+* trk_cut: positions in page X at offset D or above move down by tk,
+* but not below D
+trk_cut             pshs      d,y,u
+                    ldu       <base
+                    leau      posarr,u
+                    ldy       #NPOS
+tct1                cmpx      ,u
+                    bne       tct3
+                    ldd       2,u
+                    cmpd      ,s
+                    blo       tct3
+                    subd      <tk
+                    bcs       tct2
+                    cmpd      ,s
+                    bhs       tct2a
+tct2                ldd       ,s
+tct2a               std       2,u
+tct3                leau      4,u
+                    leay      -1,y
+                    bne       tct1
+                    puls      d,y,u,pc
+
+* ed_delto: delete the text from the cursor up to position xpos (which
+* is not before it).  Whole pages in between are dropped without being
+* read in.
+ed_delto            pshs      d,x,y,u
+edt1                ldx       <cpos
+                    cmpx      <xpos
+                    bne       edt3
+                    ldd       <xpos+2             the last piece, in one page
+                    subd      <cpos+2
+                    beq       edt8
+                    std       <tk
+                    ldd       <cpos+2
+                    lbsr      pg_cut
+                    bra       edt7
+edt3                ldd       <cpos+2             a whole page?
+                    bne       edt5
+                    ldd       <nlines
+                    subd      DS.LINES,x
+                    std       <nlines
+                    ldd       #0
+                    std       DS.USED,x
+                    std       DS.LINES,x
+                    lda       #1
+                    sta       <modif
+                    lbsr      pg_remove           positions go to the next page
+                    bra       edt1
+edt5                ldd       DS.USED,x           the end of this page
+                    subd      <cpos+2
+                    std       <tk
+                    ldd       <cpos+2
+                    lbsr      pg_cut
+                    lbsr      trk_canon           the cursor moves on to the next page
+                    bra       edt1
+edt7                ldd       DS.USED,x
+                    bne       edt7a
+                    lbsr      pg_remove
+                    bra       edt8
+edt7a               lbsr      trk_canon
+                    lbsr      pg_merge
+edt8                ldx       <cpos               the pages around the cut may be small
+                    lbsr      pg_merge
+                    ldx       <cpos
+                    ldx       DS.PREV,x
+                    beq       edt9
+                    lbsr      pg_merge
+edt9                puls      d,x,y,u,pc
 
 * pg_remove: drop empty page X from the chain (unless it is the only one)
 pg_remove           pshs      d,x,y,u

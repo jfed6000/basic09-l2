@@ -1,0 +1,5 @@
+* l2basic09 P5.2b: l2b09ed selection, cut, copy and paste
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09ed -c=4 sel.b09 <keys.bin >/vt3 >>ed.err
+echo == done

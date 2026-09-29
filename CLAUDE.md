@@ -20,7 +20,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest` … `p5ctest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
@@ -38,7 +38,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `L2B09` builds also get `-DLevel=2`.
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
 - **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `l2b09ed/` is the editor (P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
-- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, and `keys.py`, which compiles editor key scripts).
+- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, and `edmodel.py`, a Python model of the editor's commands used to generate expected files).
 
 ## Gotchas learned the hard way
 
