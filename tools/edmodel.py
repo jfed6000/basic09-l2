@@ -26,6 +26,9 @@ class Model:
         self.sel = None        # anchor index while a selection is active
         self.clip = None       # clipboard text (None = never copied)
         self.indent = True
+        self.fcase = False     # searches match case
+        self.fstr = ''
+        self.rstr = ''
 
     # ---- helpers
     def bol(self, i=None):
@@ -160,6 +163,35 @@ class Model:
         self.sel = 0
         self.c = len(self.t)
 
+    def find(self):
+        """Find fstr from the cursor on; the match becomes the selection."""
+        if not self.fstr:
+            return False
+        t, p = (self.t, self.fstr) if self.fcase else (self.t.upper(), self.fstr.upper())
+        k = t.find(p, self.c)
+        if k < 0:
+            return False
+        self.sel = k
+        self.c = k + len(p)
+        return True
+
+    def replace(self, answers):
+        """Replace fstr with rstr from the cursor on; answers are 'y', 'n',
+        'a' (all) or 'esc' for each match asked about."""
+        answers = iter(answers)
+        every = False
+        while self.find():
+            if not every:
+                a = next(answers)
+                if a == 'esc':
+                    break
+                if a == 'n':
+                    continue
+                if a == 'a':
+                    every = True
+            self.seldel()
+            self._ins(self.rstr)
+
 
 # key -> (model method, keeps the selection, extends it)
 PLAIN_MOVES = {'right': 'right', 'left': 'left', 'up': 'up', 'down': 'down',
@@ -169,6 +201,11 @@ SHIFT_MOVES = {'sright': 'right', 'sleft': 'left', 'sup': 'up', 'sdown': 'down',
                'swright': 'wright', 'swleft': 'wleft'}
 EDITS = {'enter': 'enter', 'bs': 'bs', 'del': 'delete', '^d': 'delln',
          '^c': 'copy', '^x': 'cut', '^v': 'paste', '^a': 'selall'}
+
+
+def q(s):
+    """s as a quoted key-script string."""
+    return '"%s"' % s.replace('\\', '\\\\').replace('"', '\\"')
 
 
 class Session:
@@ -208,13 +245,39 @@ class Session:
     def type(self, s):
         self.m.type(s)
         self._after(False)
-        self.keys.append('"%s"' % s.replace('\\', '\\\\').replace('"', '\\"'))
+        self.keys.append(q(s))
 
     def goto(self, n):
         self.m.sel = None
         self.m.goto(n)
         self._after(False)
         self.keys.append('^g "%d" enter' % n)
+
+    def find(self, text):
+        """^F with new text (typing replaces the remembered text)."""
+        self.m.fstr = text
+        self.m.find()
+        self._after(False)
+        self.keys.append('^f %s enter' % q(text))
+
+    def fnext(self):
+        self.m.find()
+        self._after(False)
+        self.keys.append('^l')
+
+    def replace(self, find, repl, answers):
+        """Search > Replace; repl must not be empty (an empty answer
+        keeps the remembered text)."""
+        self.m.fstr, self.m.rstr = find, repl
+        self.m.replace(answers)
+        self._after(False)
+        self.keys.append('alt-s "r" %s enter %s enter' % (q(find), q(repl)))
+        self.keys.append(' '.join('esc' if a == 'esc' else '"%s"' % a for a in answers))
+
+    def matchcase(self):
+        """Options > Match case (toggles)."""
+        self.m.fcase = not self.m.fcase
+        self.keys.append('alt-o "m"')
 
     def raw(self, keys):
         """Keys the model does not need to follow (save, quit, menus)."""

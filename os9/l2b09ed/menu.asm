@@ -71,13 +71,13 @@ medit               fdb       c_nyi-cmdtab
                     fcn       "Delete line"
                     fcn       "^D"
                     fdb       $FFFF
-msrch               fdb       c_nyi-cmdtab
+msrch               fdb       c_find-cmdtab
                     fcn       "Find..."
                     fcn       "^F"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_fnext-cmdtab
                     fcn       "Find next"
                     fcn       "^L"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_repl-cmdtab
                     fcn       "Replace..."
                     fcn       ""
                     fdb       0
@@ -114,6 +114,9 @@ mdbg                fdb       c_nyi-cmdtab
                     fdb       $FFFF
 mopt                fdb       c_indent-cmdtab
                     fcn       "Auto indent"
+                    fcn       ""
+                    fdb       c_mcase-cmdtab
+                    fcn       "Match case"
                     fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
@@ -505,10 +508,15 @@ dbx1                sta       <bx.w
                     puls      d,pc
 
 * dlg_in: ask for a line of text in a dialog titled X.  The answer is in
-* inbuf (ending in 0); carry if Esc was pressed.
+* inbuf (ending in 0); carry if Esc was pressed.  dlg_inp starts from the
+* text already in inbuf; typing a character first replaces it.
 dlg_in              pshs      x
                     ldx       <base
                     clr       inbuf,x
+                    puls      x
+dlg_inp             pshs      x
+                    lda       #1
+                    sta       <dfirst
 din1                lda       #3
                     sta       <bx.h
                     ldx       ,s
@@ -526,6 +534,14 @@ din1                lda       #3
                     lbsr      getkey
                     ldx       <base
                     leax      inbuf,x
+                    tst       <dfirst             the first key typed replaces the text
+                    beq       din2
+                    clr       <dfirst
+                    cmpa      #C$SPAC
+                    blo       din2
+                    cmpa      #$7E
+                    bhi       din2
+                    clr       ,x
 din2                tst       ,x+                 X = end of the answer
                     bne       din2
                     leax      -1,x
@@ -561,7 +577,7 @@ din3                cmpa      #C$SPAC
                     bhs       din1
                     sta       ,x+
                     clr       ,x
-                    bra       din1
+                    lbra      din1
 din_ok              bsr       dlg_done
                     andcc     #^Carry
                     puls      x,pc

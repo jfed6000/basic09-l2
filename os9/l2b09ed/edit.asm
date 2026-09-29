@@ -98,9 +98,9 @@ cmdtab              fcb       C$CR
                     fcb       $14                 ^T breakpoint
                     fdb       c_nyi-cmdtab
                     fcb       $06                 ^F find
-                    fdb       c_nyi-cmdtab
+                    fdb       c_find-cmdtab
                     fcb       $0C                 ^L find next
-                    fdb       c_nyi-cmdtab
+                    fdb       c_fnext-cmdtab
                     fcb       $1A                 ^Z undo
                     fdb       c_nyi-cmdtab
                     fcb       $19                 ^Y redo

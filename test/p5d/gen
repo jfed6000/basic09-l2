@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""P5.2c test data: find and replace on a large file, with the expected
+result from tools/edmodel.py.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from edmodel import CR, Session, source, write  # noqa: E402
+
+PGFILL = 1536
+
+
+def main():
+    outdir = sys.argv[1]
+    text = source(1500)
+    s = Session(text)
+
+    # a match that straddles a page boundary of the loaded file
+    b = PGFILL * 7
+    while CR in text[b - 6:b + 6]:
+        b += 1
+    s.find(text[b - 6:b + 6])
+    s.type('!')
+    s.key('top')
+    s.find('line 12')                            # typing replaces the match
+    s.type('X')
+    s.fnext()
+    s.fnext()
+    s.type('Y')
+    s.matchcase()                                # case: "print" is not there
+    s.find('print')
+    s.type('Z')                                  # (typed at the cursor)
+    s.matchcase()
+    s.fnext()                                    # now it is
+    s.type('?')
+    s.key('top')
+    s.replace('REM x', 'REM-z', ['y', 'n', 'y', 'n', 'esc'])
+    s.key('^k')
+    s.type('<')
+    s.replace('REM x', 'rem.q', ['n', 'y', 'a'])   # all the rest
+    s.find('zzz')                                # not found: nothing moves
+    s.type('^')
+    s.raw('^s ^q')
+
+    write(outdir, 'fnd.b09', text)
+    write(outdir, 'fnd.exp', s.m.t)
+    write(outdir, 'keys.bin', s.keybytes())
+    print('fnd.b09 %d bytes, fnd.exp %d bytes, %d "rem.q"' % (
+        len(text), len(s.m.t), s.m.t.count('rem.q')), file=sys.stderr)
+
+
+main()

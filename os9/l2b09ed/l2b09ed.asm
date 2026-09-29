@@ -168,6 +168,16 @@ pnext               rmb       2                   page after it (0 = end of the 
 pfirst              rmb       2                   first page pasted
 ptpat               rmb       1                   the window top was at the cursor
 peof                rmb       1                   pasting at the end of the text
+dfirst              rmb       1                   dlg_inp: no key typed yet
+fcase               rmb       1                   searches match case
+flen                rmb       1                   length of the search text
+fch                 rmb       1                   its first character (folded)
+fptr                rmb       2                   find_fwd: scan pointer
+fend                rmb       2                   end of the page data
+fbuf                rmb       2                   start of the page data
+fpos                rmb       4                   end of a match
+frep                rmb       2                   replacements made
+fall                rmb       1                   replace all without asking
 argp                rmb       2                   parameters
 glyphs              rmb       NGLYPH              character for each GL.* glyph
 glyok               rmb       1                   our glyphs are in the font
@@ -192,6 +202,9 @@ fname               rmb       64                  file name
 inbuf               rmb       82                  prompt input
 sbuf                rmb       130                 status line text
 fntsav              rmb       NGLYPH*8            font characters under our glyphs
+fstr                rmb       62                  search text
+rstr                rmb       62                  replacement text
+mbuf                rmb       40                  a message built at run time
 outbuf              rmb       OUTSZ
 desctab             rmb       NDESC*DS.SIZE
 cachtab             rmb       NCMAX*CE.SIZE
@@ -358,6 +371,7 @@ quit                lbsr      t_done
                     use       edit.asm
                     use       menu.asm
                     use       clip.asm
+                    use       search.asm
 
                     emod
 eom                 equ       *
