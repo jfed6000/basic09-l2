@@ -19,7 +19,7 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 | P5.2a | Turbo layout, menu bar and drop-down menus, dialog boxes, help, File commands | done |
 | P5.2b | Selection and clipboard | done |
 | P5.2c | Find and replace | done |
-| P5.2d | Undo and redo | |
+| P5.2d | Undo and redo | done |
 | P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | |
 | P5.4 | Debugger UI: current line, step, continue, evaluate, watches | |
 | P5.5 | `l2b09run`: line breakpoints, run to cursor, step over | |
@@ -47,7 +47,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | F3, ^O | Open | P5.2a |
 | Shift+arrows, Ctrl+Shift+Left/Right | Select (typing, Enter or paste replaces the selection; Backspace/Delete remove it) | P5.2b |
 | ^A ^C ^X ^V | Select all, copy, cut, paste | P5.2b |
-| ^Z / ^Y | Undo / redo | P5.2 |
+| ^Z / ^Y | Undo / redo (50 steps) | P5.2d |
 | ^F / ^L | Find / find next (the match is selected) | P5.2c |
 | Search ▸ Replace | Replace, asking Y / N / A (all) / Esc at each match | P5.2c |
 | Options ▸ Match case | Searches match case (off by default) | P5.2c |
@@ -136,6 +136,19 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Replace:** asks on the hint line at each match (Y, N, A = all the rest, Esc), then reports how many it replaced.
 - **Speed:** the search scans page buffers directly for the first character (counting line ends on the way) and compares only candidates a character at a time, so matches can span pages.
 
+## Undo and redo
+
+- **Records:** each undo record is a range of the text: an absolute 24-bit start and length, because pages split and join and the text can pass 64K. Its text is either in the buffer or out of it, in a page chain in the swap file.
+  - An insertion starts with its text in the buffer and a deletion with its text out.
+  - Undo and redo both move the text to the other side, with the page-wise delete and the paste code.
+- **Grouping:**
+  - typing (and Enter) extends the last insertion if it continues it;
+  - Delete and ^D add to the end of the last deletion, and Backspace adds to its start;
+  - a paste, a deleted or cut selection, and each replacement are records of their own.
+- **History:** there are 50 records, and the oldest goes first. An edit after an undo drops what could have been redone. Open and New clear the history.
+- **Cursor:** after an undo or redo the cursor is at the change and the window is centred on it.
+- **Page budget:** undo text shares the 512 pages with the text and the clipboard. If an edit needs a page and none is left, the undo history is given up to free its pages. If a deletion's text does not fit, the deletion still happens without a record.
+
 ## Testing
 
 - **Scripted keys:** `tools/keys.py` compiles a readable key script (`"text"`, `up`, `^g`, `pgdn*3`, …) into the bytes the editor reads. When path 0 is not a terminal, `SS.KySns` fails, so keys that need modifier bits are sent as `$FF <kysns> <char>`.
@@ -145,4 +158,5 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Model:** `tools/edmodel.py` holds the Python model of the editing commands, selection and clipboard included. A `Session` records the key script alongside the model, so p5a and p5c build both from one list of operations.
 - **`make p5ctest` (P5.2b):** a 64 KB file with a 4-page cache. It covers typing over a selection, cut and paste of lines, word selection, a selection across lines deleted, an upward selection, Esc and plain moves ending a selection, a 300-line cut pasted inside a line, and select all, copy and two pastes (the result is 196 KB). The saved file must match the model.
 - **`make p5dtest` (P5.2c):** a match across a page boundary, typing over a match, find next, Match case on and off, Replace answered Y/N/Esc, then Replace answered A (1,443 replacements), and a search that finds nothing. The result must match the model.
+- **`make p5etest` (P5.2d):** undo and redo of grouped typing, Delete and Backspace, ^D, cut and paste, 1,500 replacements undone 60 times (only 50 records are kept), select-all delete undone and redone, and an edit that ends redo. The result must match the model, which follows the same grouping rules.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

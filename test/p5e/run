@@ -1,0 +1,5 @@
+* l2basic09 P5.2d: l2b09ed undo and redo
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09ed -c=4 und.b09 <keys.bin >/vt3 >>ed.err
+echo == done

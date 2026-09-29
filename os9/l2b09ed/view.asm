@@ -72,6 +72,32 @@ vf5                 lda       <redraw
                     sta       <redraw
 vf9                 rts
 
+* v_center: put the cursor line in the middle of the window (after a
+* jump, when the lines above the window may have changed)
+v_center            ldd       <cpos
+                    std       <tpos
+                    ldd       <cpos+2
+                    std       <tpos+2
+                    ldd       <curline
+                    std       <topline
+                    ldu       <base
+                    leau      tpos,u
+                    lbsr      p_bol
+                    ldb       <wrows
+                    lsrb
+                    beq       vc9
+vc1                 ldx       <topline
+                    beq       vc9
+                    lbsr      p_prevln
+                    leax      -1,x
+                    stx       <topline
+                    decb
+                    bne       vc1
+vc9                 lda       #RD.ALL
+                    ora       <redraw
+                    sta       <redraw
+                    rts
+
 * v_draw: redraw what the flags ask for, the status line and the cursor
 v_draw              lbsr      t_curoff
                     lda       <redraw

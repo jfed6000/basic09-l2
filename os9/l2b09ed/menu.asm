@@ -47,10 +47,10 @@ mfile               fdb       c_new-cmdtab
                     fcn       "Quit"
                     fcn       "^Q"
                     fdb       $FFFF
-medit               fdb       c_nyi-cmdtab
+medit               fdb       c_undo-cmdtab
                     fcn       "Undo"
                     fcn       "^Z"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_redo-cmdtab
                     fcn       "Redo"
                     fcn       "^Y"
                     fdb       0
@@ -768,7 +768,8 @@ bn1                 beq       bn2
                     lbsr      d_free
                     leax      ,y                  (sets Z; tfr would not)
                     bra       bn1
-bn2                 ldd       #0
+bn2                 lbsr      u_clear
+                    ldd       #0
                     std       <nlines
                     lbsr      f_load
                     bcc       bn3

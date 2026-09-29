@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""P5.2d test data: undo and redo on a large file, with the expected
+result from tools/edmodel.py.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from edmodel import Session, source, write  # noqa: E402
+
+
+def main():
+    outdir = sys.argv[1]
+    text = source(1500)
+    s = Session(text)
+
+    s.goto(5)                                    # typing and Enter: one record
+    s.type('hello ')
+    s.type('world')
+    s.key('enter')
+    s.key('^z')
+    s.goto(6)                                    # redo it elsewhere? no: redo puts it back
+    s.key('^y')
+    s.goto(10)                                   # Delete then Backspace: one record
+    s.key('right', 4)
+    s.key('del', 3)
+    s.key('bs', 2)
+    s.key('^z')
+    s.goto(12)                                   # ^D twice: one record
+    s.key('^d', 2)
+    s.key('^z')
+    s.key('^y')
+    s.goto(20)                                   # cut and paste: two records
+    s.key('sdown', 5)
+    s.key('^x')
+    s.goto(40)
+    s.key('^v')
+    s.key('^z', 2)
+    s.key('^y', 2)
+    s.key('top')                                 # more records than are kept
+    s.replace('PRINT', '?', ['a'])
+    s.key('^z', 60)
+    s.key('^y', 10)
+    s.key('^a')                                  # everything deleted and back
+    s.key('del')
+    s.key('^z')
+    s.key('^y')
+    s.key('^z')
+    s.goto(30)                                   # an edit ends what could be redone
+    s.key('^z')
+    s.type('x')
+    s.key('^y')
+    s.raw('^s ^q')
+
+    write(outdir, 'und.b09', text)
+    write(outdir, 'und.exp', s.m.t)
+    write(outdir, 'keys.bin', s.keybytes())
+    print('und.b09 %d bytes, und.exp %d bytes' % (len(text), len(s.m.t)), file=sys.stderr)
+
+
+main()

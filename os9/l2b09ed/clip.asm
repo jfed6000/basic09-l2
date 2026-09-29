@@ -161,13 +161,19 @@ cct9                rts
 
 * clip_free: empty the clipboard
 clip_free           ldx       <cfirst
+                    bsr       chain_free
+                    stx       <cfirst
+                    rts
+
+* chain_free: give back the page chain at X; X = 0
+chain_free          pshs      y
+                    leax      ,x
 cf1                 beq       cf9
                     ldy       DS.NEXT,x
                     lbsr      d_free
                     leax      ,y
                     bra       cf1
-cf9                 stx       <cfirst
-                    rts
+cf9                 puls      y,pc
 
 * clip_copy: copy the selection to the clipboard; carry if the pages ran
 * out (the clipboard then holds the start of it)
@@ -191,9 +197,17 @@ cpy1                ldd       <cpos               from the cursor to the anchor
                     std       <cend
                     ldd       <apos+2
                     std       <cend+2
-cpy2                lbsr      d_alloc
-                    lbcs      cpy_full
+cpy2                bsr       chain_copy
                     stx       <cfirst
+                    rts
+
+* chain_copy: copy the text from wp to cend into a new page chain, X;
+* carry if the pages ran out (X then holds the start of it, or is 0)
+chain_copy          ldd       #0
+                    std       <chead
+                    lbsr      d_alloc
+                    lbcs      cpy_full
+                    stx       <chead
                     stx       <ctail
 cpy3                ldx       <wp                 bytes to copy from this page
                     ldd       DS.USED,x
@@ -210,7 +224,7 @@ cpy5                ldd       <ccnt
                     bne       cpy6
                     tfr       x,u                 full: a new one
                     lbsr      d_alloc
-                    bcs       cpy_full
+                    lbcs      cpy_full
                     stu       DS.PREV,x
                     stx       DS.NEXT,u
                     stx       <ctail
@@ -268,15 +282,32 @@ cpy9                ldx       <wp                 on to the next page, or done
                     ldd       #0
                     std       <wp+2
                     lbra      cpy3
-cpy_ok              andcc     #^Carry
+cpy_ok              ldx       <chead
+                    andcc     #^Carry
                     rts
-cpy_full            orcc      #Carry
+cpy_full            ldx       <chead
+                    orcc      #Carry
                     rts
 
 * c_paste: insert the clipboard at the cursor (replacing a selection)
 c_paste             ldx       <cfirst
                     lbeq      cps9
                     lbsr      sel_del
+                    ldx       <cfirst
+
+* chain_paste: insert a copy of page chain X at the cursor, leaving the
+* cursor after it (recorded for undo)
+chain_paste         stx       <pchain
+                    ldu       <base
+                    leau      cpos,u
+                    lbsr      pos2abs
+                    lda       <ua
+                    sta       <uoff
+                    ldd       <ua+1
+                    std       <uoff+1
+                    clr       <ulen
+                    ldd       #0
+                    std       <ulen+1
                     clr       <ptpat              is the window's top line here?
                     ldd       <tpos
                     cmpd      <cpos
@@ -305,8 +336,8 @@ cps3                ldd       DS.PREV,x
                     stx       <pnext
 cps4                ldd       #0
                     std       <pfirst
-                    ldd       <cfirst
-                    std       <ctail              (walks the clipboard)
+                    ldd       <pchain
+                    std       <ctail              (walks the chain)
 cps5                ldx       <ctail
                     lbeq      cps8
                     ldd       DS.USED,x
@@ -331,6 +362,11 @@ cps6                lda       ,y+
                     puls      d
                     ldx       <sn
                     std       DS.USED,x
+                    addd      <ulen+1             (for undo)
+                    std       <ulen+1
+                    bcc       cps6d
+                    inc       <ulen
+cps6d               ldd       DS.USED,x
                     ldu       <ctail
                     ldd       DS.LINES,u
                     std       DS.LINES,x
@@ -378,7 +414,8 @@ cps8b               tst       <ptpat
                     stx       <tpos
                     ldd       #0
                     std       <tpos+2
-cps8c               lbra      rd_all
+cps8c               lbsr      u_paste
+                    lbra      rd_all
 cps9                rts
 cps_full            bsr       cps8
                     lbra      c_full

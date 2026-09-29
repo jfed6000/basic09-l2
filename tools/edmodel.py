@@ -29,6 +29,68 @@ class Model:
         self.fcase = False     # searches match case
         self.fstr = ''
         self.rstr = ''
+        self.recs = []         # undo records: [off, len, deletion, out, text]
+        self.ucur = 0          # records applied
+
+    # ---- undo records (same grouping rules as undo.asm)
+    NUNDO = 50
+
+    def _last(self):
+        if self.recs and self.ucur == len(self.recs):
+            return self.recs[-1]
+        return None
+
+    def _new(self, rec):
+        del self.recs[self.ucur:]
+        if len(self.recs) == self.NUNDO:
+            self.recs.pop(0)
+        self.recs.append(rec)
+        self.ucur = len(self.recs)
+
+    def _rec_ins1(self, off):
+        r = self._last()
+        if r and not r[2] and not r[3] and r[0] + r[1] == off:
+            r[1] += 1
+        else:
+            self._new([off, 1, False, False, ''])
+
+    def _rec_del1(self, off, ch):
+        r = self._last()
+        if r and r[2] and r[3]:
+            if r[0] == off:
+                r[1] += 1
+                r[4] += ch
+                return
+            if r[0] == off + 1:
+                r[0] = off
+                r[1] += 1
+                r[4] = ch + r[4]
+                return
+        self._new([off, 1, True, True, ch])
+
+    def _toggle(self, r):
+        self.sel = None
+        off, n = r[0], r[1]
+        if not r[3]:
+            r[4] = self.t[off:off + n]
+            self.t = self.t[:off] + self.t[off + n:]
+            self.c = off
+            r[3] = True
+        else:
+            self.t = self.t[:off] + r[4] + self.t[off:]
+            self.c = off + len(r[4])
+            r[4] = ''
+            r[3] = False
+
+    def undo(self):
+        if self.ucur:
+            self.ucur -= 1
+            self._toggle(self.recs[self.ucur])
+
+    def redo(self):
+        if self.ucur < len(self.recs):
+            self._toggle(self.recs[self.ucur])
+            self.ucur += 1
 
     # ---- helpers
     def bol(self, i=None):
@@ -47,7 +109,15 @@ class Model:
         return min(start + col, self.eol(start))
 
     def _cut(self, a, b):
+        """Delete a..b as one record (a selection)."""
+        if b > a:
+            self._new([a, b - a, True, True, self.t[a:b]])
         self.t = self.t[:a] + self.t[b:]
+
+    def _del1(self, i):
+        """Delete one character (Backspace, Delete, ^D)."""
+        self._rec_del1(i, self.t[i])
+        self.t = self.t[:i] + self.t[i + 1:]
 
     def seldel(self):
         """Delete the selection; True if there was one."""
@@ -60,6 +130,16 @@ class Model:
         return True
 
     def _ins(self, s):
+        """Insert typed text, a character at a time."""
+        for ch in s:
+            self._rec_ins1(self.c)
+            self.t = self.t[:self.c] + ch + self.t[self.c:]
+            self.c += 1
+
+    def _insblock(self, s):
+        """Insert a block (paste) as one record."""
+        if s:
+            self._new([self.c, len(s), False, False, ''])
         self.t = self.t[:self.c] + s + self.t[self.c:]
         self.c += len(s)
 
@@ -130,19 +210,22 @@ class Model:
         if self.seldel():
             return
         if self.c > 0:
-            self._cut(self.c - 1, self.c)
             self.c -= 1
+            self._del1(self.c)
 
     def delete(self):
         if self.seldel():
             return
         if self.c < len(self.t):
-            self._cut(self.c, self.c + 1)
+            self._del1(self.c)
 
     def delln(self):
         self.c = self.bol()
-        j = self.t.find(CR, self.c)
-        self._cut(self.c, len(self.t) if j < 0 else j + 1)
+        while self.c < len(self.t):
+            ch = self.t[self.c]
+            self._del1(self.c)
+            if ch == CR:
+                break
 
     def copy(self):
         if self.sel is not None:
@@ -157,7 +240,7 @@ class Model:
     def paste(self):
         if self.clip is not None:
             self.seldel()
-            self._ins(self.clip)
+            self._insblock(self.clip)
 
     def selall(self):
         self.sel = 0
@@ -200,7 +283,8 @@ PLAIN_MOVES = {'right': 'right', 'left': 'left', 'up': 'up', 'down': 'down',
 SHIFT_MOVES = {'sright': 'right', 'sleft': 'left', 'sup': 'up', 'sdown': 'down',
                'swright': 'wright', 'swleft': 'wleft'}
 EDITS = {'enter': 'enter', 'bs': 'bs', 'del': 'delete', '^d': 'delln',
-         '^c': 'copy', '^x': 'cut', '^v': 'paste', '^a': 'selall'}
+         '^c': 'copy', '^x': 'cut', '^v': 'paste', '^a': 'selall',
+         '^z': 'undo', '^y': 'redo'}
 
 
 def q(s):

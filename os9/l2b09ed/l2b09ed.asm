@@ -178,6 +178,16 @@ fbuf                rmb       2                   start of the page data
 fpos                rmb       4                   end of a match
 frep                rmb       2                   replacements made
 fall                rmb       1                   replace all without asking
+ua                  rmb       3                   undo: an offset in the text (24 bits)
+ub                  rmb       3                   another
+ucnt                rmb       1                   undo records
+ucur                rmb       1                   records applied (the rest can be redone)
+noundo              rmb       1                   undo/redo at work: record nothing
+ubusy               rmb       1                   undo is allocating: d_alloc must not clear it
+uoff                rmb       3                   chain_paste: where it goes
+ulen                rmb       3                   how much
+chead               rmb       2                   chain_copy: first page
+pchain              rmb       2                   chain_paste: the chain
 argp                rmb       2                   parameters
 glyphs              rmb       NGLYPH              character for each GL.* glyph
 glyok               rmb       1                   our glyphs are in the font
@@ -205,6 +215,7 @@ fntsav              rmb       NGLYPH*8            font characters under our glyp
 fstr                rmb       62                  search text
 rstr                rmb       62                  replacement text
 mbuf                rmb       40                  a message built at run time
+utab                rmb       NUNDO*UR.SIZE       undo records
 outbuf              rmb       OUTSZ
 desctab             rmb       NDESC*DS.SIZE
 cachtab             rmb       NCMAX*CE.SIZE
@@ -372,6 +383,7 @@ quit                lbsr      t_done
                     use       menu.asm
                     use       clip.asm
                     use       search.asm
+                    use       undo.asm
 
                     emod
 eom                 equ       *

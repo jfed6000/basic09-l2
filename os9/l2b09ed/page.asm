@@ -49,9 +49,19 @@ pi3                 clr       CE.DIRT,x
                     bne       pi3
                     puls      d,x,y,u,pc
 
-* d_alloc: X = a new empty page; carry (B = error) if there are none
+* d_alloc: X = a new empty page; carry (B = error) if there are none.
+* When they run out the undo history is given up for its pages (unless
+* undo itself is asking).
 d_alloc             ldx       <freed
+                    bne       da1
+                    tst       <ubusy
+                    bne       da9
+                    tst       <ucnt
                     beq       da9
+                    lbsr      u_clear
+                    ldx       <freed
+                    beq       da9
+da1
                     pshs      d
                     ldd       DS.NEXT,x
                     std       <freed
@@ -210,6 +220,14 @@ pd1                 lda       DS.FLAG,x
                     lda       #1
                     sta       <modif
                     puls      a,y,pc
+
+* pg_dirt0: page X (mapped) has changed, but it is not part of the text
+pg_dirt0            pshs      a,y
+                    ldy       DS.CE,x
+                    beq       pdz1
+                    lda       #1
+                    sta       CE.DIRT,y
+pdz1                puls      a,y,pc
 
 * sw_seek: seek the swap file to the slot of page X
 sw_seek             pshs      d,x,u
@@ -506,7 +524,9 @@ ed_ins              pshs      d,x,y,u
                     lbsr      pg_split
                     bcs       ei_err
                     ldx       <cpos
-ei1                 lbsr      pg_map              Y = page data
+ei1                 lda       ,s                  (for undo)
+                    lbsr      u_ins1
+                    lbsr      pg_map              Y = page data
                     ldd       DS.USED,x
                     leau      d,y                 U = end of the text in the page
                     subd      <cpos+2             bytes to move up
@@ -551,6 +571,12 @@ ed_del              pshs      b,x,y,u
                     ldd       <cpos+2
                     cmpd      DS.USED,x
                     lbhs      edd_eof
+                    pshs      d                   (for undo)
+                    ldu       <base
+                    leau      cpos,u
+                    lbsr      p_char
+                    lbsr      u_del1
+                    puls      d
                     lbsr      pg_map
                     leau      d,y                 U = the character
                     lda       ,u
@@ -741,6 +767,7 @@ tct3                leau      4,u
 * is not before it).  Whole pages in between are dropped without being
 * read in.
 ed_delto            pshs      d,x,y,u
+                    lbsr      u_delto
 edt1                ldx       <cpos
                     cmpx      <xpos
                     bne       edt3

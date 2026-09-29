@@ -102,9 +102,9 @@ cmdtab              fcb       C$CR
                     fcb       $0C                 ^L find next
                     fdb       c_fnext-cmdtab
                     fcb       $1A                 ^Z undo
-                    fdb       c_nyi-cmdtab
+                    fdb       c_undo-cmdtab
                     fcb       $19                 ^Y redo
-                    fdb       c_nyi-cmdtab
+                    fdb       c_redo-cmdtab
                     fcb       $03                 ^C copy
                     fdb       c_copy-cmdtab
                     fcb       $18                 ^X cut
