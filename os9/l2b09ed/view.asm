@@ -101,6 +101,10 @@ vc9                 lda       #RD.ALL
 * v_draw: redraw what the flags ask for, the status line and the cursor
 v_draw              lbsr      t_curoff
                     lda       <redraw
+                    bita      #RD.ALL+RD.BELOW    lines may have moved
+                    beq       vd00
+                    lbsr      bp_lines
+vd00                equ       *
                     tst       <selon
                     beq       vd0
                     lbsr      sel_bounds
@@ -204,9 +208,18 @@ v_line              pshs      d,x,y,u
                     addd      <topline
                     std       <vline
                     ldb       1,s
-                    lda       <wleft
+                    lda       <wleft              the left border: the frame, or a
+                    deca                          breakpoint mark
                     addb      <wtop
                     lbsr      t_xy
+                    lda       <glyphs+GL.V2
+                    ldx       <vline
+                    exg       d,x
+                    lbsr      bp_on
+                    exg       d,x
+                    bcc       vl00
+                    lda       <glyphs+GL.BP
+vl00                lbsr      t_ch
                     clr       <vcnt
                     clr       <vrev
                     clr       <vexec              the line the program stopped at?
@@ -238,7 +251,7 @@ vl_tab              lbsr      v_selat
 vlt1                cmpy      <leftcol
                     blo       vlt2
                     lda       #C$SPAC
-                    bsr       v_put
+                    lbsr      v_put
 vlt2                leay      1,y
                     cmpy      ,s
                     blo       vlt1
@@ -518,5 +531,5 @@ errmsg              fcc       "Error #"
                     fcb       0
 hintms              fcc       "F1 Help  ^S Save  ^O Open  ^G Go to  ^B Make  ^R Run  Alt+letter Menus"
                     fcb       0
-dbghint             fcc       "Stopped:  F7 Step  ^R Continue  ^P Reset  ^E Evaluate  ^W Watch  F1 Help"
+dbghint             fcc       "Stopped:  F7 Step  F8 Over  ^R Continue  ^P Reset  ^E Evaluate  ^W Watch"
                     fcb       0

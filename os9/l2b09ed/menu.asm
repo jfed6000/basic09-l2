@@ -88,6 +88,9 @@ msrch               fdb       c_find-cmdtab
 mrun                fdb       c_run-cmdtab
                     fcn       "Run"
                     fcn       "^R"
+                    fdb       c_tocur-cmdtab
+                    fcn       "Go to cursor"
+                    fcn       "F4"
                     fdb       c_reset-cmdtab
                     fcn       "Program reset"
                     fcn       "^P"
@@ -106,8 +109,11 @@ mcomp               fdb       c_make-cmdtab
                     fcn       "F6"
                     fdb       $FFFF
 mdbg                fdb       c_step-cmdtab
-                    fcn       "Step"
+                    fcn       "Trace into"
                     fcn       "F7"
+                    fdb       c_over-cmdtab
+                    fcn       "Step over"
+                    fcn       "F8"
                     fdb       c_retbrk-cmdtab
                     fcn       "Until return..."
                     fcn       ""
@@ -121,9 +127,12 @@ mdbg                fdb       c_step-cmdtab
                     fcn       "Delete watch..."
                     fcn       ""
                     fdb       0
-                    fdb       c_nyi-cmdtab
+                    fdb       c_bptog-cmdtab
                     fcn       "Breakpoint"
                     fcn       "^T"
+                    fdb       c_bpclr-cmdtab
+                    fcn       "Clear breakpoints"
+                    fcn       ""
                     fdb       $FFFF
 mopt                fdb       c_indent-cmdtab
                     fcn       "Auto indent"
@@ -715,7 +724,8 @@ helptx              fcn       "Arrows                    move"
                     fcn       "^R                        make, then run the first procedure"
                     fcn       "^N, F6                    next message, message window"
                     fcn       "F5                        the program's screen"
-                    fcn       "F7                        step (stopped at PAUSE, BREAK or an error)"
+                    fcn       "F7, F8, F4                step into, step over, run to the cursor"
+                    fcn       "^T                        breakpoint on this line (on or off)"
                     fcn       "^R, ^P when stopped       continue, reset the program"
                     fcn       "^E, ^W                    evaluate (or x:=value), add a watch"
                     fcn       "F1                        this help"
@@ -728,11 +738,6 @@ aboutm              fcn       "l2b09ed: the l2basic09 editor, edition 1"
 
 ********************************************************************
 * The File commands and the others the menus need
-
-c_nyi               leax      nyims,pcr
-                    stx       <msgp
-                    rts
-nyims               fcn       "Not available yet"
 
 c_indent            com       <noindt
                     leax      indon,pcr

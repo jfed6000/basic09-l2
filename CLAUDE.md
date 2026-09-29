@@ -20,7 +20,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5gtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest` … `p5htest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make k2img` | `build/l2b09_k2.dsk`: the stock K2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
 
@@ -37,6 +37,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `compil`, `binder`, `exprsn` and `cnvio` are the compiler, binder, expression interpreter, and conversion/I/O.
   - Direct-page variables are in `b09defs`; `L2B09` variables go after `BufOvf`.
   - `L2B09` builds also get `-DLevel=2`.
+  - The runtime's direct page is full (1 byte left). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
 - **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `l2b09ed/` is the editor (P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
 - **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, and `edmodel.py`, a Python model of the editor's commands used to generate expected files).
@@ -69,4 +70,5 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **The top 8K slot is not all RAM.** On Wildbits, `$FD00-$FFFF` is fixed whatever is mapped in slot 7 (on the CoCo 3, `$FE00-$FFFF`). `F$MapBlk` returns the highest free slot, so a window there must stay below `$1D00`.
   - `F$Link` keeps a module out of slot 7 once the module passes 23,808 bytes. `l2b09run` is past that, which is why `L2GARD` exists (ARCHITECTURE.md, P7).
   - Watch `build/l2b09run`'s size: getting it back under the limit frees a slot.
+  - **Hard limit: 24,576 bytes** (three 8K blocks). Past it the code takes a fourth slot, and `make p7test` fails with 207 (`#24k -b=64` has no slot left for the data window). P5.5 hit this; `make` prints a warning.
 - **Record field names share the symbol table** with variables. `TYPE pt=x,y:REAL` makes `x` unusable as a variable in that procedure (error 76).

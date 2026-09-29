@@ -1,0 +1,73 @@
+# -t=/dd/l2b09/term.out
+< l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware
+
+< l2b09run
+< %READY
+> load l2b09ed.tmp
+< bmain
+< bsub
+< %READY
+> step bmain
+< BREAK: PROCEDURE bmain line 2
+< %DEBUG bmain 2
+> over
+< BREAK: PROCEDURE bmain line 3
+< %DEBUG bmain 3
+> over
+< BREAK: PROCEDURE bmain line 4
+< %DEBUG bmain 4
+> bp bsub 3
+< ok
+< %DEBUG bmain 4
+> cont
+< BREAK: PROCEDURE bsub line 3
+< %DEBUG bsub 3
+> over
+< BREAK: PROCEDURE bsub line 4
+< %DEBUG bsub 4
+> over
+< BREAK: PROCEDURE bmain line 7
+< %DEBUG bmain 7
+> over
+< BREAK: PROCEDURE bmain line 8
+< %DEBUG bmain 8
+> over
+< BREAK: PROCEDURE bsub line 3
+< %DEBUG bsub 3
+> bc
+< ok
+< %DEBUG bsub 3
+> cont
+< %READY
+> bp bmain 4
+< ok
+< %READY
+> run bmain
+< BREAK: PROCEDURE bmain line 4
+< %DEBUG bmain 4
+> bc
+< ok
+< %DEBUG bmain 4
+> bp bmain 4
+< ok
+< %DEBUG bmain 4
+> cont
+< BREAK: PROCEDURE bmain line 4
+< %DEBUG bmain 4
+> print k
+< 2
+< %DEBUG bmain 4
+> q
+< %READY
+> load l2b09ed.tmp
+< bmain
+< %READY
+> bp bmain 10
+< ok
+< %READY
+> run bmain
+< BREAK: PROCEDURE bmain line 10
+< %DEBUG bmain 10
+> cont
+< %READY
+> bye

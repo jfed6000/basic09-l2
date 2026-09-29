@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p6test p7test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes k2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p6test p7test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -69,6 +69,7 @@ $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 # l2basic09 runtime: Basic09 without the line editor (see src/b09type, L2B09)
 $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
 	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DLevel=2
+	@[ $$(stat -c %s $@) -le 24576 ] || echo "WARNING: $@ is over 24,576 bytes: it needs a fourth 8K block (ARCHITECTURE.md, P5.5)"
 
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
@@ -128,6 +129,9 @@ p5ftest: tools l2b09 pipes
 
 p5gtest: tools l2b09 pipes
 	EMU_SECONDS=150 tools/emu-wildbits.sh test/p5g
+
+p5htest: tools l2b09 pipes
+	EMU_SECONDS=150 tools/emu-wildbits.sh test/p5h
 
 p6test: l2b09
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6

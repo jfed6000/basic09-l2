@@ -261,8 +261,9 @@ tu1                 clra
                     blo       tu1
 tu9                 rts
 
-* The glyphs, in GL.* order: double frame, single frame, single tees
-gl_asc              fcc       "++++=|++++-|++"
+* The glyphs, in GL.* order: double frame, single frame, single tees,
+* the breakpoint mark
+gl_asc              fcc       "++++=|++++-|++*"
 gl_bits             fcb       $00,$00,$3F,$20,$2F,$28,$28,$28      double top left
                     fcb       $00,$00,$F8,$08,$E8,$28,$28,$28      top right
                     fcb       $28,$28,$2F,$20,$3F,$00,$00,$00      bottom left
@@ -277,3 +278,4 @@ gl_bits             fcb       $00,$00,$3F,$20,$2F,$28,$28,$28      double top le
                     fcb       $10,$10,$10,$10,$10,$10,$10,$10      vertical
                     fcb       $10,$10,$10,$1F,$10,$10,$10,$10      left tee
                     fcb       $10,$10,$10,$F0,$10,$10,$10,$10      right tee
+                    fcb       $28,$38,$7C,$7C,$7C,$38,$28,$28      breakpoint: a dot on the border

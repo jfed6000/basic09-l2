@@ -1,0 +1,6 @@
+same ed.log log.exp
+same bp.b09 bp.exp
+term.out  end
+mame.log  |*k:=k*2
+mame.log  |*PRINT "k="; k
+mame.log  ||RUN bsub(k)

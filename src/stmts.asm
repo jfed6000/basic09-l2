@@ -277,6 +277,12 @@ SETGLB stx I.APRC Set active procedure address
 * Local: U,Y,D,CC Destroyed
 
 STMLUP stx I.ICPT Set I-Code ptr to current line
+ ifne L2B09
+ tst L2NBP any breakpoints?
+ beq STML05
+ lbsr L2BPCK stop here if one is set on this statement
+STML05 equ *
+ endc
  lda I.RUNM Continuous execution?
  beq STML20 bra if so
  bpl STML10 bra if not DEBUG call
@@ -2039,12 +2045,21 @@ RUNS40 lbsr TOFSTM Turn off trace
  lda I.RUNM
  anda #$7F disable step mode
  sta I.RUNM
+ else
+ tst L2OVRU stepping over this call?
+ beq RUNS42 ..no; a step stops in the callee
+ lsl I.RUNM
+ lsr I.RUNM
+RUNS42 equ *
  endc
  lbsr EXECUT Execute basic09 procedure
  ifne L2B09
  lda I.RUNM a stop still pending (stepping out of the callee)
  anda #$80
- ora U.RUNM,U or one set by the debugger's BREAK <procedure>
+ cmpu L2OVRU back in the procedure that stepped over the call?
+ bne RUNS44
+ ora #$80 stop at its next statement
+RUNS44 ora U.RUNM,U or one set by the debugger's BREAK <procedure>
  bita #1 was trace on?
  beq RUNS45 bra if not
  pshs A
@@ -2264,6 +2279,39 @@ L2MWE stb 1,S
  puls D,Y,U
  orcc #1
  rts
+
+***************
+* Subroutine L2BPCK
+*   Breakpoint check, before each statement while breakpoints are
+*   set: stop (as a one-step pause) if the active procedure has one
+*   at this statement.  Entries are (procedure ptr, I-Code offset
+*   of a line's first statement), 0 = free.
+
+* Passed: (X)=I-Code ptr
+* Destroys: D,Y,U,CC
+
+L2BPCK tst DEBUGGER a debugger PRINT/LET statement?
+ bne L2BPC9 ..yes; never stop in it
+ ldu I.ASTR
+ ldu U.PROC,U active procedure (directory value)
+ tfr X,D
+ subd I.ICBG offset of this statement
+ ldy G.PRCA
+ leay -L2BPSZ,Y (Y)=breakpoint table, up to G.PRCA
+L2BPC1 cmpu  ,Y
+ bne L2BPC2
+ cmpd 2,Y
+ beq L2BPC5 ..this is one
+L2BPC2 leay 4,Y
+ cmpy G.PRCA
+ blo L2BPC1
+ rts
+L2BPC5 lda I.RUNM
+ ora #$80 pause before this statement
+ sta I.RUNM
+ ldd #1 even in the middle of STEP <n>
+ std STEPS
+L2BPC9 rts
 
  ttl FAR ARRAYS
  pag

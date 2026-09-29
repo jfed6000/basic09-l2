@@ -155,6 +155,7 @@ rg1                 lda       <rpb
                     clr       <rpb
 rg2                 os9       F$Wait              B = its exit status
                     clr       <child
+                    lbsr      mk_bpgone
                     clr       <dbgon
                     clr       <nproc              it held nothing
                     clr       <running
@@ -700,6 +701,7 @@ cm3                 tst       <nsend
                     beq       cm5
                     clr       <nerr
                     clr       <nerrl
+                    lbsr      mk_bpgone
                     leax      ldcmd,pcr
                     lbsr      rt_send
                     bcs       cm_gone
@@ -1065,8 +1067,16 @@ msw9                sta       <nproc
                     andcc     #^Carry
 msw8                rts
 
+* mk_bpgone: l2b09run forgets its breakpoints at a load or kill
+mk_bpgone           tst       <bprt
+                    beq       mbg9
+                    clr       <bprt
+                    inc       <bpdirty
+mbg9                rts
+
 * mk_kill: "kill <name>" for entry X; carry if the runtime has gone
-mk_kill             ldy       <base
+mk_kill             bsr       mk_bpgone
+                    ldy       <base
                     leay      rline,y
                     pshs      x
                     leax      killcm,pcr
@@ -1192,10 +1202,17 @@ c_run               lbsr      c_make
                     beq       crn0
                     leax      contcm,pcr
                     lbra      dbg_cmd
-crn0                ldb       <nproc
+crn0                leax      runcm,pcr
+* run_first: "<command X> <the first procedure in the text>" (run, or
+* step to stop at its first statement), then as dbg_go
+run_first           pshs      x
+                    lbsr      bp_sync
+                    bcs       crn8
+                    ldb       <nproc
                     bne       crn1
                     leax      noprms,pcr
                     stx       <msgp
+crn8                puls      x
 crn9                rts
 crn1                clrb                          the entry with the lowest line
                     lbsr      pt_at
@@ -1213,10 +1230,11 @@ crn3                ldx       <base               "run <name>"
                     leax      rline,x
                     exg       x,y
                     pshs      x
-                    leax      runcm,pcr
+                    ldx       2,s
                     lbsr      s_cpy
                     puls      x
                     lbsr      s_cpy
+                    leas      2,s
                     lda       #C$CR
                     sta       ,y
                     lbra      dbg_go

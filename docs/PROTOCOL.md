@@ -56,10 +56,18 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 
 Send one command per line, ending with CR.
 
-- **After `%READY`:** Basic09 commands such as `load <file>`, `run [<proc>[(<params>)]]`, `list [<proc>]`, `kill <proc>`, `save* <file>`, `pack* <file>`, `dir`, `mem [<n>]`, `chd`, `chx`, `$<shell command>` and `bye`. The line editor (`edit`/`e`) is not in `l2b09run`.
+- **After `%READY`:** Basic09 commands such as `load <file>`, `run [<proc>[(<params>)]]`, `list [<proc>]`, `kill <proc>`, `save* <file>`, `pack* <file>`, `dir`, `mem [<n>]`, `chd`, `chx`, `$<shell command>` and `bye`. The line editor (`edit`/`e`) is not in `l2b09run`. Also (not in stock Basic09):
+  - **`step [<proc>[(<params>)]]`** is `run`, but the program stops in the debugger (`%DEBUG`) before its first statement.
+  - **`bp`** and **`bc`**, as in the debugger (below).
 - **After `%DEBUG`:** debugger commands such as `cont`, `step [n]`, `list`, `print <expr>`, `let <var>:=<expr>`, `state`, `tron`, `troff`, `break <proc>`, `q` (quit to command mode) and `$<shell command>`. `print` output comes back on the channel, before the next `%DEBUG`.
   - **`step`** runs one statement. A step on a `RUN` line stops at the called procedure's first statement, and stepping through its END stops back in the caller. Stock Basic09 turns stepping off for the call, so the rest of the program runs.
+  - **`over`** (not in stock Basic09) steps over: one statement, but a `RUN` runs the whole call and stops at the caller's next statement. A breakpoint, `PAUSE`, BREAK or error inside the call still stops it there.
   - **`break <proc>`** answers `ok` and stops the program (`%DEBUG`) when it returns to `<proc>`, which must be in the call chain. Stock Basic09 only did this with trace on.
+  - **Breakpoints** (not in stock Basic09; also in command mode):
+    - **`bp <proc> <line>`** stops the program (`%DEBUG <proc> <line>`) each time it reaches the first statement of `<line>`, counted as in `%DEBUG`. It answers `ok`, or `What?` if there is no such procedure in the workspace or no such line. At most 16.
+    - **`bc`** clears them all (`ok`). There is no clearing of one: send `bc`, then `bp` for those to keep.
+    - **`load`, `kill` and `pack` clear all breakpoints**, because procedures move in the workspace. Send them again after loading.
+    - A line that never runs (`DIM`, `PARAM`, `TYPE`) never stops the program. With `-b` (banking) breakpoints work the same.
   - **Errors in `print`/`let`:** a statement that does not compile prints it with a `^` and `ERROR #<n>`. One that fails while it runs (a subscript out of range) prints `ERROR #<n>` and sends a `%ERROR` event for line 1 of the current procedure. Either way the `%DEBUG` that follows means the program is still stopped where it was.
 
 **Incremental reload.** Compiling is slow: 937 lines take about 20 s at 6.29 MHz. So keep one `l2b09run` running and `load` a file holding only the procedures that changed; a loaded procedure replaces the one with the same name. Send `kill <proc>` for a procedure deleted in the editor.

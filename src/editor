@@ -20,6 +20,9 @@ DEBUG pshs D,X,Y,U Preserve registers
  tst DEBUGGER already in Debugger?
  bne CONTIN99 ..Yes; don't enter recursively
  inc DEBUGGER Signal Debugger Entered
+ ifne L2B09
+ clr L2OVRU any step over ends at a stop (no storage is below $100)
+ endc
  lda G.SIGN Abort signal recieved?
  bne DEBUG9 ..Yes; don't check step count
  ldd STEPS in step mode?
@@ -1078,33 +1081,24 @@ L2ECP2 anda #$7F
  sta ,U+
  rts
 
-* Append (D) in decimal at (U)
-L2EDEC pshs D,X,Y
- leax <L2TEN,PCR
- ldy #0 no digit written yet
-L2EDE1 lda #'0-1
- sta ,U
- ldd ,S
-L2EDE2 inc ,U
- subd ,X
- bhs L2EDE2
- addd ,X
- std ,S remainder
- ldd ,X++ divisor
- cmpd #1
- beq L2EDE3 units digit always written
- lda ,U
- cmpa #'0
- bne L2EDE3
- cmpy #0
- beq L2EDE1 drop leading zero
-L2EDE3 leau 1,U
- ldy #1
- ldd -2,X
- cmpd #1
- bne L2EDE1
- puls D,X,Y,PC
-L2TEN fdb 10000,1000,100,10,1
+* Append (D) in decimal at (U), with ItoA: the I/O buffer is moved to
+* (U) for the call (the I/O buffer may hold a source line)
+* Destroys: X,Y
+L2EDEC pshs D
+ ldx I.IOPT
+ ldy I.IOBG
+ ldb I.IOCT
+ pshs B,X,Y
+ stu I.IOBG
+ stu I.IOPT
+ ldd 5,S
+ lbsr ItoA
+ ldu I.IOPT
+ puls B,X,Y
+ stb I.IOCT
+ stx I.IOPT
+ sty I.IOBG
+ puls D,PC
 
 ***************
 * Subroutine L2DPMT
@@ -1142,6 +1136,120 @@ L2BSTM pshs B,X
  puls B
  stb P.STAT,X
  puls B,X,PC
+
+***************
+* Subroutines BPSET, BPCLR  (BP and BC, in command and debug mode)
+*   BP <procedure> <line>  stop before the first statement of <line>
+*   BC                     clear all breakpoints
+*   <line> counts as in "%DEBUG": 1 is the line after PROCEDURE.
+*   LOAD, KILL and PACK clear them too (procedures move).
+*   Table entries: procedure ptr (0 = free), I-Code offset.
+
+BPSET bsr L2BPAR (U)=procedure, (X)=offset
+ bcs L2BPX
+ ldy G.PRCA the table ends where the procedures start
+ ldb #L2BPN
+BPSET1 leay -4,Y
+ tst  ,Y free? (no procedure ptr is below $100)
+ beq BPSET2
+ decb
+ bne BPSET1
+L2BPE coma table full
+L2BPX rts
+BPSET2 stu  ,Y
+ stx 2,Y
+ inc L2NBP
+BPCLR1 leax OKMSG,PCR
+ lbra PRTLIN
+BPCLR bsr L2BPZ
+ bra BPCLR1
+
+***************
+* Subroutine L2BPZ
+*   Clear all breakpoints
+
+* Destroys: CC
+
+L2BPZ pshs B,X
+ ldx G.PRCA
+ ldb #L2BPSZ
+ clr L2NBP
+L2BPZ1 clr ,-X
+ decb
+ bne L2BPZ1
+ puls B,X,PC
+
+***************
+* Subroutine L2BPAR
+*   Parse "<procedure> <line>" and find the line's I-Code.  A banked
+*   procedure is mapped in to walk it, then the code window gets
+*   back what it held (the stopped procedure, in the debugger).
+
+* Passed: (Y)=Command line
+* Returns: (U)=Procedure ptr (directory value)
+*          (X)=I-Code offset of the line's first statement
+*          CC=Carry set on error (no such procedure or line)
+
+L2BPAR lbsr J$NAME
+ beq L2BPE
+ lbsr DIRSCH
+ bcs L2BPX
+ ldu  ,X procedure
+ lbsr CMDSEP
+ leax  ,Y
+ lbsr GETNUM (D)=line, 1 or more
+ bcs L2BPX
+ subd #1 lines before it
+ ldx WINBLK
+ pshs D,X,U 0 lines, 2 window, 4 procedure
+ ldd I.ICLM
+ pshs D 0 I.ICLM, 2 lines, 4 window, 6 procedure
+ tfr U,X
+ lbsr J$L2RS (X)=procedure code
+ bcs L2BPA7
+ ldb M$TYPE,X in the workspace (un-typed)?
+ bne L2BPA6 ..no; a module has no lines
+ ldd P.DSCB,X
+ leay D,X
+ sty I.ICLM end of I-Code, for the skip routines
+ ldd P.PGMB,X
+ leay D,X
+ pshs Y 0 I-Code beginning, 2 I.ICLM, 4 lines, ...
+ ldd 4,S
+ lbsr NXTLIN (Y)=start of the line
+ tfr Y,D
+ subd  ,S++
+ std 2,S offset
+ cmpy I.ICLM past the end?
+ bhs L2BPA6
+ clra carry clear
+ bra L2BPA7
+L2BPA6 coma
+L2BPA7 puls D 0 offset, 2 window, 4 procedure
+ std I.ICLM
+ ldd 2,S
+ pshs CC
+ beq L2BPA8 ..the window held nothing
+ lbsr J$L2MW map it back
+L2BPA8 puls CC,X (X)=offset
+ leas 2,S
+ puls U,PC
+***************
+* Subroutine OVER  (debug mode)
+*   Step over: one statement, but a RUN runs the whole call
+
+OVER ldd I.ASTR
+ std L2OVRU stop when the call returns here
+ lbra STEP1
+
+***************
+* Subroutine STEPRN  (command mode STEP)
+*   RUN, stopping in the debugger before the first statement
+
+STEPRN lsl I.RUNM
+ coma
+ ror I.RUNM
+ lbra INTERP
 
 ***************
 * Decompile FAR (no space after the ':' before it)
@@ -1361,6 +1469,7 @@ CHKER8 cmpa #T.ERRL Numbered error line?
 * Subroutine GETLIN
 *   Get ordinal number of current Edit line
 
+ ifeq L2B09 only the line editor uses it
 GETLIN ldx #0
  ldy I.ICBG Start at beginning of procedure
 GETLI1 cmpy I.ICPT Are we at the editors current line?
@@ -1373,6 +1482,7 @@ GETLI2 sty I.ICPT insure "CLEAN" edit ptr
  stx EDTLIN Save line number
  clra (return Carry clear)
  rts
+ endc
 
 ***************
 * ELIST
@@ -1400,6 +1510,7 @@ ELIST1 ldd I.ICLM
 * Subroutine CHKEOL
 *   Check for end of line
 
+ ifeq L2B09 only the line editor uses it
 CHKEOL pshs B,X Save regs
  ldx I.IOPT Get I/O ptr
  ldb  ,X Get next char there
@@ -1408,6 +1519,7 @@ CHKEOL pshs B,X Save regs
  puls B,X,PC Return
 CHKEO1 leas 5,S Pull of b,x,pc
  lbra CMDERR Print what? and return to caller's caller
+ endc
 
 ***************
 * Subroutine LIMITS
@@ -1839,12 +1951,14 @@ EDELET lbsr LIMITS
  lbra EMOVE1 Print the current line, return
  endc
 
+ ifeq L2B09 only the line editor uses it
 DELLIN ldd I.STBG
  std ICDPTR Insure nothing gets inserted
  tfr Y,D
  pshs X
  subd ,S++ Calculate number of bytes to delete
  leay  ,X Delete bytes from lower 'limit'
+ endc
 * Fall thru to Replace
 
 ***************
@@ -2194,10 +2308,12 @@ SKIP cmpy I.ICLM Repeat (entry point of skip routine)
  coma set Carry (not found)
 SKIP9 puls D,X,U,PC Restore registers, return
 
+ ifeq L2B09 nothing uses it
 LREFS fcb T.GOTO,T.GOSB,T.LREF,$FF
 NXLNRF pshs D,X,U Save regs
  leau >LREFS,PCR
  bra SKIP
+ endc
 
 STMTS fcb T.BKSL
 EOLTOK fcb T.EOL,$FF

@@ -44,11 +44,12 @@ NCMAX               equ       24                  most cache buffers
 NCMIN               equ       3                   fewest cache buffers
 NCDEF               equ       12                  cache buffers by default
 TABW                equ       8                   tab stops
+MAXBP               equ       8                   breakpoints
 OUTSZ               equ       256                 screen output buffer
 STKSZ               equ       768
 C$TAB               equ       $09
 SS.FntChar          equ       $C2                 Wildbits grfdrv256: get/set a font character
-GLYPH0              equ       $F2                 frame glyphs go here (as in te)
+GLYPH0              equ       $F1                 frame glyphs go here (te uses $F2-$FF)
 
 * Frame glyphs (see term.asm)
 GL.TL2              equ       0                   double frame
@@ -65,7 +66,8 @@ GL.H1               equ       10
 GL.V1               equ       11
 GL.LT1              equ       12                  single tees
 GL.RT1              equ       13
-NGLYPH              equ       14
+GL.BP               equ       14                  breakpoint mark (on the left border)
+NGLYPH              equ       15
 
 * Page descriptor
                     org       0
@@ -117,14 +119,6 @@ clock               rmb       2                   LRU clock
 freed               rmb       2                   free descriptors
 first               rmb       2                   first page of the text
 nlines              rmb       2                   carriage returns in the text
-* Tracked positions: page edits keep these pointing at the same text.
-* A position is a page descriptor and an offset in that page.
-posarr              equ       .
-cpos                rmb       4                   cursor
-tpos                rmb       4                   start of the top line in the window
-apos                rmb       4                   selection anchor
-xpos                rmb       4                   scratch
-NPOS                equ       (.-posarr)/4
 wp                  rmb       4                   work position (not tracked)
 curline             rmb       2                   cursor line (0 = first)
 curcol              rmb       2                   cursor display column
@@ -243,12 +237,27 @@ vexec               rmb       1                   v_line: this is the line it st
 quiet               rmb       1                   rt_wait: %ERROR is a result, not a message
 nwatch              rmb       1                   watches
 wwh                 rmb       1                   rows of the watch window (0 = none)
+bpdirty             rmb       1                   the breakpoints changed since bp_sync
+bprt                rmb       1                   breakpoints l2b09run holds (0 = none)
+bptemp              rmb       1                   F4 set a breakpoint only for this run
 dpend               equ       .
-                    ifgt      dpend-256
+                    ifgt      dpend-(256-16)
                     error     "direct page overflow"
                     endc
 
-                    org       256
+* Tracked positions: page edits keep these pointing at the same text.
+* A position is a page descriptor (0 = unused) and an offset in that
+* page.  The breakpoints follow the four in the direct page, so the
+* tracking loops see them all.
+                    org       256-16
+posarr              equ       .
+cpos                rmb       4                   cursor
+tpos                rmb       4                   start of the top line in the window
+apos                rmb       4                   selection anchor
+xpos                rmb       4                   scratch
+bppos               rmb       MAXBP*4             breakpoints: the end of their lines
+NPOS                equ       (.-posarr)/4
+bpline              rmb       MAXBP*2             their lines (bp_lines)
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing
 fname               rmb       64                  file name
@@ -285,7 +294,7 @@ swpnm               fcc       "l2b09ed.swp"
 start               tfr       u,d
                     tfr       a,dp
                     pshs      x                   parameters (they stay above our stack)
-                    leay      dpend,u             clear the direct page variables
+                    leay      bpline,u            clear the direct page variables
                     leax      ,u
 st1                 clr       ,x+
                     pshs      y

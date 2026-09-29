@@ -1,0 +1,8 @@
+* l2basic09 P5.5: l2b09ed breakpoints, run to the cursor, step over
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/l2b09ed -t=/dd/l2b09/term.out -l=ed.log bp.b09 <keys.bin >/vt3 >>ed.err
+echo == one done
+/dd/l2b09/l2b09ed -h -t=/dd/l2b09/term2.out bp2.b09 <keys2.bin >/term

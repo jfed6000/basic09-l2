@@ -54,8 +54,13 @@ dbg_quit            ldx       <base
                     lbra      rt_wait
 dq9                 rts
 
-* dbg_cmd: run command X (ending in CR) as dbg_go does
-dbg_cmd             ldy       <base
+* dbg_cmd: run command X (ending in CR) as dbg_go does, after sending
+* the breakpoints if they changed
+dbg_cmd             pshs      x
+                    lbsr      bp_sync
+                    puls      x
+                    lbcs      dg9
+                    ldy       <base
                     leay      rline,y
 dcm1                lda       ,x+
                     sta       ,y+
@@ -80,6 +85,8 @@ dg1                 lbsr      rt_cmd
                     clr       <running
                     lbsr      u_back
                     puls      cc
+                    bcs       dg9
+                    lbsr      bp_tmpclr
                     bcs       dg9
                     clr       <msgp
                     clr       <msgp+1
@@ -139,18 +146,27 @@ dsh1                ldd       <dbfl
                     lbsr      goto_line
                     lbra      v_center
 
-* c_step: one statement, into a called procedure (F7)
+* c_step: one statement, into a called procedure (F7).  If the program
+* is not running: Make, then start it, stopped at its first statement.
 c_step              tst       <dbgon
-                    beq       c_notst
+                    beq       c_stfirst
                     leax      stepcm,pcr
                     lbra      dbg_cmd
+c_stfirst           lbsr      c_make
+                    bcs       cst9
+                    tst       <dbgon              (Make did not reset it)
+                    bne       c_step
+                    leax      stepfc,pcr
+                    lbra      run_first
+cst9                rts
 stepcm              fcc       "step"
                     fcb       C$CR
+stepfc              fcn       "step "
 
 c_notst             leax      notstms,pcr
                     stx       <msgp
                     rts
-notstms             fcn       "The program is not stopped (PAUSE or BREAK stops it)"
+notstms             fcn       "The program is not stopped"
 
 * c_reset: end the stopped program (^P)
 c_reset             tst       <dbgon
@@ -576,3 +592,330 @@ wwd1                cmpb      <nwatch
 wwd9                puls      d,x,y,u,pc
 wttl                fcn       "Watch"
 wsep                fcn       ": "
+
+********************************************************************
+* Breakpoints
+*
+* A breakpoint is a tracked position (bppos) at the carriage return
+* ending its line, so it moves with the text: Enter at the end of the
+* line leaves it there, Enter at the start moves it down with the text.
+* l2b09run holds its own copy, by procedure and line, and forgets it
+* at every load and kill; bp_sync sends them all again before the
+* program next runs.
+
+* bp_lines: the line of each breakpoint to bpline ($FFFF = unused)
+bp_lines            pshs      d,x,y,u
+                    ldu       <base
+                    leay      bpline,u
+                    leau      bppos,u
+                    ldb       #MAXBP
+bpl1                pshs      b
+                    ldd       #$FFFF
+                    ldx       ,u
+                    beq       bpl2
+                    bsr       pos_line
+bpl2                std       ,y++
+                    leau      4,u
+                    puls      b
+                    decb
+                    bne       bpl1
+                    puls      d,x,y,u,pc
+
+* pos_line: D = the line of position U (the carriage returns before it)
+pos_line            pshs      x,y,u
+                    ldd       #0
+                    ldx       <first
+pln1                cmpx      ,u                  the pages before its own
+                    beq       pln2
+                    addd      DS.LINES,x
+                    ldx       DS.NEXT,x
+                    bne       pln1
+                    puls      x,y,u,pc
+pln2                pshs      d                   then its own, up to it
+                    lbsr      pg_map
+                    ldd       2,u
+                    leau      d,y
+                    puls      x
+                    pshs      u
+pln3                cmpy      ,s
+                    bhs       pln4
+                    lda       ,y+
+                    cmpa      #C$CR
+                    bne       pln3
+                    leax      1,x
+                    bra       pln3
+pln4                leas      2,s
+                    tfr       x,d
+                    puls      x,y,u,pc
+
+* bp_on: carry if a breakpoint is on line D (by bpline)
+bp_on               pshs      d,x
+                    ldx       <base
+                    leax      bpline,x
+                    lda       #MAXBP
+                    pshs      a
+bpo1                ldd       ,x++
+                    cmpd      1,s
+                    beq       bpo_yes
+                    dec       ,s
+                    bne       bpo1
+                    leas      1,s
+                    andcc     #^Carry
+                    puls      d,x,pc
+bpo_yes             leas      1,s
+                    orcc      #Carry
+                    puls      d,x,pc
+
+* bp_del: clear the breakpoints on line D (by bpline); carry if there
+* were any
+bp_del              pshs      d,x,y,u
+                    clr       ,-s                 how many
+                    ldu       <base
+                    leay      bpline,u
+                    leau      bppos,u
+                    ldb       #MAXBP
+bpd1                ldx       ,y++
+                    cmpx      1,s
+                    bne       bpd2
+                    clr       ,u
+                    clr       1,u
+                    ldx       #$FFFF
+                    stx       -2,y
+                    inc       ,s
+bpd2                leau      4,u
+                    decb
+                    bne       bpd1
+                    lda       ,s+
+                    beq       bpd3
+                    inc       <bpdirty
+                    orcc      #Carry
+                    puls      d,x,y,u,pc
+bpd3                andcc     #^Carry
+                    puls      d,x,y,u,pc
+
+* bp_clear: no breakpoints (a new text)
+bp_clear            pshs      d,x
+                    ldx       <base
+                    leax      bppos,x
+                    ldb       #MAXBP*4
+bpc1                clr       ,x+
+                    decb
+                    bne       bpc1
+                    ldb       #MAXBP*2
+                    lda       #$FF
+bpc2                sta       ,x+
+                    decb
+                    bne       bpc2
+                    inc       <bpdirty
+                    puls      d,x,pc
+
+* c_bptog: set or clear a breakpoint on the cursor line (^T)
+c_bptog             lbsr      bp_lines
+                    ldd       <curline
+                    bsr       bp_del
+                    bcc       tgl1
+                    leax      bpclms,pcr
+                    bra       tgl8
+tgl1                ldu       <base               a free entry
+                    leau      bppos,u
+                    ldb       #MAXBP
+tgl2                ldx       ,u
+                    beq       tgl3
+                    leau      4,u
+                    decb
+                    bne       tgl2
+                    leax      nobpms,pcr
+                    stx       <msgp
+                    rts
+tgl3                ldd       <cpos               at the end of the cursor line
+                    std       ,u
+                    ldd       <cpos+2
+                    std       2,u
+                    lbsr      p_eol
+                    inc       <bpdirty
+                    leax      bpsetms,pcr
+tgl8                stx       <msgp
+                    lda       #RD.ALL
+                    ora       <redraw
+                    sta       <redraw
+                    rts
+bpsetms             fcn       "Breakpoint set"
+bpclms              fcn       "Breakpoint cleared"
+nobpms              fcn       "No room for another breakpoint"
+
+* c_bpclr: clear all the breakpoints
+c_bpclr             lbsr      bp_clear
+                    leax      bpallms,pcr
+                    bra       tgl8
+bpallms             fcn       "Breakpoints cleared"
+
+* bp_proc: the procedure holding file line D: Y = its entry, D = the
+* line in it (1 = the line after PROCEDURE); carry if there is none
+bp_proc             pshs      d,x
+                    ldy       #0
+                    clrb
+bpp1                cmpb      <nproc
+                    bhs       bpp3
+                    lbsr      pt_at
+                    pshs      b
+                    lda       PR.FLAG,x
+                    bita      #PF.SEEN
+                    beq       bpp2
+                    ldd       PR.LINE,x
+                    cmpd      1,s
+                    bhs       bpp2                it starts at the line or after it
+                    cmpy      #0
+                    beq       bpp1a
+                    cmpd      PR.LINE,y
+                    bls       bpp2                an earlier one than the best so far
+bpp1a               tfr       x,y
+bpp2                puls      b
+                    incb
+                    bra       bpp1
+bpp3                cmpy      #0
+                    beq       bpp_no
+                    ldd       ,s
+                    subd      PR.LINE,y
+                    std       ,s
+                    andcc     #^Carry
+                    puls      d,x,pc
+bpp_no              orcc      #Carry
+                    puls      d,x,pc
+
+* bp_cmd: "<command U><procedure> <line>" in rline for file line D;
+* carry if that line is not in a procedure l2b09run holds as it is
+bp_cmd              pshs      d,y,u
+                    bsr       bp_proc
+                    bcs       bpm9
+                    std       ,s
+                    lda       PR.FLAG,y
+                    bita      #PF.SEND+PF.ERR
+                    bne       bpm_no              changed since it was loaded
+                    ldx       <base
+                    leax      rline,x
+                    pshs      y
+                    ldy       6,s
+                    lbsr      s_str
+                    puls      y
+                    lbsr      s_str
+                    lda       #C$SPAC
+                    sta       ,x+
+                    ldd       ,s
+                    lbsr      n_dec
+                    lda       #C$CR
+                    sta       ,x
+                    andcc     #^Carry
+                    puls      d,y,u,pc
+bpm_no              orcc      #Carry
+bpm9                puls      d,y,u,pc
+
+* bp_ask: send rline (bp or bc) and wait for the answer; Z if
+* it was "ok".  Carry if the runtime has gone.
+bp_ask              ldx       <base
+                    clr       lastout,x
+                    lbsr      rt_cmd
+                    bcs       bpa9
+                    lbsr      rt_wait
+                    bcs       bpa9
+                    ldx       <base
+                    ldd       lastout,x
+                    cmpd      #$6F6B              "ok"
+                    bne       bpa8
+                    tst       lastout+2,x
+bpa8                andcc     #^Carry
+bpa9                rts
+
+* bp_sync: if the breakpoints changed, send them to l2b09run again ("bc",
+* then "bp <procedure> <line>" for each).  The text is scanned first,
+* for the procedures' lines as they are now; a procedure changed since
+* it was loaded gets none (and is sent at the next Make).  Carry if the
+* runtime has gone.
+bp_sync             tst       <bpdirty
+                    beq       bps8
+                    tst       <child
+                    beq       bps8
+                    lbsr      mk_scan
+                    bcs       bps8                (Make says the table is full)
+                    lbsr      mk_keep
+                    tst       <bprt
+                    beq       bps1
+                    ldx       <base
+                    leax      rline,x
+                    ldd       #$6263              "bc"
+                    std       ,x
+                    lda       #C$CR
+                    sta       2,x
+                    bsr       bp_ask
+                    bcs       bps9
+                    clr       <bprt
+bps1                lbsr      bp_lines
+                    ldx       <base
+                    leax      bpline,x
+                    ldb       #MAXBP
+bps2                pshs      b,x
+                    ldd       ,x
+                    cmpd      #$FFFF
+                    beq       bps3
+                    leau      bpcm,pcr
+                    lbsr      bp_cmd
+                    bcs       bps3
+                    bsr       bp_ask
+                    bcs       bps_gone
+                    bne       bps3
+                    inc       <bprt
+bps3                puls      b,x
+                    leax      2,x
+                    decb
+                    bne       bps2
+                    clr       <bpdirty
+bps8                andcc     #^Carry
+bps9                rts
+bps_gone            puls      b,x,pc
+bpcm                fcn       "bp "
+
+* bp_tmpclr: after a run to the cursor, its breakpoint has to go: l2b09run
+* can only clear them all, so all are sent again before the next run
+bp_tmpclr           tst       <bptemp
+                    beq       btc9
+                    clr       <bptemp
+                    inc       <bpdirty
+btc9                andcc     #^Carry
+                    rts
+
+* c_tocur: run until the program reaches the cursor line (F4): Make, a
+* breakpoint there for this run only, then run or continue
+c_tocur             lbsr      c_make
+                    bcs       ctc9
+                    lbsr      bp_sync
+                    bcs       ctc9
+                    lbsr      bp_lines
+                    ldd       <curline
+                    lbsr      bp_on
+                    bcs       ctc_go              one is there already
+                    leau      bpcm,pcr
+                    lbsr      bp_cmd
+                    bcs       ctc_no
+                    lbsr      bp_ask
+                    bcs       ctc9
+                    bne       ctc_no
+                    inc       <bprt
+                    inc       <bptemp
+ctc_go              tst       <dbgon
+                    beq       ctc1
+                    leax      contcm,pcr
+                    lbra      dbg_cmd
+ctc1                leax      runcm,pcr
+                    lbra      run_first
+ctc_no              leax      nolnms,pcr
+                    stx       <msgp
+ctc9                rts
+nolnms              fcn       "The cursor is not on a statement of a loaded procedure"
+
+* c_over: one statement, but a RUN runs the whole call (F8); starts the
+* program if it is not running, as F7 does
+c_over              tst       <dbgon
+                    lbeq      c_stfirst
+                    leax      overcm,pcr
+                    lbra      dbg_cmd
+overcm              fcc       "over"
+                    fcb       C$CR

@@ -3,5 +3,5 @@ term.out  n=7
 term.out  k=9
 mame.log  || 1 k: 2
 mame.log  || 2 s: hello
-mame.log  Stopped:  F7 Step  ^R Continue
+mame.log  Stopped:  F7 Step  F8 Over  ^R Continue
 mame.log  |+== 9:1 ===

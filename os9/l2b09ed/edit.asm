@@ -104,7 +104,11 @@ cmdtab              fcb       C$CR
                     fcb       $17                 ^W watch
                     fdb       c_watch-cmdtab
                     fcb       $14                 ^T breakpoint
-                    fdb       c_nyi-cmdtab
+                    fdb       c_bptog-cmdtab
+                    fcb       EK.F1+3             F4 run to the cursor
+                    fdb       c_tocur-cmdtab
+                    fcb       EK.F1+7             F8 step over
+                    fdb       c_over-cmdtab
                     fcb       $06                 ^F find
                     fdb       c_find-cmdtab
                     fcb       $0C                 ^L find next
@@ -493,7 +497,8 @@ fullms              fcc       "Out of pages"
 gomsg               fcn       "Go to line"
 
 * buf_top: cursor and window at the start of a freshly loaded text
-buf_top             ldd       <first
+buf_top             lbsr      bp_clear
+                    ldd       <first
                     std       <cpos
                     std       <tpos
                     std       <apos

@@ -446,6 +446,8 @@ DSTADR rmb 2 Data window address when that destination was taken
 FARFLG rmb 1 Binder: the declaration being bound is FAR
 WINLIM rmb 2 Usable size of the code window
 GRDBLK rmb 2 Block keeping the top slot filled (0 = no guard)
+L2NBP rmb 1 Breakpoints set (the table is at G.DIRA+$100)
+L2OVRU rmb 2 Step over: storage of the procedure to stop in (MSB 0 = none)
  endc
 
  pag
@@ -476,6 +478,8 @@ P.BANK equ $20 P.STAT bit: banked procedure; this is its stub
 *  block number (2 bytes) and offset in that block (2 bytes) of the
 *  real image.
 P.FAR equ $10 P.STAT bit: procedure has far arrays (not packable)
+L2BPN equ 16 Breakpoint table entries: procedure ptr, I-Code offset
+L2BPSZ equ 4*L2BPN Breakpoint table size; it sits at G.DIRA+$100
 L2BLSZ equ $2000 MMU block size (8K on Wildbits and CoCo 3)
 L2TOPU equ $1D00 Usable part of the top slot: $FD00-$FFFF is fixed on
 *                 Wildbits ($FE00-$FFFF on the CoCo 3)

@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""P5.5 test data: breakpoints, run to the cursor, step over, and F7
+starting a program that is not running.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+prog = '''PROCEDURE bmain
+DIM k,i:INTEGER
+k:=1
+FOR i:=1 TO 3
+k:=k*2
+NEXT i
+RUN bsub(k)
+PRINT "k="; k
+RUN bsub(k)
+PRINT "end"
+END
+PROCEDURE bsub
+PARAM n:INTEGER
+n:=n+1
+PRINT "n="; n
+END
+'''
+# ^G takes the file line (1 = PROCEDURE bmain)
+keys = '''
+f7                          # not running: Make, then step bmain (stops at k:=1)
+f8 f8                       # step over: FOR, k:=k*2
+^g "15" enter ^t            # a breakpoint in bsub (PRINT "n=")
+^r                          # continue: bp bsub 3, cont; it stops there
+f8 f8                       # over PRINT and END: back in bmain, at PRINT "k="
+f8                          # to the second RUN bsub(k)
+f8                          # over it: the breakpoint stops it inside
+^t                          # clear it (the cursor is on the stopped line)
+^r                          # continue: bc, then the program ends
+^g "5" enter f4             # run to the cursor: bp bmain 4, run, stop, bc
+f4                          # again, from the stop: the next time round the loop
+^e "k" enter esc            # k is 2
+^p                          # reset
+^g "10" enter ^t            # a breakpoint on PRINT "end"
+^g "1" enter ^k enter "REM moved"  # a line above it moves it down
+^r                          # Make sends bmain; bp bmain 10 (the file's line 11)
+^r                          # to the end
+^s ^q
+'''
+# A second session keeps its screen for the snapshot (-h): the marks
+keys2 = '''
+^g "5" enter ^t ^g "8" enter ^t ^g "3" enter
+'''
+for name in ('bp.b09', 'bp2.b09'):
+    with open(os.path.join(out, name), 'w', newline='') as f:
+        f.write(prog.replace('\n', '\r'))
+with open(os.path.join(out, 'bp.exp'), 'w', newline='') as f:
+    f.write(prog.replace('PROCEDURE bmain\n', 'PROCEDURE bmain\nREM moved\n', 1).replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
+with open(os.path.join(out, 'keys2.bin'), 'wb') as f:
+    f.write(compile_keys(keys2))

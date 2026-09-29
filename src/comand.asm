@@ -1022,7 +1022,7 @@ CMDVRB equ *
  fcb V$CR+$80
 
  ifne L2B09
- fdb 12 number of alphabetic entries (no EDIT/E)
+ fdb 15 number of alphabetic entries (no EDIT/E; BP, BC, STEP)
  else
  fdb 14 number of alphabetic entries
  endc
@@ -1057,6 +1057,14 @@ CMDVRB equ *
  fcs "CHD"
  fdb CHXDIR-*
  fcs "CHX"
+ ifne L2B09
+ fdb BPSET-*
+ fcs "BP"
+ fdb BPCLR-*
+ fcs "BC"
+ fdb STEPRN-*
+ fcs "STEP"
+ endc
 
 ***************
 * Debug Mode Commands
@@ -1069,7 +1077,11 @@ DBGVRB equ *
  fdb STEP0-*
  fcb V$CR+$80
 
+ ifne L2B09
+ fdb 17 number of alphabetic debug commands (BP, BC, OVER)
+ else
  fdb 14 number of alphabetic debug commands
+ endc
  fcb 2 number of skip bytes per entry
  fdb CONTIN-*
  fcs "CONT"
@@ -1097,6 +1109,14 @@ DBGVRB equ *
  fcs "STEP"
  fdb BREAK-*
  fcs "BREAK"
+ ifne L2B09
+ fdb BPSET-*
+ fcs "BP"
+ fdb BPCLR-*
+ fcs "BC"
+ fdb OVER-*
+ fcs "OVER"
+ endc
 
  ifeq L2B09
 ***************
@@ -1165,14 +1185,14 @@ DBGMSG equ *
  fcs "BREAK: "
 CALLBY fcs "called by"
 OKMSG fcs "ok"
-DBGPMT fcs "D:"
-EDTPMT fcs "E:"
  ifne L2B09
 CMDPMT fcs "%READY"
  else
+DBGPMT fcs "D:"
+EDTPMT fcs "E:"
 CMDPMT fcs "B:"
- endc
 NOTFND fcs "can't find:"
+ endc
 
  ttl Basic09 Command module
  pag
@@ -1223,6 +1243,9 @@ START0 std ,--U clear DP Globals
  tfr D,S
  std G.DIRA
  inca
+ ifne L2B09
+ addd #L2BPSZ breakpoint table between directory and procedures
+ endc
  std G.PRCA
  std I.STBG
  tfr U,D
@@ -1761,7 +1784,11 @@ LODER1 cmpb #E$EOF End of File?
  beq EXIT1 ..yes; return
  bra ERREXT Print error message & return
 
-LOAD leax  ,Y get path name ptr
+LOAD equ *
+ ifne L2B09
+ lbsr L2BPZ procedures move: breakpoints go
+ endc
+ leax  ,Y get path name ptr
  lda #READ. Open for input
  OS9 I$Open Open the input file
  bcs LODER1 Exit if error
@@ -1839,7 +1866,11 @@ PRCLI9 rts RETURN to user
 *   Pack <Procedure List>;<File Spec> (?)
 *   saves procedure icode suitable for Roming
 
-DUMP lbsr DEFILE Parse procedure names, get pathnname
+DUMP equ *
+ ifne L2B09
+ lbsr L2BPZ PACK strips procedures: breakpoints go
+ endc
+ lbsr DEFILE Parse procedure names, get pathnname
  ldu I.OPBG
  bra DUMP02 Repeat
 DUMP01 ldy  ,Y get proc addr
@@ -2228,6 +2259,7 @@ INTER1 lbsr DIRLNK Try to find procedure
  stx I.APRC Set active procedure
  ifne L2B09
  stx L2APRC
+ clr L2OVRU no step over pending
  endc
  lda M$TYPE,X external or bound?
  beq INTE30 ..Yes; check type
@@ -2344,7 +2376,11 @@ KILALL ldy I.IOPT build "All" name in I/O buffer
  sta  ,Y (kill all)
  sta G.SIGN
 
-KILLER lbsr PCDLST get list of procedures to kill
+KILLER equ *
+ ifne L2B09
+ lbsr L2BPZ procedures move: breakpoints go
+ endc
+ lbsr PCDLST get list of procedures to kill
  clr I.APRC no active procedure
  clr I.APRC+1
 KILL0 ldu I.OPBG
