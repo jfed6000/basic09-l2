@@ -1,0 +1,14 @@
+* l2basic09 P4: farmem, memory beyond 64K from Basic09
+-x
+chd /dd/l2b09
+load /dd/l2b09/farmem
+mfree >mfree1
+/dd/l2b09/l2b09run #24k <p4.cmds >p4.out >>p4.err
+mfree >mfree2
+echo == same program packed, under stock RunB
+load /dd/l2b09/p4pk
+/dd/l2b09/runb #24k p4main >runb.out >>runb.err
+echo == benchmark
+/dd/l2b09/l2b09run #24k p4prog.b09 p4bench <bye.cmds >bench.out >>bench.err
+unlink p4main p4bench
+mfree >mfree3

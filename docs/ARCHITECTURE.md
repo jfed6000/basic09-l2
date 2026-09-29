@@ -101,7 +101,24 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
   - **BREAK/ABORT** need no new code. `INTCPT` already routes `S$Intrpt` to the debugger and `S$Abort` to HALT. Both were tested by signalling a running loop.
   - **Found:** a second PACK fails with error 51 in stock Basic09 too, because PACK strips the workspace copy. Documented in PROTOCOL.md.
   - **Test harness note:** if an `expect` never matches, `l2b09ctl` blocks until the emulator stops, and the output files are cut off because they were never closed. So a hang shows up as missing or short files.
-- **P4 – `farmem` subroutine module** plus a sample and a benchmark.
+- **P4 – `farmem` subroutine module (done).** `modules/farmem.asm` is 644 bytes; user documentation is in [FARMEM.md](FARMEM.md). `make p4test` passes all 10 checks.
+  - **Interface:** `RUN farmem("alloc"|"put"|"get"|"unmap"|"free", fm, ...)`, with a 4-INTEGER descriptor the program owns. A subroutine module has no data area of its own, so all state lives in the descriptor. Far memory is an array of records, each `SIZE(var)` bytes.
+  - **How it works:**
+    - `F$AllRAM` provides whole 8K blocks, and `F$DelRAM` returns them.
+    - One block at a time is mapped with `F$MapBlk` into a window that stays mapped between calls.
+    - A block change costs `F$ClrBlk` + `F$MapBlk`.
+    - Records crossing a block boundary are copied in pieces.
+  - **Tested:**
+    - 800 records of 320 bytes (256K, many straddling blocks) written and read back with no errors;
+    - the range error (55) caught with `ON ERROR`;
+    - the same program packed and run under **stock RunB**;
+    - free memory identical before, after, and at the end (no leaks).
+  - **Measured (5,000 calls at 6.29 MHz, one-second timer):** local access under 1 s; `farmem` within one block 2–3 s (about 0.5 ms per call, mostly `RUN` overhead); alternating blocks about 4 s (a remap adds about 0.3–0.4 ms).
+  - **Limits:**
+    - Blocks from `F$AllRAM` are not owned by the process, so a program that ends without `free` leaks them until reboot.
+    - The window needs one free 8K slot in the program's 64K.
+    - Both limits are documented in FARMEM.md. P7 (language-level far arrays) could remove the need for `free` by having the runtime free on exit.
+  - **Harness:** `expect` files can now say `same <fileA> <fileB>` (used for the mfree comparison).
 - **P5 – Editor integration.** This is either a minimal test client or the real editor, depending on where the editor ends up.
 - **P6 – Transparent code banking .**
   - Procedure I-code is kept in `F$AllRAM` blocks and mapped into a code window on RUN; the caller's block is restored on return.

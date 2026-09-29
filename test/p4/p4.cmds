@@ -1,0 +1,5 @@
+load p4prog.b09
+pack* /dd/l2b09/p4pk
+run p4main
+q
+bye

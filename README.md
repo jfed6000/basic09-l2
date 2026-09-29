@@ -16,7 +16,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and roadmap.
 | Path       | Contents |
 |------------|----------|
 | `src/`     | Microware modular Basic09/RunB source (comand, compil, binder, stmts, exprsn, cnvio) and the module build script. See `src/MICROWARE.md`. |
-| `modules/` | Basic09 subroutine modules (`syscall`, `inkey`). |
+| `modules/` | Basic09 subroutine modules: `farmem` (memory beyond 64K, see [docs/FARMEM.md](docs/FARMEM.md)), `syscall`, `inkey`. |
 | `samples/` | Basic09 sample programs. |
 | `test/`    | Emulator tests (`run` script, command files, expected output). |
 | `os9/`     | OS-9 side tools: `l2b09ctl`, a scripted editor stand-in for the protocol. |
@@ -34,6 +34,7 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
     make p1test             # P1 pipeline test, headless on Wildbits Jr2 under MAME
     make p2test             # l2b09run test: -t terminal, debugger over stdin/stderr, line numbers
     make p3test             # protocol test: l2b09ctl drives l2b09run over pipes, with signals
+    make p4test             # farmem: 256K of far records, stock RunB, leak check, benchmark
     make loadtime           # benchmark: compile the 937-line startrek sample
     make NITROS9DIR=/path/to/nitros9
 

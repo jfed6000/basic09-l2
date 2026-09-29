@@ -1,0 +1,10 @@
+p4.out    p4: allocated blocks32
+p4.out    p4: records800 bad0
+p4.out    p4: range error55
+p4.out    p4: freed
+runb.out  p4: records800 bad0
+runb.out  p4: range error55
+runb.out  p4: freed
+bench.out bench 5000 far alternating blocks
+same      mfree1 mfree2
+same      mfree1 mfree3

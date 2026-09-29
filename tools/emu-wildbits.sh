@@ -8,7 +8,8 @@
 #   modules  optional "<build file> <name>" lines; copied from build/ with exec attrs
 #   bootmods optional list of build/ modules to add to OS9Boot (drivers, managers)
 #   fetch    optional list of files to copy back from /dd/l2b09 after the run
-#   expect   optional "<file> <text>" lines; each text must appear in that file
+#   expect   optional "<file> <text>" lines; each text must appear in that file,
+#            or "same <fileA> <fileB>": the two fetched files must be identical
 #   *        every other file is copied into /dd/l2b09 as text (LF -> CR)
 #
 # The base image is copied, never modified. Results land in build/emu/<test>/:
@@ -83,6 +84,17 @@ if [ -f "$tdir/expect" ]; then
     fail=0
     while read -r file text; do
         case $file in ''|'#'*) continue ;; esac
+        if [ "$file" = same ]; then
+            # "same <fileA> <fileB>": the two fetched files must be identical
+            set -- $text
+            if cmp -s "$out/$1" "$out/$2"; then
+                echo "PASS  $1 same as $2"
+            else
+                echo "FAIL  $1 differs from $2"
+                fail=1
+            fi
+            continue
+        fi
         if grep -qF -- "$text" "$out/$file"; then
             echo "PASS  $file: $text"
         else

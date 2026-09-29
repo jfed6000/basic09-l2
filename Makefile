@@ -25,7 +25,7 @@ AFLAGS = -DNOS9VER= -DNOS9MAJ= -DNOS9MIN=
 # Stock Microware builds (the baseline everything else is measured against)
 STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
         $(BUILD)/runb_6809 $(BUILD)/runb_6309
-SUBS  = $(BUILD)/syscall $(BUILD)/inkey
+SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
 L2B09 = $(BUILD)/l2b09run
 OS9DIR = os9
 TOOLS = $(BUILD)/l2b09ctl
@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -95,6 +95,9 @@ p2test: l2b09 pipes
 
 p3test: l2b09 tools pipes
 	tools/emu-wildbits.sh test/p3
+
+p4test: stock l2b09 subs
+	tools/emu-wildbits.sh test/p4
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09
