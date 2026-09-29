@@ -1134,10 +1134,12 @@ L2DBGE fcs "%DEBUG"
 L2BSTM pshs B,X
  ldx I.APRC
  ldb P.STAT,X
+ pshs B the binder does not keep B
  clr P.STAT,X
  lbsr J$BSTM
  ldx I.APRC
  lda P.STAT,X
+ puls B
  stb P.STAT,X
  puls B,X,PC
 

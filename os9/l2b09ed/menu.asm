@@ -88,6 +88,9 @@ msrch               fdb       c_find-cmdtab
 mrun                fdb       c_run-cmdtab
                     fcn       "Run"
                     fcn       "^R"
+                    fdb       c_reset-cmdtab
+                    fcn       "Program reset"
+                    fcn       "^P"
                     fdb       c_user-cmdtab
                     fcn       "User screen"
                     fcn       "F5"
@@ -102,15 +105,22 @@ mcomp               fdb       c_make-cmdtab
                     fcn       "Messages"
                     fcn       "F6"
                     fdb       $FFFF
-mdbg                fdb       c_nyi-cmdtab
+mdbg                fdb       c_step-cmdtab
                     fcn       "Step"
                     fcn       "F7"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_retbrk-cmdtab
+                    fcn       "Until return..."
+                    fcn       ""
+                    fdb       c_eval-cmdtab
                     fcn       "Evaluate..."
                     fcn       "^E"
-                    fdb       c_nyi-cmdtab
+                    fdb       c_watch-cmdtab
                     fcn       "Add watch..."
                     fcn       "^W"
+                    fdb       c_wdel-cmdtab
+                    fcn       "Delete watch..."
+                    fcn       ""
+                    fdb       0
                     fdb       c_nyi-cmdtab
                     fcn       "Breakpoint"
                     fcn       "^T"
@@ -587,10 +597,11 @@ din_ok              bsr       dlg_done
 din_esc             bsr       dlg_done
                     orcc      #Carry
                     puls      x,pc
-dlg_done            lda       #RD.ALL
+dlg_done            pshs      a                   (dlg_ask returns the answer in A)
+                    lda       #RD.ALL
                     ora       <redraw
                     sta       <redraw
-                    rts
+                    puls      a,pc
 
 * dlg_ask: ask question X; A = 'Y' or 'N', carry if Esc was pressed
 dlg_ask             pshs      x
@@ -624,10 +635,12 @@ dak_esc             bsr       dlg_done
                     puls      x,pc
 
 * dlg_msg: show message X until a key is pressed
-dlg_msg             pshs      x
+dlg_msg             leay      msgtl,pcr
+* dlg_msgt: the same, in a dialog titled Y
+dlg_msgt            pshs      x
                     lda       #3
                     sta       <bx.h
-                    leax      msgtl,pcr
+                    tfr       y,x
                     lbsr      dlg_box
                     lda       <bx.col
                     adda      #2
@@ -702,8 +715,10 @@ helptx              fcn       "Arrows                    move"
                     fcn       "^R                        make, then run the first procedure"
                     fcn       "^N, F6                    next message, message window"
                     fcn       "F5                        the program's screen"
+                    fcn       "F7                        step (stopped at PAUSE, BREAK or an error)"
+                    fcn       "^R, ^P when stopped       continue, reset the program"
+                    fcn       "^E, ^W                    evaluate (or x:=value), add a watch"
                     fcn       "F1                        this help"
-                    fcn       " "
                     fcn       "Press any key."
                     fcb       0
 

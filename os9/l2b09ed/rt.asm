@@ -130,10 +130,15 @@ rd1                 lda       <lgpath
                     clr       <lgpath
 rd9                 rts
 
-* rt_stop: end the runtime: bye, then the end of its input
+* rt_stop: end the runtime: q if it is in the debugger, bye, then the
+* end of its input
 rt_stop             tst       <child
                     lbeq      rp9
-                    leax      byecm,pcr
+                    tst       <dbgon
+                    beq       rp0
+                    lbsr      dbg_quit
+                    lbcs      rp9
+rp0                 leax      byecm,pcr
                     lbsr      rt_send
                     lda       <rpa
                     os9       I$Close
@@ -150,6 +155,7 @@ rg1                 lda       <rpb
                     clr       <rpb
 rg2                 os9       F$Wait              B = its exit status
                     clr       <child
+                    clr       <dbgon
                     clr       <nproc              it held nothing
                     clr       <running
                     ldx       <base               "l2b09run has ended [(error <n>)]"
@@ -358,9 +364,10 @@ lg_line             pshs      d,x,y
 lg9                 andcc     #^Carry
                     puls      d,x,y,pc
 
-* rt_wait: read the runtime's output up to %READY.  Errors go to the
-* message window; a stop in the debugger (%DEBUG) is noted, and the
-* debugger is left with q.  Carry if the runtime has gone.
+* rt_wait: read the runtime's output up to %READY, or a stop in the
+* debugger (%DEBUG: dbgon, dbname, dbline and dbfl).  Errors go to the
+* message window, unless quiet is set.  The last line of text is kept
+* in lastout.  Carry if the runtime has gone.
 rt_wait             clr       <evcode
 rw1                 bsr       rt_line
                     bcc       rw1a
@@ -376,11 +383,14 @@ rw1a
                     leay      ev_rdy,pcr
                     lbsr      ev_is
                     bne       rw2
+                    clr       <dbgon
                     andcc     #^Carry
                     rts
 rw2                 leay      ev_err,pcr
                     lbsr      ev_is
                     bne       rw3
+                    tst       <quiet              an error in print: the ERROR line says it
+                    bne       rw1
                     lbsr      ev_code
                     lbsr      ms_ev
                     bra       rw1
@@ -403,17 +413,8 @@ rw3b                lbsr      ms_ev
 rw4                 leay      ev_dbg,pcr
                     lbsr      ev_is
                     bne       rw5
-                    tst       <evcode             a break, not an error: say where
-                    bne       rw4a
                     lbsr      ev_where
-                    lbsr      ms_ev
-rw4a                clr       <evcode
-                    ldx       <base               P5.3 has no debugger: quit it
-                    leax      rline,x
-                    ldd       #$710D              "q", CR
-                    std       ,x
-                    lbsr      rt_cmd
-                    lbra      rw1
+                    lbra      dbg_at
 rw5                 leay      ev_ask,pcr
                     lbsr      ev_is
                     lbne      rw1
@@ -436,8 +437,9 @@ rw5b                ldx       <base
                     sta       1,x
                     lbsr      rt_cmd
                     lbra      rw1
-rw_text             leax      -1,x                count "ERROR #" lines (a load failure
-rwt1                leay      errtx,pcr           has one without an event)
+rw_text             leax      -1,x                keep it, and count "ERROR #" lines
+                    lbsr      out_keep            (a load failure has one without an
+rwt1                leay      errtx,pcr           event)
                     pshs      x
 rwt2                lda       ,y+
                     beq       rwt_hit
@@ -497,8 +499,8 @@ evw2                clr       -1,x
 ********************************************************************
 * Messages from events
 
-* ms_ev: a message for the event in evcode (0 = a stop), evproc and
-* evline: "Line <n>, <proc>: Error <code> <text>"
+* ms_ev: a message for the error event in evcode, evproc and evline:
+* "Line <n>, <proc>: Error <code> <text>"
 ms_ev               lbsr      ms_new
                     bcs       mse9
                     pshs      x                   ,s = the message
@@ -527,9 +529,6 @@ mse3                lda       ,y+
                     bne       mse3
 mse4                ldd       #$3A20              ": "
                     std       ,x++
-                    leay      stoptx,pcr
-                    ldb       <evcode
-                    beq       mse5
                     leay      errtx2,pcr
                     lbsr      s_str
                     clra
@@ -538,14 +537,11 @@ mse4                ldd       #$3A20              ": "
                     ldu       ,s                  the text ends with the message
                     leau      MS.SIZE-1,u
                     bsr       er_text
-                    bra       mse6
-mse5                lbsr      s_str
-mse6                clr       ,x
+                    clr       ,x
                     puls      x
 mse9                rts
 
 linetx              fcn       "Line "
-stoptx              fcn       "Stopped"
 errtx2              fcn       "Error "
 
 * er_text: " <text>" for error evcode, from the error message file, at
@@ -688,7 +684,11 @@ cm1                 lbsr      ms_clear
                     leax      manyms,pcr
                     stx       <msgp
                     rts
-cm2                 lbsr      mk_sweep            kill what is gone
+cm2                 lbsr      mk_dbg              stopped in the debugger?
+                    bcs       cm_gone
+                    tstb
+                    bne       cm_keep
+                    lbsr      mk_sweep            kill what is gone
                     bcs       cm_gone
                     lbsr      mk_write            the temp file
                     bcc       cm3
@@ -740,6 +740,10 @@ cm8                 lbsr      s_str
                     rts
 cm_gone             orcc      #Carry
                     rts
+cm_keep             leax      keptms,pcr
+                    stx       <msgp
+                    andcc     #^Carry
+                    rts
 
 makems              fcn       "Making..."
 manyms              fcn       "Too many procedures"
@@ -747,6 +751,66 @@ makeds              fcn       "Make: "
 errsms              fcn       " error(s)"
 loadms              fcn       " loaded"
 uptdms              fcn       "up to date"
+keptms              fcn       "Not loaded: the program is stopped (^P resets it)"
+rstask              fcn       "The text changed: reset the program (Y/N)?"
+
+* mk_dbg: if the program is stopped in the debugger and the text changed,
+* the program has to be reset (q) before anything is loaded: ask.  B = 1
+* for no (nothing is loaded, and the changed procedures are sent next
+* time), else 0.  Carry to give up: Esc, or the runtime has gone.
+mk_dbg              clrb
+                    tst       <dbgon
+                    beq       mkd9
+                    bsr       mk_dirty
+                    beq       mkd9
+                    leax      rstask,pcr
+                    lbsr      dlg_ask
+                    bcs       mkd_esc
+                    cmpa      #'Y
+                    bne       mkd_no
+                    lbsr      dbg_quit
+                    ldb       #0                  (keeps the carry)
+                    rts
+mkd_no              bsr       mk_keep
+                    ldb       #1
+mkd9                andcc     #^Carry
+                    rts
+mkd_esc             bsr       mk_keep
+                    orcc      #Carry
+                    rts
+
+* mk_dirty: Z clear if Make has something to send or kill
+mk_dirty            clrb
+mdy1                cmpb      <nproc
+                    bhs       mdy_no
+                    lbsr      pt_at
+                    lda       PR.FLAG,x
+                    bita      #PF.SEND
+                    bne       mdy_yes
+                    bita      #PF.SEEN
+                    beq       mdy_yes
+                    incb
+                    bra       mdy1
+mdy_no              orcc      #Zero
+                    rts
+mdy_yes             andcc     #^Zero
+                    rts
+
+* mk_keep: nothing is sent this time: mark what was to be sent as
+* failed, so the next Make sends it
+mk_keep             clrb
+mkp1                cmpb      <nproc
+                    bhs       mkp9
+                    lbsr      pt_at
+                    lda       PR.FLAG,x
+                    bita      #PF.SEND
+                    beq       mkp2
+                    anda      #^PF.SEND
+                    ora       #PF.ERR
+                    sta       PR.FLAG,x
+mkp2                incb
+                    bra       mkp1
+mkp9                rts
 ldcmd               fcc       "load l2b09ed.tmp"
                     fcb       C$CR
 
@@ -1119,11 +1183,16 @@ rsd1                lda       ,x+
 ********************************************************************
 * Run and the user screen
 
-* c_run: Make, then run the first procedure in the text (^R).  Its
-* terminal is shown while it runs.
+* c_run: Make, then run the first procedure in the text (^R), or
+* continue the program if it is stopped in the debugger.  Its terminal
+* is shown while it runs.
 c_run               lbsr      c_make
                     bcs       crn9
-                    ldb       <nproc
+                    tst       <dbgon
+                    beq       crn0
+                    leax      contcm,pcr
+                    lbra      dbg_cmd
+crn0                ldb       <nproc
                     bne       crn1
                     leax      noprms,pcr
                     stx       <msgp
@@ -1150,34 +1219,11 @@ crn3                ldx       <base               "run <name>"
                     lbsr      s_cpy
                     lda       #C$CR
                     sta       ,y
-                    tst       <uterm
-                    bne       crn4
-                    leax      runms,pcr
-                    stx       <msgp
-                    lbsr      v_hint
-                    lbsr      t_flush
-crn4                lbsr      rt_cmd
-                    bcs       crn_gone
-                    inc       <running
-                    bsr       u_show
-                    lbsr      rt_wait
-                    pshs      cc
-                    clr       <running
-                    bsr       u_back
-                    puls      cc
-                    bcs       crn_gone
-                    clr       <msgp
-                    clr       <msgp+1
-                    ldb       <nmsg
-                    beq       crn8
-                    lbsr      w_show
-                    clrb
-                    lbra      ms_jump
-crn8                rts
-crn_gone            rts
+                    lbra      dbg_go
 noprms              fcn       "No procedures"
-runms               fcn       "Running..."
 runcm               fcn       "run "
+contcm              fcc       "cont"
+                    fcb       C$CR
 
 * u_show: show the program's terminal
 u_show              tst       <uterm

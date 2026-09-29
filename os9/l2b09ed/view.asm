@@ -209,7 +209,14 @@ v_line              pshs      d,x,y,u
                     lbsr      t_xy
                     clr       <vcnt
                     clr       <vrev
-                    ldu       <base
+                    clr       <vexec              the line the program stopped at?
+                    tst       <dbgon
+                    beq       vl0
+                    ldd       <vline
+                    cmpd      <dbfl
+                    bne       vl0
+                    inc       <vexec
+vl0                 ldu       <base
                     leau      wp,u
                     ldx       #0                  display column
 vl1                 lbsr      p_char
@@ -249,21 +256,34 @@ vl_eol              cmpx      <leftcol            a selected line end shows as a
                     beq       vle1
                     lda       #C$SPAC
                     lbsr      v_put
-vle1                lbsr      v_selend
-                    lbsr      v_pad
+vle1                bsr       v_endpad
                     lbsr      p_next
                     andcc     #^Carry
                     puls      d,x,y,u,pc
-vl_eof              lbsr      v_selend
-                    lbsr      v_pad
+vl_eof              bsr       v_endpad
                     orcc      #Carry
                     puls      d,x,y,u,pc
 
+* v_endpad: the rest of the row, reversed on the line the program
+* stopped at
+v_endpad            tst       <vexec
+                    beq       vep1
+                    tst       <vrev
+                    bne       vep2
+                    inc       <vrev
+                    lbsr      t_rev
+                    bra       vep2
+vep1                bsr       v_selend
+vep2                lbsr      v_pad
+                    bra       v_selend
+
 * v_selat: reverse video on or off for display column X of line vline,
-* by whether it is in the selection
-v_selat             tst       <selon
-                    beq       vsa9
-                    pshs      d
+* by whether it is in the selection (the other way round on the line
+* the program stopped at)
+v_selat             pshs      d
+                    clra
+                    tst       <selon
+                    beq       vsa2
                     ldd       <vline              before the start?
                     cmpd      <sl
                     blo       vsa_out
@@ -279,7 +299,8 @@ vsa1                ldd       <vline              at or after the end?
 vsa_in              lda       #1
                     bra       vsa2
 vsa_out             clra
-vsa2                cmpa      <vrev
+vsa2                eora      <vexec
+                    cmpa      <vrev
                     beq       vsa8
                     sta       <vrev
                     tsta
@@ -287,8 +308,7 @@ vsa2                cmpa      <vrev
                     lbsr      t_rev
                     bra       vsa8
 vsa3                lbsr      t_norm
-vsa8                puls      d
-vsa9                rts
+vsa8                puls      d,pc
 
 * v_selend: reverse video off
 v_selend            tst       <vrev
@@ -350,6 +370,9 @@ v_hint              ldx       <base
                     tst       <msgerr
                     bne       vh_err
                     leay      hintms,pcr
+                    tst       <dbgon
+                    beq       vh_msg
+                    leay      dbghint,pcr
 vh_msg              bsr       s_str
                     bra       vs_out
 vh_err              leay      errmsg,pcr
@@ -494,4 +517,6 @@ untitl              fcc       "(untitled)"
 errmsg              fcc       "Error #"
                     fcb       0
 hintms              fcc       "F1 Help  ^S Save  ^O Open  ^G Go to  ^B Make  ^R Run  Alt+letter Menus"
+                    fcb       0
+dbghint             fcc       "Stopped:  F7 Step  ^R Continue  ^P Reset  ^E Evaluate  ^W Watch  F1 Help"
                     fcb       0

@@ -20,7 +20,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5ftest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest` … `p5gtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make k2img` | `build/l2b09_k2.dsk`: the stock K2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
 
@@ -46,6 +46,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **`TFR` sets no flags.** Use `leax ,y` (or a compare) when the next branch needs Z.
 - **`LEAU`/`LEAS` don't set Z** (only `LEAX`/`LEAY` do). A `leau -1,u` / `bne` loop never ends, so count with X or Y, or add `cmpu #0`.
 - **Branch range.** Inserting code inline often pushes 8-bit branches (`bsr`, `beq`, ...) out of range ("Byte overflow"). Put new code in a subroutine somewhere else and call it with `lbsr`, or make that one branch long under `ifne L2B09`.
+- **`J$` calls clobber registers.** Cross-module calls through the jump tables keep nothing, so hold values on the stack across them (`L2BSTM` once lost `P.STAT` in B this way).
+- **Symbols are case-insensitive** (`nosymbolcase`), so a constant `NWATCH` clashes with a variable `nwatch`.
 - **Hidden undefined symbols.** The build uses the `undefextern` pragma, which hides undefined symbols. After changing `src/`, reassemble the touched files with `lwasm.orig` without `undefextern` (see the git history for the exact command) to catch them.
 - **The lwasm wrapper** writes `.map`/`.list` files into the current directory, so run it inside `build/`.
 - **Pipes:**

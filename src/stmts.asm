@@ -1979,6 +1979,9 @@ RUNS20 ldx  ,S Retrieve I-Code ptr
  std  ,S Save procedure ptr
  ldu I.ASTR Get storage base
  lda I.RUNM Get current run mode
+ ifne L2B09
+ anda #$7F a pending stop (step) is for the callee, not the return
+ endc
  sta U.RUNM,U Save it
  ldb I.BASE+1 Get array base lsb
  stb U.BASE,U Save it
@@ -2032,16 +2035,30 @@ RUNS30 ldd U.S,U Get data stack ptr
  bcc RUNS50 continue if no error
  bra RUNERR signal runtime error
 RUNS40 lbsr TOFSTM Turn off trace
+ ifeq L2B09
  lda I.RUNM
  anda #$7F disable step mode
  sta I.RUNM
+ endc
  lbsr EXECUT Execute basic09 procedure
+ ifne L2B09
+ lda I.RUNM a stop still pending (stepping out of the callee)
+ anda #$80
+ ora U.RUNM,U or one set by the debugger's BREAK <procedure>
+ bita #1 was trace on?
+ beq RUNS45 bra if not
+ pshs A
+ lbsr TONSTM Turn on trace
+ puls A
+RUNS45 sta I.RUNM
+ else
  lda U.RUNM,U Get old run mode
  bita #1 is trace on?
  beq RUNS50 bra if not
  lbsr TONSTM Turn on trace
  lda U.RUNM,U restore old run mode
  sta I.RUNM Restore it
+ endc
 RUNS50 ldd U.STBG,U Get string stack beginning
  std I.STBG Restore it
  ldd U.PRLM,U Get parameter limit

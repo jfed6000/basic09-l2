@@ -25,7 +25,7 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 | P5.2c | Find and replace | done |
 | P5.2d | Undo and redo | done |
 | P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | done |
-| P5.4 | Debugger UI: current line, step, continue, evaluate, watches | |
+| P5.4 | Debugger UI: current line, step, continue, evaluate, watches | done |
 | P5.5 | `l2b09run`: line breakpoints, run to cursor, step over | |
 
 ## Keys
@@ -57,13 +57,15 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Options ▸ Match case | Searches match case (off by default) | P5.2c |
 | Esc | Cancel (menu, dialog, selection) | P5.2a/b |
 | ^B | Make (load the changed procedures) | P5.3 |
-| ^R | Run (Make, then run the first procedure) | P5.3 |
+| ^R | Run (Make, then run the first procedure); continue when stopped | P5.3/P5.4 |
 | ^N | Next message (and its line) | P5.3 |
 | F5 | User screen (the program's window) | P5.3 |
 | F6 | Into the message window, and back | P5.3 |
-| F7 | Step | P5.4 |
+| F7 | Step (into a called procedure) | P5.4 |
+| ^P | Program reset | P5.4 |
 | ^E | Evaluate / modify | P5.4 |
 | ^W | Add a watch | P5.4 |
+| Debug ▸ Delete watch, Until return | Delete a watch (or all); stop when the program returns to a procedure | P5.4 |
 | F4 | Run to the cursor | P5.5 |
 | F8 | Step over | P5.5 |
 | ^T | Toggle a breakpoint | P5.5 |
@@ -106,6 +108,13 @@ With the message window open, the text window ends 7 rows higher, and the messag
     row h-8      ┌─────────────────── Message ───────────────────┐          double frame while it has the focus
     rows h-7..h-3│ Line 9, sub: Error 12 Illegal Statement ...    │          the selected message is reversed
     row h-2      └───────────────────────────────────────────────┘
+
+With watches (P5.4), a watch window of 2 rows plus one per watch sits directly under the text window, above the message window if that is open:
+
+    ┌──────────────────── Watch ────────────────────┐
+    │ 1 k: 2                                         │
+    │ 2 s: hello                                     │
+    └───────────────────────────────────────────────┘
 
 - **Text window:** the rows and columns inside the frame. Tabs expand to every 8th column. A line wider than the window scrolls the whole window sideways.
 - **Menus:** Alt+letter opens a menu under its title in a single-line box. Up/Down move (skipping separators), Left/Right go to the next menu, Enter or an item's first letter runs it, and Esc closes the menu. Commands that come in later phases are in the menus already and say "Not available yet".
@@ -172,12 +181,31 @@ The text is paged, so a file can be far larger than the editor's 64K.
   - If a load fails without an event (an `ERROR #` line with no `%CERR` or `%BERR`), every procedure in it is sent again next time, and the message window says so.
 - **Messages:** each `%CERR`, `%BERR` and `%ERROR` becomes a message: `Line <n>, <proc>: Error <code> <text>`. The file line is the line of the procedure's `PROCEDURE` line plus the event's line. The text comes from `/dd/sys/errmsg`, which has the Basic09 errors. Up to 32 messages are kept.
 - **After a Make with errors:** the message window opens (7 rows at the bottom, taken from the text window) and the cursor goes to the first error. ^N goes to the next one. F6 (or Compile ▸ Messages) moves into the window: Up/Down choose a message, Enter goes to its line, F6 goes back, and Esc closes the window. A clean Make closes it and says how many procedures it loaded, or "up to date".
-- **Run:** Make, then `run <first procedure in the text>`. While it runs, the program's terminal is shown (`$1B $21` written to a path the editor keeps open to it); when `%READY` comes back, the editor's own window is shown again.
-  - A runtime error (`%ERROR`) becomes a message and the cursor goes to its line. The debugger stop that follows (`%DEBUG`) is left with `q` until P5.4 adds the debugger.
-  - A break with no error is shown as `Line <n>, <proc>: Stopped`.
+- **Run:** Make, then `run <first procedure in the text>`. While it runs, the program's terminal is shown (`$1B $21` written to a path the editor keeps open to it); when `%READY` or a debugger stop comes back, the editor's own window is shown again.
+  - A runtime error (`%ERROR`) becomes a message and the cursor goes to its line. The program stays stopped there in the debugger (see below).
 - **BREAK:** SCF sends the keyboard interrupt to the last process that used the terminal. That is `l2b09run` once the program has done I/O there, but it can be the editor, which selected the window. So the editor has a signal handler that passes BREAK and abort on to `l2b09run` while a program runs.
   - A signal ends a waiting pipe read with `E$EOF` (pipeman returns the 0 bytes read so far). The handler sets a flag so the read is tried again instead of taken for the end of the pipe.
 - **User screen:** F5 (Run ▸ User screen) shows the program's terminal until a key is pressed there.
+
+## The debugger
+
+- **Stops:** a program stops in the debugger at a `PAUSE` statement, a BREAK, a runtime error, or (with Until return) on its way back to a procedure. `l2b09run` then sends `%DEBUG <proc> <line>`, and the editor stays in the debugger until the program ends or is reset:
+  - the line it stopped at is drawn in reverse video across the window, and the cursor goes there (the window moves only if that line is not in it);
+  - the hint line lists the debugger keys;
+  - a stop in a procedure that is not in the text says `Stopped in <proc> line <n>`.
+- **Step (F7):** `step`. A step on a `RUN` line stops at the called procedure's first statement, and stepping through its END stops back in the caller. The first stop at a `PAUSE` is on the `PAUSE` line itself, so the first step only moves on. F7 does nothing until the program has stopped; P5.5 lets it start the program.
+- **Continue (^R, Run ▸ Run):** `cont`. The program's terminal is shown while it runs, as for Run.
+- **Program reset (^P, Run ▸ Program reset):** `q`. The program ends and `l2b09run` is back in command mode.
+- **Make while stopped:** Make (and ^R) sends nothing while the text matches what was loaded. If the text changed, it asks "reset the program (Y/N)?":
+  - **Y** resets (`q`), then loads, and ^R then starts the program again;
+  - **N** loads nothing (the changed procedures are sent at the next Make), and ^R continues the old code;
+  - **Esc** does neither.
+  Step and evaluate always use the code that is loaded.
+- **Evaluate (^E, Debug ▸ Evaluate):** asks for an expression, starting with the word at the cursor (or the last expression), sends `print <expr>`, and shows `<expr> = <value>`. `<name>:=<value>` sends `let` first, then shows the new value. An error shows its text from `/dd/sys/errmsg`.
+- **Watches (^W, Debug ▸ Add watch):** up to 6 expressions, printed again at every stop. They are shown numbered in a watch window above the message window, as `<n> <expr>: <value>`. Values are cleared when the program ends. An expression that is not valid where the program stopped (a variable of another procedure) shows its error, for example `Error 49 Undefined Variable`. Debug ▸ Delete watch asks for a watch's number, or 0 for all of them.
+- **Until return (Debug ▸ Until return):** asks for the name of a procedure in the call chain and sends the debugger's `BREAK <proc>`. The next ^R runs until the program returns to that procedure. It works as a "step out" when given the caller's name.
+- **Protocol:** `print` and `let` output comes back on the channel before the next `%DEBUG`. The editor keeps the last text line as the answer, and ignores the `%ERROR` event an invalid `print` can cause. The `ERROR #<n>` line says the same.
+- **Quitting** while stopped sends `q` before `bye`.
 
 ## Testing
 
@@ -189,5 +217,6 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5ctest` (P5.2b):** a 64 KB file with a 4-page cache. It covers typing over a selection, cut and paste of lines, word selection, a selection across lines deleted, an upward selection, Esc and plain moves ending a selection, a 300-line cut pasted inside a line, and select all, copy and two pastes (the result is 196 KB). The saved file must match the model.
 - **`make p5dtest` (P5.2c):** a match across a page boundary, typing over a match, find next, Match case on and off, Replace answered Y/N/Esc, then Replace answered A (1,443 replacements), and a search that finds nothing. The result must match the model.
 - **`make p5etest` (P5.2d):** undo and redo of grouped typing, Delete and Backspace, ^D, cut and paste, 1,500 replacements undone 60 times (only 50 records are kept), select-all delete undone and redone, and an edit that ends redo. The result must match the model, which follows the same grouping rules.
-- **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make (`kill` plus one load). The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, the editor leaves the debugger, and a second Run sends nothing new.
+- **`make p5gtest` (P5.4):** `test/p5g`. A session steps from a `PAUSE` into a called procedure and back, with three watches (one of them invalid in the callee), sets a variable with ^E and evaluates an invalid one, deletes a watch, continues into a subscript error (55), resets, runs again, and uses Until return. The whole protocol log must match `log.exp`, and the program's output must show the value that was set. A second session with `-h` leaves the screen up, and the checks read the watch window and the hint line from the snapshot in `mame.log`.
+- **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make: the program is stopped at the error, so Make asks, and Y resets it before the `kill` and the load. The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, ^P resets it, a second Run sends nothing new and stops again, and quitting sends `q` before `bye`.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

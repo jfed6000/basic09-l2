@@ -4,7 +4,7 @@
 * Make and Run put their errors here.  Each message has the text line
 * it points at, so Enter on it (or ^N) moves the cursor there.  While
 * the window is shown it takes MH rows from the bottom of the text
-* window.
+* window, under the watch window (dbg.asm) if there are watches.
 
 MAXMSG              equ       32
 MSGW                equ       76                  text, with its 0
@@ -47,13 +47,12 @@ mn_full             orcc      #Carry
 * w_show: show the message window (if the screen has room for it)
 w_show              tst       <msgon
                     bne       wsh9
-                    lda       <wrows
-                    cmpa      #MH+3
-                    blo       wsh9
-                    suba      #MH
-                    sta       <wrows
+                    ldb       <wwh
+                    addb      #MH
+                    bsr       w_fits
+                    bcs       wsh9
                     inc       <msgon
-                    lbra      rd_all
+                    bra       w_layout
 wsh9                rts
 
 * w_hide: give its rows back to the text window
@@ -61,20 +60,53 @@ w_hide              tst       <msgon
                     beq       whd9
                     clr       <msgon
                     clr       <msgfoc
-                    lda       <wrows
-                    adda      #MH
-                    sta       <wrows
-                    lbra      rd_all
+                    bra       w_layout
 whd9                rts
 
-* w_draw: the message window, if it is shown.  The selected message is
-* in reverse video; the frame is double while the window has the focus.
-w_draw              tst       <msgon
+* w_fits: carry if the text window would have fewer than 3 rows with B
+* more rows taken from it (and the message window's, if it is shown)
+w_fits              pshs      b
+                    lda       <scrh
+                    suba      #4                  menu bar, borders, hint line
+                    suba      ,s+
+                    tst       <msgon
+                    beq       wf1
+                    suba      #MH
+wf1                 cmpa      #3
+                    blt       wf_no
+                    andcc     #^Carry
+                    rts
+wf_no               orcc      #Carry
+                    rts
+
+* w_layout: the text window's rows, after the watch and message windows
+w_layout            clr       <wwh
+                    ldb       <nwatch
+                    beq       wl1
+                    addb      #2
+                    stb       <wwh
+wl1                 lda       <scrh
+                    suba      #4
+                    suba      <wwh
+                    tst       <msgon
+                    beq       wl2
+                    suba      #MH
+wl2                 sta       <wrows
+                    lbra      rd_all
+
+* w_draw: the watch window if there are watches, and the message window
+* if it is shown.  The selected message is in reverse video; the frame
+* is double while the window has the focus.
+w_draw              tst       <nwatch
+                    beq       wdr0
+                    lbsr      ww_draw
+wdr0                tst       <msgon
                     beq       wdr9
                     pshs      d,x,y
                     clr       <bx.col
                     lda       <wtop
                     adda      <wrows
+                    adda      <wwh
                     inca
                     sta       <bx.row
                     lda       <scrw

@@ -1,0 +1,220 @@
+# -t=/dd/l2b09/term.out
+< l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware
+
+< l2b09run
+< %READY
+> load l2b09ed.tmp
+< dmain
+< dsub
+< %READY
+> run dmain
+< BREAK: PROCEDURE dmain line 6
+< %DEBUG dmain 6
+> print k
+< 1
+< %DEBUG dmain 6
+> print k
+< 1
+< %DEBUG dmain 6
+> print s
+< hello
+< %DEBUG dmain 6
+> step
+< BREAK: PROCEDURE dmain line 7
+< %DEBUG dmain 7
+> print k
+< 1
+< %DEBUG dmain 7
+> print s
+< hello
+< %DEBUG dmain 7
+> step
+< BREAK: PROCEDURE dmain line 8
+< %DEBUG dmain 8
+> print k
+< 2
+< %DEBUG dmain 8
+> print s
+< hello
+< %DEBUG dmain 8
+> step
+< BREAK: PROCEDURE dsub line 2
+< %DEBUG dsub 2
+> print k
+< print k
+<       ^
+< ERROR #049
+< %DEBUG dsub 2
+> print s
+< print s
+<       ^
+< ERROR #049
+< %DEBUG dsub 2
+> print k
+< print k
+<       ^
+< ERROR #049
+< %DEBUG dsub 2
+> print s
+< print s
+<       ^
+< ERROR #049
+< %DEBUG dsub 2
+> print n
+< 2
+< %DEBUG dsub 2
+> step
+< BREAK: PROCEDURE dsub line 3
+< %DEBUG dsub 3
+> print k
+< print k
+<       ^
+< ERROR #049
+< %DEBUG dsub 3
+> print s
+< print s
+<       ^
+< ERROR #049
+< %DEBUG dsub 3
+> print n
+< 7
+< %DEBUG dsub 3
+> step
+< BREAK: PROCEDURE dsub line 4
+< %DEBUG dsub 4
+> print k
+< print k
+<       ^
+< ERROR #049
+< %DEBUG dsub 4
+> print s
+< print s
+<       ^
+< ERROR #049
+< %DEBUG dsub 4
+> print n
+< 7
+< %DEBUG dsub 4
+> step
+< BREAK: PROCEDURE dmain line 9
+< %DEBUG dmain 9
+> print k
+< 7
+< %DEBUG dmain 9
+> print s
+< hello
+< %DEBUG dmain 9
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 9
+> let k:=9
+< %DEBUG dmain 9
+> print k
+< 9
+< %DEBUG dmain 9
+> print s
+< hello
+< %DEBUG dmain 9
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 9
+> print k
+< 9
+< %DEBUG dmain 9
+> print zz
+< print zz
+<       ^
+< ERROR #049
+< %DEBUG dmain 9
+> step
+< BREAK: PROCEDURE dmain line 10
+< %DEBUG dmain 10
+> print k
+< 9
+< %DEBUG dmain 10
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 10
+> cont
+< *0053      a(k):=k
+< ERROR #055
+< %ERROR 55 dmain 10
+< BREAK: PROCEDURE dmain line 10
+< %DEBUG dmain 10
+> print k
+< 9
+< %DEBUG dmain 10
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 10
+> q
+< %READY
+> run dmain
+< BREAK: PROCEDURE dmain line 6
+< %DEBUG dmain 6
+> print k
+< 1
+< %DEBUG dmain 6
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 6
+> step
+< BREAK: PROCEDURE dmain line 7
+< %DEBUG dmain 7
+> print k
+< 1
+< %DEBUG dmain 7
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 7
+> step
+< BREAK: PROCEDURE dmain line 8
+< %DEBUG dmain 8
+> print k
+< 2
+< %DEBUG dmain 8
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 8
+> step
+< BREAK: PROCEDURE dsub line 2
+< %DEBUG dsub 2
+> print k
+< print k
+<       ^
+< ERROR #049
+< %DEBUG dsub 2
+> print n
+< 2
+< %DEBUG dsub 2
+> break dmain
+< ok
+< %DEBUG dsub 2
+> cont
+< BREAK: PROCEDURE dmain line 9
+< %DEBUG dmain 9
+> print k
+< 7
+< %DEBUG dmain 9
+> print n
+< print n
+<       ^
+< ERROR #049
+< %DEBUG dmain 9
+> q
+< %READY
+> bye

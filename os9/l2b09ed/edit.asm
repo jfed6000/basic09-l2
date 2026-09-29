@@ -95,10 +95,14 @@ cmdtab              fcb       C$CR
                     fdb       c_user-cmdtab
                     fcb       EK.F1+5             F6 message window
                     fdb       c_msgwin-cmdtab
+                    fcb       EK.F1+6             F7 step
+                    fdb       c_step-cmdtab
+                    fcb       $10                 ^P program reset
+                    fdb       c_reset-cmdtab
                     fcb       $05                 ^E evaluate
-                    fdb       c_nyi-cmdtab
+                    fdb       c_eval-cmdtab
                     fcb       $17                 ^W watch
-                    fdb       c_nyi-cmdtab
+                    fdb       c_watch-cmdtab
                     fcb       $14                 ^T breakpoint
                     fdb       c_nyi-cmdtab
                     fcb       $06                 ^F find

@@ -236,7 +236,17 @@ msgsel              rmb       1                   the selected one
 msgon               rmb       1                   the message window is shown
 msgfoc              rmb       1                   it has the focus
 gotsig              rmb       1                   a signal came (rt_icpt)
+dbgon               rmb       1                   the program is stopped in the debugger
+dbline              rmb       2                   where: line in the procedure dbname
+dbfl                rmb       2                   the file line ($FFFF = not in the text)
+vexec               rmb       1                   v_line: this is the line it stopped at
+quiet               rmb       1                   rt_wait: %ERROR is a result, not a message
+nwatch              rmb       1                   watches
+wwh                 rmb       1                   rows of the watch window (0 = none)
 dpend               equ       .
+                    ifgt      dpend-256
+                    error     "direct page overflow"
+                    endc
 
                     org       256
 optsav              rmb       32                  terminal options on entry
@@ -247,11 +257,15 @@ sbuf                rmb       130                 status line text
 fntsav              rmb       NGLYPH*8            font characters under our glyphs
 fstr                rmb       62                  search text
 rstr                rmb       62                  replacement text
-mbuf                rmb       40                  a message built at run time
+mbuf                rmb       64                  a message built at run time
 tname               rmb       40                  the program's terminal
 bopt                rmb       8                   -b value
 rline               rmb       258                 a line to or from l2b09run
 nbuf                rmb       NAMEMAX             mk_isproc: a procedure name
+dbname              rmb       NAMEMAX             the procedure it stopped in
+lastout             rmb       LASTMAX             the last text line from l2b09run
+estr                rmb       62                  the last expression evaluated
+wtab                rmb       MAXWATCH*WT.SIZE      watches
 ptab                rmb       MAXPROC*PR.SIZE     procedures l2b09run holds
 mtab                rmb       MAXMSG*MS.SIZE      messages
 utab                rmb       NUNDO*UR.SIZE       undo records
@@ -462,6 +476,7 @@ quit                lbsr      rt_done
                     use       undo.asm
                     use       msg.asm
                     use       rt.asm
+                    use       dbg.asm
 
                     emod
 eom                 equ       *

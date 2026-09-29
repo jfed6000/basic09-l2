@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""P5.4 test data: the debugger UI (step, continue, reset, evaluate,
+watches, until return).
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+prog = '''PROCEDURE dmain
+DIM a(3):INTEGER
+DIM k:INTEGER
+DIM s:STRING[10]
+k:=1
+s:="hello"
+PAUSE
+k:=k+1
+RUN dsub(k)
+PRINT "k="; k
+a(k):=k
+PRINT "done"
+END
+PROCEDURE dsub
+PARAM n:INTEGER
+n:=n+5
+PRINT "n="; n
+END
+'''
+keys = '''
+^w "k" enter                # a watch before the program runs: no value
+^r                          # Run: PAUSE stops it; the watch is printed
+^w "s" enter                # a second watch
+f7 f7                       # step twice: to RUN dsub
+f7                          # step into dsub (k is not known there)
+^w "n" enter
+f7 f7 f7                    # through dsub, back in dmain
+^e "k:=9" enter esc         # modify k, then see it
+^e "zz" enter esc           # an error
+alt-d "d" "2" enter         # delete the watch on s
+f7                          # PRINT "k="; k
+^r                          # continue: a(9) fails with error 55, and stops
+^p                          # program reset
+^r                          # Make is up to date; run to the PAUSE again
+f7*3                        # into dsub
+alt-d "u" "dmain" enter     # until return to dmain
+^r                          # continue: it stops back in dmain
+^q                          # quit: q, then bye
+'''
+# A second session keeps its screen for the snapshot (-h)
+keys2 = '''
+^w "k" enter ^w "s" enter
+^r f7 f7
+'''
+with open(os.path.join(out, 'dbg.b09'), 'w', newline='') as f:
+    f.write(prog.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
+with open(os.path.join(out, 'keys2.bin'), 'wb') as f:
+    f.write(compile_keys(keys2))

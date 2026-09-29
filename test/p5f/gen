@@ -52,10 +52,10 @@ keys = '''
 ^b                          # Make: sends sub and crash, not main
 ^r                          # Run main
 ^g "4" enter "RUN crash" enter
-^r                          # Make sends main; crash fails with error 45
+^r                          # Make sends main; crash fails with error 45 and stops
 "REM "                      # at the start of the line of the error
 ^g "13" enter ^k "2"        # rename crash to crash2
-^b                          # Make: kill crash, load crash2
+^b "y"                      # Make: reset the stopped program, kill crash, load crash2
 ^s ^q
 '''
 # The protocol traffic: each Make sends only what changed
@@ -127,9 +127,10 @@ ENDLOOP
 END
 '''
 keys2 = '''
-^r                          # Run: the BREAK stops it; the editor quits the debugger
-^r                          # and it can run again
-^q
+^r                          # Run: the BREAK stops it in the debugger
+^p                          # program reset (q)
+^r                          # it can run again, and stops again
+^q                          # quit leaves the debugger first
 '''
 
 files = {'prog.b09': prog, 'prog.exp': expect, 'log.exp': log, 'brk.b09': brk}
