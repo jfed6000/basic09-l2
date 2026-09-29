@@ -201,7 +201,8 @@ ce4                 cmpx      #0
                     bcs       c_full
                     leax      -1,x
                     bra       ce4
-ce5                 bra       rd_below
+ce5                 lda       #RD.BELOW+RD.PREV   the line split above too
+                    bra       rd
 
 * c_bs: delete the character before the cursor
 c_bs                lbsr      sel_del

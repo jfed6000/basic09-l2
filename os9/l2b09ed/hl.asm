@@ -8,13 +8,16 @@
 * lines, so each line starts afresh.  Rows end in the normal colour,
 * so the frame, menus and dialogs never need to set it.
 
-* Colours (the Wildbits text palette; the CoCo 3's has the same slots)
-CL.NORM             equ       1                   when the terminal's are unknown
-CL.KW               equ       14                  keywords
-CL.FN               equ       3                   functions
-CL.STR              equ       5                   strings
-CL.CMT              equ       12                  comments
-CL.NUM              equ       8                   numbers
+* The editor's own colours, as Turbo C had its own (the Wildbits text
+* palette; the CoCo 3's has the same slots).  With colours off the
+* terminal's own are used.  $0A and $0D are avoided as colour numbers.
+CL.BG               equ       6                   background: blue
+CL.NORM             equ       7                   text: yellow
+CL.KW               equ       1                   keywords: white
+CL.FN               equ       3                   functions: pale cyan
+CL.STR              equ       5                   strings: green
+CL.CMT              equ       15                  comments: light grey
+CL.NUM              equ       8                   numbers: orange
 KC.KW               equ       CL.KW               kwtab.asm classes
 KC.FN               equ       CL.FN
 
@@ -23,36 +26,76 @@ HS.REM              equ       2                   in REM (to the end of the line
 HS.PCM              equ       3                   in (* ... *)
 HLMAX               equ       15                  word buffer
 
-* hl_init: the terminal's colours (SS.FBRgs): text is drawn in its
-* foreground, and that is what is left on exit.  Only a terminal is
-* asked (a file answers SS.FBRgs without an error).
+* hl_init: note the terminal's colours (SS.FBRgs, asked only of a
+* terminal: a file answers without an error), then set ours
 hl_init             ldx       <base
-                    lda       #CL.NORM
-                    sta       hlnorm,x
+                    clr       hlok,x
                     leax      rline,x
                     lda       <scpath
                     clrb                          SS.Opt
                     os9       I$GetStt
-                    bcs       hli8
+                    bcs       hl_set
                     lda       ,x                  PD.DTP
                     cmpa      #DT.SCF
-                    bne       hli8
+                    bne       hl_set
                     lda       <scpath
                     ldb       #SS.FBRgs
                     os9       I$GetStt
-                    bcs       hli9
+                    bcs       hl_set
                     ifeq      coco3
-                    lsra                          Wildbits: A = fg<<4 | bg
+                    tfr       a,b                 Wildbits: A = fg<<4 | bg
                     lsra
                     lsra
                     lsra
+                    lsra
+                    andb      #$0F
                     endc
                     ldx       <base
-                    sta       hlnorm,x
-hli8                ldx       <base
-hli9                lda       hlnorm,x
+                    sta       hlsfg,x
+                    stb       hlsbg,x
+                    inc       hlok,x
+* hl_set: the colours to draw with: ours, or the terminal's with colours
+* off (then nothing changes if they are not known)
+hl_set              ldx       <base
+                    lda       #CL.NORM
+                    ldb       #CL.BG
+                    tst       <nocolr
+                    beq       hls1
+                    tst       hlok,x
+                    beq       hls9
+                    lda       hlsfg,x
+                    ldb       hlsbg,x
+hls1                sta       hlnorm,x
+                    bsr       hl_pair
+hls9                lda       hlnorm,x
                     sta       <hlout
                     rts
+
+* hl_pair: foreground A, background B, now
+hl_pair             pshs      d
+                    lda       #$1B
+                    lbsr      t_ch
+                    lda       #$33
+                    lbsr      t_ch
+                    lda       1,s
+                    lbsr      t_ch
+                    lda       #$1B
+                    lbsr      t_ch
+                    lda       #$32
+                    lbsr      t_ch
+                    lda       ,s
+                    lbsr      t_ch
+                    puls      d,pc
+
+* hl_done: the terminal's own colours back (before the screen is
+* cleared on exit)
+hl_done             ldx       <base
+                    tst       hlok,x
+                    beq       hld9
+                    lda       hlsfg,x
+                    ldb       hlsbg,x
+                    bra       hl_pair
+hld9                rts
 
 * hl_norm: back to the normal colour
 hl_norm             pshs      b,x
@@ -309,8 +352,11 @@ kwf_no              clrb
                     leas      1,s
                     puls      x,y,u,pc
 
-* c_colour: syntax colours on or off (Options)
+* c_colour: syntax colours on or off (Options); the screen is cleared
+* in the new background
 c_colour            com       <nocolr
+                    lbsr      hl_set
+                    lbsr      t_cls
                     lda       #RD.ALL
                     ora       <redraw
                     sta       <redraw

@@ -12,7 +12,7 @@ from keys import compile_keys  # noqa: E402
 out = sys.argv[1]
 main = '''PROCEDURE ppmain
 dim i,k:integer
-k=0
+10 k=0
 for i=1 to 3
 if i=2 then
 k=k+10
@@ -24,29 +24,29 @@ print "k=";k;"and a long line with many items to wrap";i;k;i;k;i;k;"tail"
 run ppsub(k)
 end
 '''
-sub = '''PROCEDURE ppsub
+sub = '''procedure ppsub
 param n:integer
 print "n=";n
 end
 '''
 pmain = '''PROCEDURE ppmain
-DIM i,k:INTEGER
-k=0
-FOR i=1 TO 3
-  IF i=2 THEN
-    k=k+10
-  ELSE
-    k=k+i
-  ENDIF
-NEXT i
-PRINT "k="; k; "and a long line with many items to wrap"; i; k; i; k; i; k; "tail"
-RUN ppsub(k)
-END
+  DIM i,k:INTEGER
+10 k=0
+  FOR i=1 TO 3
+    IF i=2 THEN
+      k=k+10
+    ELSE
+      k=k+i
+    ENDIF
+  NEXT i
+  PRINT "k="; k; "and a long line with many items to wrap"; i; k; i; k; i; k; "tail"
+  RUN ppsub(k)
+  END
 '''
 psub = '''PROCEDURE ppsub
-PARAM n:INTEGER
-PRINT "n="; n
-END
+  PARAM n:INTEGER
+  PRINT "n="; n
+  END
 '''
 files = {'pp.b09': main + sub, 'pp1.exp': pmain + sub, 'pp3.exp': main + sub,
          'pp4.exp': pmain + psub}

@@ -10,34 +10,34 @@
 > list ppmain
 < PROCEDURE ppmain
 <  0000      DIM i,k:INTEGER
-<  000B      k=0
-<  0012      FOR i=1 TO 3
-<  0022        IF i=2 THEN 
-<  002E          k=k+10
-<  0039        ELSE 
-<  003D          k=k+i
-<  0049        ENDIF 
-<  004B      NEXT i
-<  0056      PRINT "k="; k; "and a long line with many items to wrap"; i
+<  000B 10   k=0
+<  0015      FOR i=1 TO 3
+<  0025        IF i=2 THEN 
+<  0031          k=k+10
+<  003C        ELSE 
+<  0040          k=k+i
+<  004C        ENDIF 
+<  004E      NEXT i
+<  0059      PRINT "k="; k; "and a long line with many items to wrap"; i
             ; k; i; k; i; k; "tail"
-<  00A9      RUN ppsub(k)
-<  00B3      END 
+<  00AC      RUN ppsub(k)
+<  00B6      END 
 < %READY
 > list ppmain
 < PROCEDURE ppmain
 <  0000      DIM i,k:INTEGER
-<  000B      k=0
-<  0012      FOR i=1 TO 3
-<  0022        IF i=2 THEN 
-<  002E          k=k+10
-<  0039        ELSE 
-<  003D          k=k+i
-<  0049        ENDIF 
-<  004B      NEXT i
-<  0056      PRINT "k="; k; "and a long line with many items to wrap"; i
+<  000B 10   k=0
+<  0015      FOR i=1 TO 3
+<  0025        IF i=2 THEN 
+<  0031          k=k+10
+<  003C        ELSE 
+<  0040          k=k+i
+<  004C        ENDIF 
+<  004E      NEXT i
+<  0059      PRINT "k="; k; "and a long line with many items to wrap"; i
             ; k; i; k; i; k; "tail"
-<  00A9      RUN ppsub(k)
-<  00B3      END 
+<  00AC      RUN ppsub(k)
+<  00B6      END 
 < %READY
 > bp ppmain 5
 < ok
@@ -50,18 +50,18 @@
 > list ppmain
 < PROCEDURE ppmain
 <  0000      DIM i,k:INTEGER
-<  000B      k=0
-<  0012      FOR i=1 TO 3
-<  0022        IF i=2 THEN 
-<  002E          k=k+10
-<  0039        ELSE 
-<  003D          k=k+i
-<  0049        ENDIF 
-<  004B      NEXT i
-<  0056      PRINT "k="; k; "and a long line with many items to wrap"; i
+<  000B 10   k=0
+<  0015      FOR i=1 TO 3
+<  0025        IF i=2 THEN 
+<  0031          k=k+10
+<  003C        ELSE 
+<  0040          k=k+i
+<  004C        ENDIF 
+<  004E      NEXT i
+<  0059      PRINT "k="; k; "and a long line with many items to wrap"; i
             ; k; i; k; i; k; "tail"
-<  00A9      RUN ppsub(k)
-<  00B3      END 
+<  00AC      RUN ppsub(k)
+<  00B6      END 
 < %READY
 > list ppsub
 < PROCEDURE ppsub

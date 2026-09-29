@@ -77,6 +77,7 @@ t_done              lbsr      t_flush
                     lda       #1
                     clrb
                     os9       I$SetStt
+                    lbsr      hl_done             its own colours back
                     lda       #$0C                clear the screen
                     bsr       t_ch
                     lbsr      t_flush

@@ -6,11 +6,14 @@
 * structures indented: that was stock Basic09's pretty print.  So
 * pretty print makes sure the procedure is loaded as it stands (Make),
 * asks l2b09run to "list" it, cleans each line up, and puts the result
-* in place of the procedure's lines; the PROCEDURE line stays as typed.
+* in place of the procedure's lines, the PROCEDURE line included.  The
+* body is indented PPIND under PROCEDURE, and a line number sits in that
+* gutter.
 *
-* A LIST line is " XXXX" (a marker and the I-code offset), a space,
-* then a line number if there is one, and the text from column PPCOL
-* on, two columns more for each level of indent.  A line longer than
+* LIST's first line is "PROCEDURE <name>".  The others are " XXXX" (a
+* marker and the I-code offset), a space, then a line number if there
+* is one, and the text from column PPCOL on, two columns more for each
+* level of indent.  A line longer than
 * the decompiler's margin goes on after an LF and more spaces.
 *
 * The line count does not change (every source line is one I-code
@@ -19,6 +22,7 @@
 * the loaded code.  One undo takes the whole pretty print back.
 
 PPCOL               equ       11                  LIST text column, indent level 0
+PPIND               equ       2                   the body's indent under PROCEDURE
 
 * c_pp: pretty print the procedure at the cursor
 c_pp                ldx       <base
@@ -127,7 +131,7 @@ po1                 pshs      y
                     lda       #C$CR
                     sta       ,x
                     lbsr      rt_cmd
-                    bcs       po_gone
+                    lbcs      po_gone
                     lbsr      d_alloc             a chain for the new text
                     bcs       po_full0
                     ldu       <base
@@ -140,10 +144,10 @@ po2                 lbsr      rt_line             the listing, up to %READY
                     lda       rline,x
                     cmpa      #'%
                     beq       po4
-                    tst       pphdr,x             its first line: PROCEDURE <name>
-                    bne       po3
+                    tst       pphdr,x             its first line, PROCEDURE <name>,
+                    bne       po3                 goes in as it is
                     inc       pphdr,x
-                    bra       po2
+                    inc       ppcont,x
 po3                 lbsr      pp_clean
                     bcc       po2
                     bra       po_full             (read the rest first)
@@ -194,36 +198,42 @@ pp_clean            tfr       y,d
                     tst       ppcont,u
                     bne       ppc5                the rest of a line too long to read
                     leax      6,x                 past the marker and the offset
-                    cmpx      ,s
+                    clr       ppw,u
+ppc1                cmpx      ,s                  a line number goes in the gutter
                     lbhs      ppc9
-                    lda       ,x                  a line number?
+                    lda       ,x
                     cmpa      #'0
                     blo       ppc2
                     cmpa      #'9
                     bhi       ppc2
-ppc1                lda       ,x
-                    cmpa      #'0
-                    blo       ppc1e
-                    cmpa      #'9
-                    bhi       ppc1e
                     sta       ,y+
                     leax      1,x
-                    cmpx      ,s
-                    blo       ppc1
-ppc1e               lda       #C$SPAC             (dropped again if nothing follows)
-                    sta       ,y+
-ppc2                ldu       <base               spaces up to column PPCOL go
-                    leau      rline+PPCOL,u
-ppc3                cmpx      ,s
-                    bhs       ppc9
-                    pshs      u
-                    cmpx      ,s++
-                    bhs       ppc5
+                    ldu       <base
+                    inc       ppw,u
+                    bra       ppc1
+ppc2                cmpx      ,s                  the spaces up to the text go
+                    lbhs      ppc9
                     lda       ,x
                     cmpa      #C$SPAC
-                    bne       ppc5
+                    bne       ppc3
                     leax      1,x
-                    bra       ppc3
+                    bra       ppc2
+ppc3                tfr       x,d                 the text's column: PPIND, and two
+                    subd      <base               more for each level of indent
+                    subd      #rline+PPCOL
+                    bpl       ppc3a
+                    clrb
+ppc3a               addb      #PPIND
+                    ldu       <base
+                    subb      ppw,u               spaces after the line number
+                    bgt       ppc4
+                    ldb       ppw,u               (at least one after a number)
+                    beq       ppc5
+                    ldb       #1
+ppc4                lda       #C$SPAC
+ppc4a               sta       ,y+
+                    decb
+                    bne       ppc4a
 ppc5                cmpx      ,s                  the text, as it is
                     bhs       ppc9
                     lda       ,x+
@@ -286,10 +296,7 @@ ppc12               andcc     #^Carry
 * pp_put: the new text in place of the lines of the procedure of entry
 * Y (from the line after PROCEDURE up to the next PROCEDURE line or the
 * end of the text); carry if the pages ran out
-pp_put              ldd       PR.LINE,y           the first line of the body
-                    addd      #1
-                    cmpd      <nlines
-                    bhi       pp_none             PROCEDURE is the last line
+pp_put              ldd       PR.LINE,y           from the PROCEDURE line
                     pshs      d,y
                     ldd       #$FFFF              the next PROCEDURE line
                     pshs      d
@@ -300,7 +307,7 @@ ppt1                cmpb      <nproc
                     lbsr      pt_at
                     ldd       PR.LINE,x
                     cmpd      3,s
-                    blo       ppt2                (at or before this one)
+                    bls       ppt2                (at or before this one)
                     cmpd      1,s
                     bhs       ppt2
                     std       1,s

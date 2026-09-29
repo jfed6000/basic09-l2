@@ -95,6 +95,7 @@ CE.SIZE             equ       .
 RD.ALL              equ       $01                 the whole text window
 RD.BELOW            equ       $02                 the cursor line and everything below it
 RD.LINE             equ       $04                 the cursor line
+RD.PREV             equ       $08                 with RD.BELOW: from the line above it
 
 * Data area.  The first 256 bytes are the direct page; everything else
 * is reached through the pointers set up at start.
@@ -282,11 +283,15 @@ dbname              rmb       NAMEMAX             the procedure it stopped in
 lastout             rmb       LASTMAX             the last text line from l2b09run
 estr                rmb       62                  the last expression evaluated
 hlnorm              rmb       1                   the normal text colour
+hlok                rmb       1                   the terminal's colours are known:
+hlsfg               rmb       1                   its foreground
+hlsbg               rmb       1                   and background
 hp                  rmb       4                   hl: a look-ahead position
 hlbuf               rmb       HLMAX+1             hl_word: the word
 ppall               rmb       1                   pretty print: every procedure
 pphdr               rmb       1                   the LIST header line was read
 ppcont              rmb       1                   the last read had no CR
+ppw                 rmb       1                   the width of a line number
 ppcl                rmb       2                   the cursor line and column, the
 ppcc                rmb       2                   window's top line, before
 pptl                rmb       2

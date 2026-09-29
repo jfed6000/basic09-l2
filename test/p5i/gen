@@ -36,7 +36,7 @@ files = {'hl.b09': small, 'big.b09': '\n'.join(lines) + '\n'}
 for name, text in files.items():
     with open(os.path.join(out, name), 'w', newline='') as f:
         f.write(text.replace('\n', '\r'))
-keys = {'k1.bin': '^q', 'kon.bin': 'pgdn*150 ^q', 'koff.bin': 'alt-o "s" pgdn*150 ^q'}
+keys = {'kent.bin': '^g "3" enter enter', 'k1.bin': '^q', 'kon.bin': 'pgdn*150 ^q', 'koff.bin': 'alt-o "s" pgdn*150 ^q'}
 for name, text in keys.items():
     with open(os.path.join(out, name), 'wb') as f:
         f.write(compile_keys(text))

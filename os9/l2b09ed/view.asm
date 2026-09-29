@@ -133,7 +133,13 @@ vd1                 bita      #RD.BELOW+RD.LINE
                     lda       <redraw
                     bita      #RD.BELOW
                     beq       vd2
-                    bsr       v_rows
+                    bita      #RD.PREV            the line above changed too (Enter)
+                    beq       vd1b
+                    tstb
+                    beq       vd1b
+                    decb
+                    lbsr      p_prevln            (U = wp)
+vd1b                bsr       v_rows
                     bra       vd3
 vd2                 bsr       v_line
 vd3                 lbsr      v_stat
