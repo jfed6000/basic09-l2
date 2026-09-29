@@ -15,6 +15,7 @@ def c(n):
 N, KW, FN, STR, CMT, NUM = c(7), c(1), c(3), c(5), c(15), c(8)
 want = [
     ('blue background, yellow text', b'\x1b3\x06' + N),
+    ('grey menu bar', b'\x1b3\x0f' + c(0) + b'  File'),
     ('keyword, string, REM', b's:=' + STR + b'"hi"' + N + b' \\ ' + CMT + b'REM note' + N),
     ('FOR, number, TO, hex', KW + b'FOR' + N + b' i=' + NUM + b'1' + N + b' ' + KW + b'TO' + N + b' ' + NUM + b'$1F' + N),
     ('function, real, (* *)', KW + b'PRINT' + N + b' ' + FN + b'left$' + N + b'(s,' + NUM + b'1' + N + b'); '

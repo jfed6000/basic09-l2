@@ -18,6 +18,9 @@ CL.FN               equ       3                   functions: pale cyan
 CL.STR              equ       5                   strings: green
 CL.CMT              equ       15                  comments: light grey
 CL.NUM              equ       8                   numbers: orange
+CL.MBFG             equ       0                   menu bar: black
+CL.MBBG             equ       15                  on light grey,
+CL.MSBG             equ       5                   the open menu's title on green
 KC.KW               equ       CL.KW               kwtab.asm classes
 KC.FN               equ       CL.FN
 
@@ -86,6 +89,29 @@ hl_pair             pshs      d
                     lda       ,s
                     lbsr      t_ch
                     puls      d,pc
+
+* mb_on, mb_sel, mb_off: the menu bar grey, as in Turbo C (the open
+* menu's title green), then back to the text's colours.  With colours
+* off, reverse video as before.  They keep all registers.
+mb_on               tst       <nocolr
+                    lbne      t_rev
+                    pshs      d
+                    ldd       #CL.MBFG*256+CL.MBBG
+mb1                 bsr       hl_pair
+                    puls      d,pc
+mb_sel              tst       <nocolr
+                    lbne      t_norm
+                    pshs      d
+                    ldd       #CL.MBFG*256+CL.MSBG
+                    bra       mb1
+mb_off              tst       <nocolr
+                    lbne      t_norm
+                    pshs      d,x
+                    ldx       <base
+                    lda       hlnorm,x
+                    ldb       #CL.BG
+                    bsr       hl_pair
+                    puls      d,x,pc
 
 * hl_done: the terminal's own colours back (before the screen is
 * cleared on exit)

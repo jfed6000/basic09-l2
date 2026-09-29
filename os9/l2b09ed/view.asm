@@ -510,7 +510,7 @@ v_menubar           pshs      a
                     clra
                     clrb
                     lbsr      t_xy
-                    lbsr      t_rev
+                    lbsr      mb_on
                     lda       #C$SPAC
                     lbsr      t_ch
                     ldb       #1                  columns written
@@ -520,7 +520,7 @@ vmb1                tst       ,x
                     beq       vmb5
                     cmpa      ,s
                     bne       vmb2
-                    lbsr      t_norm
+                    lbsr      mb_sel
 vmb2                pshs      a
                     lda       #C$SPAC
                     lbsr      t_ch
@@ -536,7 +536,7 @@ vmb4                lda       #C$SPAC
                     puls      a
                     cmpa      ,s
                     bne       vmb4a
-                    lbsr      t_rev
+                    lbsr      mb_on
 vmb4a               inca
                     bra       vmb1
 vmb5                pshs      b
@@ -544,7 +544,7 @@ vmb5                pshs      b
                     subb      ,s+
                     lda       #C$SPAC
                     lbsr      t_rep
-                    lbsr      t_norm
+                    lbsr      mb_off
                     puls      a,pc
 
 untitl              fcc       "(untitled)"
