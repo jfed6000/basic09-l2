@@ -23,7 +23,10 @@ With `-t=<terminal>`, the program's standard input and output (paths 0 and 1) mo
 
 Pipes must be in the boot file (OS9Boot); see ARCHITECTURE.md, P1.
 
-Full usage: `l2b09run [#mem] [-t=<terminal>] [<file> [<procedure>[(<params>)]]]`. An editor normally passes no file, then sends `load` commands.
+Full usage: `l2b09run [#mem] [-b=<kb>] [-t=<terminal>] [<file> [<procedure>[(<params>)]]]`. An editor normally passes no file, then sends `load` commands.
+
+- **`#mem` first.** Put the shell's `#mem` straight after the command name; Shell+ rejects it in front of an argument.
+- **`-b=<kb>`** banks procedure code into <kb> kilobytes of far memory (ARCHITECTURE.md, P6), so programs larger than the workspace can be loaded, run and debugged. Line numbers, LIST, SAVE and the debugger work the same with banking. PACK does not.
 
 ## Runtime to editor
 

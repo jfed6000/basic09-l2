@@ -1,0 +1,10 @@
+load p6prog.b09
+dir
+run p6main
+run p6bad
+print z
+state
+q
+list p6fib
+save* p6save
+bye

@@ -1,0 +1,62 @@
+PROCEDURE p6main
+DIM i,s:INTEGER
+DIM r:REAL
+s:=0
+FOR i:=1 TO 10
+RUN p6add(s,i)
+NEXT i
+PRINT "p6: sum"; s
+RUN p6fib(20,r)
+PRINT "p6: fib20 "; r
+RUN p6data(s)
+PRINT "p6: data sum"; s
+RUN p6deep(1)
+PRINT "p6: main done"
+END
+
+PROCEDURE p6add
+PARAM acc,n:INTEGER
+acc:=acc+n
+END
+
+PROCEDURE p6fib
+PARAM n:INTEGER; r:REAL
+DIM a,b,t:REAL; k:INTEGER
+a:=0. \b:=1.
+FOR k:=1 TO n
+t:=a+b \a:=b \b:=t
+NEXT k
+r:=a
+END
+
+PROCEDURE p6data
+PARAM s:INTEGER
+DIM v:INTEGER
+s:=0
+10 READ v
+IF v<0 THEN 20
+s:=s+v
+GOTO 10
+20 END
+DATA 5,10,15,-1
+
+PROCEDURE p6deep
+PARAM d:INTEGER
+IF d<5 THEN
+RUN p6deep(d+1)
+ELSE
+PRINT "p6: depth"; d
+ENDIF
+END
+
+PROCEDURE p6bad
+DIM z:INTEGER
+z:=0
+RUN p6div(z)
+END
+
+PROCEDURE p6div
+PARAM z:INTEGER
+DIM q:INTEGER
+q:=5/z
+END

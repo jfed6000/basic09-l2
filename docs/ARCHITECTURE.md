@@ -120,9 +120,26 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
     - Both limits are documented in FARMEM.md. P7 (language-level far arrays) could remove the need for `free` by having the runtime free on exit.
   - **Harness:** `expect` files can now say `same <fileA> <fileB>` (used for the mfree comparison).
 - **P5 – Editor integration.** This is either a minimal test client or the real editor, depending on where the editor ends up.
-- **P6 – Transparent code banking .**
-  - Procedure I-code is kept in `F$AllRAM` blocks and mapped into a code window on RUN; the caller's block is restored on return.
-  - Touches: call/return in `stmts.asm`, the error-trap path, `DATA`/`RESTORE`, and debugger `LIST`.
+- **P6 – Transparent code banking (done).** `l2b09run -b=<kb>` keeps loaded procedures in far memory and maps each one in when it runs. Programs are unchanged. `make p6test` passes all 13 checks, including a program with about 48K of compiled code: it fails with "memory full" (32) in a 24K workspace without `-b`, and loads and runs with `-b=128` (1,355 lines in about 11 s, 22,232 bytes still free). `l2b09run` is 23,182 bytes.
+  - **Stubs:** after LOAD binds a procedure (`L2BANK`), its image is copied into a far store (`F$AllRAM`, filled in order) and the workspace copy shrinks to a stub of about 34 bytes. The stub is the header and name, the `P.BANK` bit in `P.STAT`, then the far block and offset. The directory, name searches, `DIR` and the call-chain pointers (`U.PROC`) all point at stubs.
+  - **Resolving:** `L2RSLV` turns a stub into a mapped address by mapping its block into the 8K code window (`L2MAPW`: `F$ClrBlk` + `F$MapBlk`). It runs in exactly two places: `EXECUT` (call) and the return path in `RUNSTM` (`RUNS50`, before `SETGLB`). Errors never unwind across procedure levels, so there is no third path. `I.APRC` always points at mapped code, and `INTERP`/`LIST` put it back to the stub afterwards.
+  - **Why the window never moves:** banked code must always appear at the same address, because callers keep pointers into it (`U.ICPT`, `I.DATA`) and bound references are offsets from `I.ICBG`. `F$SetImg` is system-state only, so the window is created at `-b` time as the highest free slot (just under `l2b09run`'s code). Only our own process changes its DAT image, and nothing runs between `F$ClrBlk` and `F$MapBlk`, so the same slot comes back every time. `L2MAPW` still checks the address and fails with 207 instead of running code from the wrong place.
+  - **Also handled:**
+    - `LIST`/`SAVE` map banked procedures before decompiling.
+    - PACK refuses banked procedures, because it rewrites procedures in place; load without `-b` to pack.
+    - `bye` (and a program's `BYE`) frees the store (`L2FREE`).
+  - **Tested:** parameters, recursion, DATA/READ with GOTO, a runtime error two levels deep (`%ERROR`, debugger PRINT, `STATE` chain), LIST, SAVE, and free memory identical afterwards.
+  - **Measured (6,000 calls at 6.29 MHz):**
+    - caller and callee in the same far block: no measurable cost (about 1 s, against 2 s unbanked);
+    - in different blocks: 7 s, about 0.8 ms extra per call and return (four system calls).
+    - Small procedures are packed into blocks in load order, so procedures that call each other a lot should be next to each other in the source.
+  - **Limits:**
+    - Procedures over 8K stay in the workspace.
+    - Far space is never reused: a reloaded procedure takes new space, and when the store is full, new procedures stay in the workspace.
+    - `S$Kill` or `CHAIN` leak the store (as with farmem).
+    - RENAME of a banked procedure leaves the old name in its far copy, which is what error messages show.
+    - `DIR` shows stub sizes.
+  - **Possible later steps:** a 16K or two-window scheme to cut cross-block calls; placing procedures together by call graph; reusing far space.
 - **P7 – Opt-in far arrays .**
   - Marked in `DIM` and used with normal syntax.
   - The far flag is carried in the symbol type/descriptor (`compil`/`binder`); `X$VREF` in `exprsn.asm` maps the element into a data window.

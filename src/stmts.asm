@@ -17,6 +17,10 @@ STMTENT equ *
  fdb LETSTM-STMTENT Single statement execution
  fdb TONSTM-STMTENT Trace on statement
  fdb TOFSTM-STMTENT Trace off statement
+ ifne L2B09
+ fdb L2RSLV-STMTENT Resolve procedure ptr
+ fdb L2MAPW-STMTENT Map far block into the code window
+ endc
 
 ***************
 * External Subroutine References
@@ -187,6 +191,10 @@ EXEC20 std G.VARS Update free space
  sts U.S,U Save current stack
  std U.U,U Save caller's storage address
  stx U.PROC,U Set procedure address
+ ifne L2B09
+ lbsr L2RSLV banked? map it; (X)=real address
+ lbcs EXCERR
+ endc
  ldd #1
  std I.BASE Default array base to one
  sta U.DEG,U Default trig mode to radians
@@ -1957,7 +1965,11 @@ RUNS20 ldx  ,S Retrieve I-Code ptr
  std U.PRLM,U Save it
  ldd I.DATA Get data ptr
  std U.DATA,U Save it
+ ifne L2B09
+ lbsr RPARAM Process parameters
+ else
  bsr RPARAM Process parameters
+ endc
  stx U.ICPT,U Save I-Code ptr
  puls X Retrieve procedure ptr
  lda M$TYPE,X Get procedure TYPE
@@ -2017,6 +2029,10 @@ RUNS50 ldd U.STBG,U Get string stack beginning
  sex Set Msb
  std I.BASE Restore array base
  ldx U.PROC,U Get procedure ptr
+ ifne L2B09
+ lbsr L2RSLV caller banked? map it back
+ lbcs RUNERR
+ endc
  lbsr SETGLB Set I.xxxx
  ldx U.ICPT,U Restore I-Code ptr
  ldd I.OPSP Reset free space
@@ -2125,6 +2141,87 @@ INIT lbsr J$EXPI Init expr
  leax STMTDT,PCR
  stx D.STMT
  rts
+
+ ifne L2B09
+ ttl CODE BANKING
+ pag
+***************
+* Subroutine L2RSLV  (X$L2RS)
+*   Turn a procedure ptr into the address of its code.  For a
+*   banked procedure (a stub) the far block is mapped into the
+*   code window first.  The window never moves, so every banked
+*   procedure always runs at the same address.
+
+* Passed: (X)=Procedure ptr (directory value, U.PROC)
+* Returns: (X)=Procedure address; carry set, (B)=error on failure
+
+L2RSLV pshs D,X
+ lda P.STAT,X
+ bita #P.BANK banked?
+ beq L2RS8 ..no; it is the real thing
+ ldb P.NAMS,X
+ leax P.NAME,X
+ abx (X)=stub tail
+ ldd 2,X offset in the block
+ pshs D
+ ldd  ,X far block
+ bsr L2MAPW
+ bcs L2RSE
+ puls D
+ leax D,X real address
+ stx 2,S
+L2RS8 andcc #$FE
+ puls D,X,PC
+L2RSE leas 2,S
+ stb 1,S error code
+ puls D,X
+ orcc #1
+ rts
+
+***************
+* Subroutine L2MAPW  (X$L2MW)
+*   Map far block (D) into the code window.  The first mapping
+*   fixes the window address; if a later F$MapBlk lands anywhere
+*   else, the call fails instead of running code from the wrong
+*   place.
+
+* Passed: (D)=Physical block number
+* Returns: (X)=Window address; carry set, (B)=error on failure
+
+L2MAPW cmpd WINBLK already there?
+ beq L2MW9
+ pshs D,Y,U
+ ldd WINBLK
+ beq L2MW1 ..nothing mapped
+ ldu WINADR
+ ldb #1
+ OS9 F$ClrBlk
+ clr WINBLK
+ clr WINBLK+1
+L2MW1 ldx  ,S
+ ldb #1
+ OS9 F$MapBlk (U)=where it went
+ bcs L2MWE
+ ldd WINADR
+ beq L2MW2 ..first mapping
+ pshs U
+ cmpd ,S++
+ bne L2MWM ..window moved
+L2MW2 stu WINADR
+ ldd  ,S
+ std WINBLK
+ puls D,Y,U
+L2MW9 ldx WINADR
+ andcc #$FE
+ rts
+L2MWM ldb #1 give the stray mapping back
+ OS9 F$ClrBlk
+ ldb #E$MemFul
+L2MWE stb 1,S
+ puls D,Y,U
+ orcc #1
+ rts
+ endc
 
 * End of Statement Interpreter routines
 

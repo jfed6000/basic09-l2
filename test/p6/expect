@@ -1,0 +1,13 @@
+term.out   p6: sum55
+term.out   p6: fib20 6765.
+term.out   p6: data sum30
+term.out   p6: depth5
+term.out   p6: main done
+p6.err     %ERROR 45 p6div 3
+p6.err     called by p6bad
+p6.err     t:=a+b \a:=b \b:=t
+p6save     PROCEDURE p6deep
+bigno.err  ERROR #032
+bigyes.out big: total 1200.
+same       mfree1 mfree2
+bigyes.err   big30         34

@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test p6test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -68,7 +68,7 @@ $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 
 # l2basic09 runtime: Basic09 without the line editor (see src/b09type, L2B09)
 $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1
+	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DLevel=2
 
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
@@ -98,6 +98,9 @@ p3test: l2b09 tools pipes
 
 p4test: stock l2b09 subs
 	tools/emu-wildbits.sh test/p4
+
+p6test: l2b09
+	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09

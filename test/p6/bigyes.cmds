@@ -1,0 +1,4 @@
+load big.b09
+dir
+run bigmain
+bye

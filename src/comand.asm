@@ -239,6 +239,12 @@ J$ISTM jsr M.STMTS
  fcb X$ISTM  interpret single statement
 J$ASNM jsr M.CNVIO
  fcb X$ASNM  cnv ASCII > numeric
+ ifne L2B09
+J$L2RS jsr M.STMTS
+ fcb X$L2RS resolve procedure ptr
+J$L2MW jsr M.STMTS
+ fcb X$L2MW map far block into the code window
+ endc
 
  ttl KEYWORD Table
  pag
@@ -1719,6 +1725,9 @@ LODERR ldb #M$UPRC Error-unknown procedure
 LODABT ldb #M$MFUL Error; memory full
 LODEOF pshs B Save error code
  bsr RBIND1 Bind erroneous procedure
+ ifne L2B09
+ lbsr L2BANK
+ endc
  puls B Restore error code
 LODER1 cmpb #E$EOF End of File?
  beq EXIT1 ..yes; return
@@ -1771,6 +1780,9 @@ LOAD35 lda ,X+
  stx I.IOBG Move I/O buffer up (binding errors wipe out)
  stx I.IOPT
  lbsr J$BIND Bind current procedure
+ ifne L2B09
+ lbsr L2BANK
+ endc
  puls X,Y Restore next procedure name
  stx I.IOBG Reset I/O buffer addr
  stx I.IOPT
@@ -1805,6 +1817,11 @@ DUMP lbsr DEFILE Parse procedure names, get pathnname
 DUMP01 ldy  ,Y get proc addr
  tst M$TYPE,Y internal (un-typed) procedure?
  lbne ERABRT ..no; illegal to compile
+ ifne L2B09
+ lda P.STAT,Y
+ bita #P.BANK PACK rebinds in place: not for banked procedures
+ lbne ERABRT
+ endc
  lda P.STAT,Y
  rora any errors in procedure?
  lbcs ERABRT ..Yes; abort
@@ -2051,6 +2068,12 @@ LIST0 stx I.ICPT out of range to KILL "*" on current
  bra LIST2
 LIST1 pshs Y Save proc list ptr
  ldy [,Y] get procedure addr
+ ifne L2B09
+ tfr Y,X
+ lbsr J$L2RS banked? map it
+ lbcs LIST15
+ tfr X,Y
+ endc
  sty I.APRC set active procedure
  ldd P.PGMB,Y set icode beginning offset
  addd I.APRC
@@ -2070,9 +2093,19 @@ LSEXIT lbra EXIT (this will fall through)
 LIST12 tst PRTCTL doing a save?
  bmi LIST15 ..yes; don't produce error list
  ldx [,S] restore directory ptr
+ ifne L2B09
+ ldy  ,X
+ lda P.STAT,Y
+ bita #P.BANK never rebind a banked procedure in place
+ bne LIST15
+ endc
  lbsr UNBIND Unbind procedure
  lbsr J$BIND Rebind it (show errors)
 LIST15 puls Y Restore proc list ptr
+ ifne L2B09
+ ldx [,Y] the current procedure is the stub, not the window
+ stx I.APRC
+ endc
 LIST2 ldx ,--Y get next directory addr
  bne LIST1
 
@@ -2165,6 +2198,9 @@ INTER1 lbsr DIRLNK Try to find procedure
  lbcs ERUPRC Not found - error
  ldx  ,X get active procedure addr
  stx I.APRC Set active procedure
+ ifne L2B09
+ stx L2APRC
+ endc
  lda M$TYPE,X external or bound?
  beq INTE30 ..Yes; check type
  anda #LangMask check language
@@ -2219,7 +2255,12 @@ INTE40 lbsr J$CPRM Call parameter list
 INTRTS puls D,X
  std I.STBG
  stx G.VARS
-INTER9 lbra EXIT Return
+INTER9 equ *
+ ifne L2B09
+ ldx L2APRC current procedure is the stub again, not the window
+ stx I.APRC
+ endc
+ lbra EXIT Return
 
 ERABRT ldb #M$ERST
  lbra ERREXT
@@ -2229,6 +2270,9 @@ ERABRT ldb #M$ERST
 *   Return nicely to OS-9
 
 BYEBYE bsr KILALL kill all external procedures
+ ifne L2B09
+ lbsr L2FREE give back the far procedure store
+ endc
  clrb
  OS9 F$Exit
 
@@ -2688,6 +2732,9 @@ NEWLNLEN            equ	*-NEWLN
 * Subroutine L2OPTS
 *   Parse l2b09run options ahead of the file name
 *
+*   -b=<kb>    Bank procedure code: keep loaded procedures in a
+*              far store of <kb> kilobytes (whole 8K blocks),
+*              mapped into an 8K code window when they run.
 *   -t=<path>  Program terminal.  Standard input and output
 *              (paths 0 and 1) are moved to <path> so the
 *              program, and anything it SHELLs, uses it.
@@ -2706,10 +2753,18 @@ L2OPTS lda ,Y+
  ldd ,Y++ get option letter and '='
  anda #^('a-'A) upper case
  cmpd #'T*256+'=
- bne L2OPTE ..unknown option
+ bne L2OPT2
  bsr L2TERM
  bcc L2OPTS
-L2OPTX OS9 F$Exit report error to parent
+ bra L2OPTX
+L2OPT2 cmpd #'B*256+'=
+ bne L2OPTE ..unknown option
+ bsr L2STOR
+ bcc L2OPTS
+L2OPTX pshs B
+ lbsr L2FREE give back a far store already set up
+ puls B
+ OS9 F$Exit report error to parent
 L2OPTE ldb #E$IllArg illegal argument
  bra L2OPTX
 L2OPT9 leay -1,Y back up to first non-option char
@@ -2732,6 +2787,174 @@ L2TERM clra
  clra
  OS9 I$Dup terminal becomes path 1 too
 L2TER9 rts
+
+***************
+* Subroutine L2STOR
+*   -b=<kb>: allocate the far procedure store and reserve the
+*   code window at once, while it can be the highest free slot
+*   (only l2b09run's own code is above it), so it never moves.
+
+* Passed: (Y)=Decimal kilobytes
+* Returns: (Y)=Updated; carry set, (B)=error on failure
+
+L2STOR ldd #0
+L2STO1 pshs D
+ ldb  ,Y
+ subb #'0
+ cmpb #9
+ bhi L2STO2 ..not a digit
+ leay 1,Y
+ ldd  ,S value*10
+ aslb
+ rola
+ std  ,S
+ aslb
+ rola
+ aslb
+ rola
+ addd  ,S
+ std  ,S
+ ldb -1,Y plus digit
+ subb #'0
+ clra
+ addd  ,S
+ leas 2,S
+ bra L2STO1
+L2STO2 puls D (D)=kilobytes
+ addd #7 whole 8K blocks
+ lsra
+ rorb
+ lsra
+ rorb
+ lsra
+ rorb
+ tsta
+ bne L2STOE ..over 255 blocks
+ tstb
+ beq L2STOE ..none
+ pshs B
+ OS9 F$AllRAM (D)=first block
+ puls A (A)=block count
+ bcs L2STO9
+ clr FARBAS
+ stb FARBAS+1
+ sta FARCNT
+ clr FARIDX
+ clr FAROFS
+ clr FAROFS+1
+ ldd FARBAS
+ lbsr J$L2MW reserve the window now
+ rts
+L2STOE ldb #E$IllArg
+ coma
+L2STO9 rts
+
+***************
+* Subroutine L2FREE
+*   Release the code window and the far procedure store
+
+L2FREE pshs D,X,U
+ ldd FARBAS
+ beq L2FRE9 ..no store
+ ldd WINBLK
+ beq L2FRE1 ..nothing mapped
+ ldu WINADR
+ ldb #1
+ OS9 F$ClrBlk
+L2FRE1 ldx FARBAS
+ ldb FARCNT
+ OS9 F$DelRAM
+ clr FARBAS
+ clr FARBAS+1
+ clr WINBLK
+ clr WINBLK+1
+L2FRE9 puls D,X,U,PC
+
+***************
+* Subroutine L2BANK
+*   After LOAD binds a procedure, move it to the far store and
+*   leave a stub in the workspace.  Skipped when banking is off,
+*   for procedures with errors, and for procedures over 8K or
+*   that no longer fit in the store (they stay in the workspace).
+
+L2BANK pshs D,X,Y,U
+ ldd FARBAS
+ lbeq L2BNK9 ..banking off
+ ldx I.APRC the procedure just bound
+ lda P.STAT,X
+ bita #1+P.BANK errors, or already banked?
+ lbne L2BNK9
+ ldd G.PRCA must be the top procedure
+ addd G.PRCS
+ pshs D
+ tfr X,D
+ addd P.SIZE,X
+ cmpd ,S++
+ lbne L2BNK9
+ ldd P.SIZE,X
+ cmpd #$2000
+ lbhi L2BNK9 ..bigger than the window
+ addd FAROFS
+ cmpd #$2000
+ bls L2BNK1 ..fits in the current block
+ lda FARIDX
+ inca next block
+ cmpa FARCNT
+ lbhs L2BNK9 ..store full
+ sta FARIDX
+ clr FAROFS
+ clr FAROFS+1
+L2BNK1 clra
+ ldb FARIDX
+ addd FARBAS (D)=far block
+ pshs D
+ lbsr J$L2MW (X)=window
+ bcs L2BNKE
+ ldd FAROFS
+ leau D,X destination
+ ldx I.APRC
+ ldy P.SIZE,X
+L2BNK2 lda ,X+ copy the procedure
+ sta ,U+
+ leay -1,Y
+ bne L2BNK2
+ ldx I.APRC turn the original into a stub
+ ldb P.NAMS,X
+ leay P.NAME,X
+ leay B,Y (Y)=stub tail
+ puls D
+ std  ,Y far block
+ ldd FAROFS
+ std 2,Y offset
+ ldd P.SIZE,X
+ addd FAROFS
+ std FAROFS
+ leay 4,Y end of stub
+ tfr Y,D
+ pshs X
+ subd ,S++ (D)=stub size
+ pshs D
+ ldd P.SIZE,X
+ subd  ,S (D)=bytes given back
+ pshs D
+ ldd 2,S
+ std P.SIZE,X
+ lda P.STAT,X
+ ora #P.BANK
+ sta P.STAT,X
+ ldd G.PRCS
+ subd  ,S
+ std G.PRCS
+ ldd G.VARS
+ addd  ,S
+ std G.VARS
+ ldd I.STBG
+ subd  ,S
+ std I.STBG
+ leas 4,S
+L2BNK9 puls D,X,Y,U,PC
+L2BNKE leas 2,S
+ bra L2BNK9
 
 ***************
 * Subroutine L2INSR

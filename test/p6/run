@@ -1,0 +1,13 @@
+* l2basic09 P6: procedure code banked into far memory
+-x
+chd /dd/l2b09
+mfree >mfree1
+echo >term.out
+/dd/l2b09/l2b09run -b=64 -t=/dd/l2b09/term.out #24k <p6.cmds >p6.out >>p6.err
+echo == big program, 24K workspace, no banking
+/dd/l2b09/l2b09run #24k <bigno.cmds >bigno.out >>bigno.err
+echo == big program, 24K workspace, banked
+date -t
+/dd/l2b09/l2b09run -b=128 #24k <bigyes.cmds >bigyes.out >>bigyes.err
+date -t
+mfree >mfree2

@@ -58,6 +58,10 @@ X$STER rmb 2 Statement error exit
 X$ISTM rmb 2 Interpret single statement
 X$TRON rmb 2 Turn on trace mode
 X$TROF rmb 2 Turn off trace mode
+ ifne L2B09
+X$L2RS rmb 2 Resolve procedure ptr (map banked procedure)
+X$L2MW rmb 2 Map far block into the code window
+ endc
 
 *** Expression Interpreter Entries
  org 0

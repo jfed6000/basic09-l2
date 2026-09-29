@@ -428,6 +428,13 @@ BufOvf rmb 1 I/O Buffer Overflow flag
  ifne L2B09
 CMDIN rmb 1 Home command input path (0 unless -t moved stdin)
 LSTERR rmb 1 Last error code printed (for protocol events)
+WINADR rmb 2 Code window address (0 = none yet)
+WINBLK rmb 2 Far block mapped in the window (0 = none)
+FARBAS rmb 2 First block of the far procedure store (0 = banking off)
+FARCNT rmb 1 Blocks in the store
+FARIDX rmb 1 Store block being filled
+FAROFS rmb 2 Next free offset in that block
+L2APRC rmb 2 Top-level procedure (stub) of the current RUN
  endc
 
  pag
@@ -452,6 +459,12 @@ P.EXEC rmb 2 First executable statement address
 P.STAT rmb 1 Procedure status
 P.NAMS rmb 1 Procedure name size
 P.NAME equ . Procedure name beginning
+ ifne L2B09
+P.BANK equ $20 P.STAT bit: banked procedure; this is its stub
+*  A stub is the procedure header and name, followed by the far
+*  block number (2 bytes) and offset in that block (2 bytes) of the
+*  real image.
+ endc
 
 * Procedure Invocation Temporaries
 

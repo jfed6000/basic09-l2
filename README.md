@@ -35,6 +35,7 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
     make p2test             # l2b09run test: -t terminal, debugger over stdin/stderr, line numbers
     make p3test             # protocol test: l2b09ctl drives l2b09run over pipes, with signals
     make p4test             # farmem: 256K of far records, stock RunB, leak check, benchmark
+    make p6test             # code banking: 48K program in a 24K workspace, debugger, LIST/SAVE
     make loadtime           # benchmark: compile the 937-line startrek sample
     make NITROS9DIR=/path/to/nitros9
 
@@ -44,12 +45,13 @@ Emulator tests use that tree's MAME build (`mame/mame`, machine `wbjr2`) and its
 
 ## l2b09run
 
-    l2b09run [#mem] [-t=<terminal>] [<file> [<procedure>[(<params>)]]]
+    l2b09run [#mem] [-b=<kb>] [-t=<terminal>] [<file> [<procedure>[(<params>)]]]
 
 `l2b09run` is Basic09 without the line editor.
 - It loads a source file, runs its first procedure (or the one named), then takes Basic09 commands.
 - Commands and the debugger use its standard input and standard error.
 - `-t` gives the program its own terminal, for example `-t=/vt2`.
+- `-b=<kb>` keeps procedure code in <kb> kilobytes of far memory, mapped in when a procedure runs. Programs bigger than the workspace then load and run unchanged.
 - The debugger reports where it stopped as `BREAK: PROCEDURE <name> line <n>`. Line 1 is the line after the `PROCEDURE` header.
 - For editors there is a line protocol with `%` event lines (`%READY`, `%DEBUG`, `%ERROR`, `%CERR`, `%BERR`, `%ASK`) and signals for break and abort. See [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
