@@ -51,17 +51,21 @@ ti3                 tfr       x,d
                     bls       ti4
                     ldb       #128
 ti4                 stb       <scrw
+                    subb      #2                  inside the frame
                     stb       <wcols
                     tfr       y,d
                     stb       <scrh
-                    decb                          the bottom row is the status line
+                    subb      #4                  menu bar, two borders, hint line
                     stb       <wrows
-                    clr       <wtop
-                    clr       <wleft
-                    rts
+                    lda       #2
+                    sta       <wtop
+                    lda       #1
+                    sta       <wleft
+                    lbra      t_glyph
 
 * t_done: put the terminal back
 t_done              lbsr      t_flush
+                    lbsr      t_unglyph
                     tst       <kbterm
                     beq       td1
                     ldx       <base
@@ -182,3 +186,94 @@ nd4                 leay      2,y
                     leas      1,s
                     puls      d,y,u,pc
 n_dect              fdb       10000,1000,100,10,0
+
+* t_rep: B copies of A
+t_rep               tstb
+                    beq       tr9
+tr1                 lbsr      t_ch
+                    decb
+                    bne       tr1
+tr9                 rts
+
+********************************************************************
+* Frame glyphs.  Fonts differ, so the editor draws its own: the
+* originals of characters GLYPH0.. in font set 0 are kept and put back
+* on exit.  SS.FntChar takes the font set from the caller's A, which
+* for I$SetStt is the path, so the calls go through path 0.  Where
+* that fails (keys from a file, or no SS.FntChar) the frames are ASCII.
+
+* t_glyph: install the glyphs; glyphs = the codes to draw them with
+t_glyph             ldx       <base
+                    leax      glyphs,x
+                    leay      gl_asc,pcr
+                    ldb       #NGLYPH
+tg0                 lda       ,y+
+                    sta       ,x+
+                    decb
+                    bne       tg0
+                    tst       <kbterm
+                    beq       tg9
+                    ldx       <base               keep the originals
+                    leax      fntsav,x
+                    ldy       #GLYPH0
+tg1                 clra
+                    ldb       #SS.FntChar
+                    os9       I$GetStt
+                    bcs       tg9
+                    leax      8,x
+                    leay      1,y
+                    cmpy      #GLYPH0+NGLYPH
+                    blo       tg1
+                    leax      gl_bits,pcr
+                    ldy       #GLYPH0
+tg2                 clra
+                    ldb       #SS.FntChar
+                    os9       I$SetStt
+                    bcs       tg9
+                    leax      8,x
+                    leay      1,y
+                    cmpy      #GLYPH0+NGLYPH
+                    blo       tg2
+                    inc       <glyok
+                    ldx       <base
+                    leax      glyphs,x
+                    lda       #GLYPH0
+                    ldb       #NGLYPH
+tg3                 sta       ,x+
+                    inca
+                    decb
+                    bne       tg3
+tg9                 rts
+
+* t_unglyph: put the original characters back
+t_unglyph           tst       <glyok
+                    beq       tu9
+                    clr       <glyok
+                    ldx       <base
+                    leax      fntsav,x
+                    ldy       #GLYPH0
+tu1                 clra
+                    ldb       #SS.FntChar
+                    os9       I$SetStt
+                    leax      8,x
+                    leay      1,y
+                    cmpy      #GLYPH0+NGLYPH
+                    blo       tu1
+tu9                 rts
+
+* The glyphs, in GL.* order: double frame, single frame, single tees
+gl_asc              fcc       "++++=|++++-|++"
+gl_bits             fcb       $00,$00,$3F,$20,$2F,$28,$28,$28      double top left
+                    fcb       $00,$00,$F8,$08,$E8,$28,$28,$28      top right
+                    fcb       $28,$28,$2F,$20,$3F,$00,$00,$00      bottom left
+                    fcb       $28,$28,$E8,$08,$F8,$00,$00,$00      bottom right
+                    fcb       $00,$00,$FF,$00,$FF,$00,$00,$00      horizontal
+                    fcb       $28,$28,$28,$28,$28,$28,$28,$28      vertical
+                    fcb       $00,$00,$00,$1F,$10,$10,$10,$10      single top left
+                    fcb       $00,$00,$00,$F0,$10,$10,$10,$10      top right
+                    fcb       $10,$10,$10,$1F,$00,$00,$00,$00      bottom left
+                    fcb       $10,$10,$10,$F0,$00,$00,$00,$00      bottom right
+                    fcb       $00,$00,$00,$FF,$00,$00,$00,$00      horizontal
+                    fcb       $10,$10,$10,$10,$10,$10,$10,$10      vertical
+                    fcb       $10,$10,$10,$1F,$10,$10,$10,$10      left tee
+                    fcb       $10,$10,$10,$F0,$10,$10,$10,$10      right tee

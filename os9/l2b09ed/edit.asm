@@ -15,9 +15,15 @@ m_loop              lbsr      v_fix
                     blo       ml2
                     cmpa      #$7E
                     bhi       ml2
-                    bsr       c_char
+                    lbsr      c_char
                     bra       m_loop
-ml2                 leax      cmdtab,pcr
+ml2                 cmpa      #EK.ALT             Alt+letter opens a menu
+                    blo       ml2a
+                    cmpa      #EK.ALT+25
+                    bhi       ml2a
+                    lbsr      c_altkey
+                    bra       m_loop
+ml2a                leax      cmdtab,pcr
 ml3                 ldb       ,x
                     beq       m_loop              not a command
                     cmpa      ,x
@@ -73,6 +79,40 @@ cmdtab              fcb       C$CR
                     fdb       c_save-cmdtab
                     fcb       $11                 ^Q quit
                     fdb       c_quit-cmdtab
+                    fcb       $0F                 ^O open
+                    fdb       c_open-cmdtab
+                    fcb       EK.F1+2             F3 open
+                    fdb       c_open-cmdtab
+                    fcb       EK.F1
+                    fdb       c_help-cmdtab
+                    fcb       $02                 ^B make
+                    fdb       c_nyi-cmdtab
+                    fcb       $12                 ^R run
+                    fdb       c_nyi-cmdtab
+                    fcb       $0E                 ^N next error
+                    fdb       c_nyi-cmdtab
+                    fcb       $05                 ^E evaluate
+                    fdb       c_nyi-cmdtab
+                    fcb       $17                 ^W watch
+                    fdb       c_nyi-cmdtab
+                    fcb       $14                 ^T breakpoint
+                    fdb       c_nyi-cmdtab
+                    fcb       $06                 ^F find
+                    fdb       c_nyi-cmdtab
+                    fcb       $0C                 ^L find next
+                    fdb       c_nyi-cmdtab
+                    fcb       $1A                 ^Z undo
+                    fdb       c_nyi-cmdtab
+                    fcb       $19                 ^Y redo
+                    fdb       c_nyi-cmdtab
+                    fcb       $03                 ^C copy
+                    fdb       c_nyi-cmdtab
+                    fcb       $18                 ^X cut
+                    fdb       c_nyi-cmdtab
+                    fcb       $16                 ^V paste
+                    fdb       c_nyi-cmdtab
+                    fcb       $01                 ^A select all
+                    fdb       c_nyi-cmdtab
                     fcb       0
 
 * Redraw requests
@@ -103,6 +143,8 @@ c_enter             ldu       <base
                     std       2,u
                     lbsr      p_bol
                     ldx       #0                  leading spaces before the cursor
+                    tst       <noindt
+                    bne       ce3
 ce1                 ldd       ,u
                     cmpd      <cpos
                     bne       ce2
@@ -368,7 +410,7 @@ pvc9                rts
 
 * c_goto: ask for a line number and go there
 c_goto              leax      gomsg,pcr
-                    lbsr      v_prompt
+                    lbsr      dlg_in
                     bcs       cg9
                     ldx       <base
                     leax      inbuf,x
@@ -414,64 +456,26 @@ gl5                 stx       <cpos
                     std       <cpos+2
                     rts
 
-* c_save: write the file (asking for a name if there is none);
-* carry if it was not saved
-c_save              ldx       <base
-                    leax      fname,x
-                    tst       ,x
-                    bne       cs2
-                    leax      samsg,pcr
-                    lbsr      v_prompt
-                    bcs       cs9
-                    ldx       <base
-                    leax      inbuf,x
-                    ldy       <base
-                    leay      fname,y
-                    ldb       #63
-cs1                 lda       ,x+
-                    sta       ,y+
-                    beq       cs1a
-                    decb
-                    bne       cs1
-                    clr       ,y
-cs1a                ldx       <base
-                    tst       fname,x
-                    beq       cs9
-cs2                 lbsr      f_save
-                    bcs       cs_err
-                    leax      savedm,pcr
-                    stx       <msgp
-                    andcc     #^Carry
-                    rts
-cs_err              stb       <msgerr
-cs9                 orcc      #Carry
-                    rts
-
-* c_quit: leave, offering to save first
-c_quit              tst       <modif
-                    beq       cq_go
-                    leax      qmsg,pcr
-                    lbsr      v_prompt
-                    bcs       cq9
-                    ldx       <base
-                    lda       inbuf,x
-                    anda      #$DF
-                    cmpa      #'N
-                    beq       cq_go
-                    cmpa      #'Y
-                    bne       cq9
-                    bsr       c_save
-                    bcs       cq9
-cq_go               lbra      quit
-cq9                 rts
-
 fullms              fcc       "Out of pages"
                     fcb       0
-gomsg               fcc       "Go to line: "
-                    fcb       0
-samsg               fcc       "Save as: "
-                    fcb       0
-savedm              fcc       "Saved"
-                    fcb       0
-qmsg                fcc       "Save changes (Y/N)? "
-                    fcb       0
+gomsg               fcn       "Go to line"
+
+* buf_top: cursor and window at the start of a freshly loaded text
+buf_top             ldd       <first
+                    std       <cpos
+                    std       <tpos
+                    std       <apos
+                    std       <xpos
+                    ldd       #0
+                    std       <cpos+2
+                    std       <tpos+2
+                    std       <apos+2
+                    std       <xpos+2
+                    std       <curline
+                    std       <topline
+                    std       <leftcol
+                    std       <wantcol
+                    lda       #RD.ALL
+                    ora       <redraw
+                    sta       <redraw
+                    rts

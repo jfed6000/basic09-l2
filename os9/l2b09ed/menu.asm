@@ -1,0 +1,802 @@
+********************************************************************
+* menu - the menu bar, drop-down menus, dialog boxes, help and the
+* File commands
+
+NMENU               equ       8
+
+* Menu titles (ending in an empty string), their Alt letters, and the
+* items of each menu.  An item is the handler (an offset from cmdtab),
+* its text and the shortcut shown; a handler of 0 is a separator line,
+* and $FFFF ends the menu.
+mtitle              fcc       "File"
+                    fcb       0
+                    fcc       "Edit"
+                    fcb       0
+                    fcc       "Search"
+                    fcb       0
+                    fcc       "Run"
+                    fcb       0
+                    fcc       "Compile"
+                    fcb       0
+                    fcc       "Debug"
+                    fcb       0
+                    fcc       "Options"
+                    fcb       0
+                    fcc       "Help"
+                    fcb       0
+                    fcb       0
+mkeys               fcc       "FESRCDOH"
+
+mitems              fdb       mfile-mitems,medit-mitems,msrch-mitems,mrun-mitems
+                    fdb       mcomp-mitems,mdbg-mitems,mopt-mitems,mhelp-mitems
+
+mfile               fdb       c_new-cmdtab
+                    fcn       "New"
+                    fcn       ""
+                    fdb       c_open-cmdtab
+                    fcn       "Open..."
+                    fcn       "^O"
+                    fdb       c_save-cmdtab
+                    fcn       "Save"
+                    fcn       "^S"
+                    fdb       c_saveas-cmdtab
+                    fcn       "Save as..."
+                    fcn       ""
+                    fdb       0
+                    fdb       c_quit-cmdtab
+                    fcn       "Quit"
+                    fcn       "^Q"
+                    fdb       $FFFF
+medit               fdb       c_nyi-cmdtab
+                    fcn       "Undo"
+                    fcn       "^Z"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Redo"
+                    fcn       "^Y"
+                    fdb       0
+                    fdb       c_nyi-cmdtab
+                    fcn       "Cut"
+                    fcn       "^X"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Copy"
+                    fcn       "^C"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Paste"
+                    fcn       "^V"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Select all"
+                    fcn       "^A"
+                    fdb       0
+                    fdb       c_delln-cmdtab
+                    fcn       "Delete line"
+                    fcn       "^D"
+                    fdb       $FFFF
+msrch               fdb       c_nyi-cmdtab
+                    fcn       "Find..."
+                    fcn       "^F"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Find next"
+                    fcn       "^L"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Replace..."
+                    fcn       ""
+                    fdb       0
+                    fdb       c_goto-cmdtab
+                    fcn       "Go to line..."
+                    fcn       "^G"
+                    fdb       $FFFF
+mrun                fdb       c_nyi-cmdtab
+                    fcn       "Run"
+                    fcn       "^R"
+                    fdb       c_nyi-cmdtab
+                    fcn       "User screen"
+                    fcn       "F5"
+                    fdb       $FFFF
+mcomp               fdb       c_nyi-cmdtab
+                    fcn       "Make"
+                    fcn       "^B"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Next error"
+                    fcn       "^N"
+                    fdb       $FFFF
+mdbg                fdb       c_nyi-cmdtab
+                    fcn       "Step"
+                    fcn       "F7"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Evaluate..."
+                    fcn       "^E"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Add watch..."
+                    fcn       "^W"
+                    fdb       c_nyi-cmdtab
+                    fcn       "Breakpoint"
+                    fcn       "^T"
+                    fdb       $FFFF
+mopt                fdb       c_indent-cmdtab
+                    fcn       "Auto indent"
+                    fcn       ""
+                    fdb       $FFFF
+mhelp               fdb       c_help-cmdtab
+                    fcn       "Keys"
+                    fcn       "F1"
+                    fdb       c_about-cmdtab
+                    fcn       "About"
+                    fcn       ""
+                    fdb       $FFFF
+
+* c_menu: key A is Alt+letter; open that menu if there is one
+c_altkey            suba      #EK.ALT-'A
+                    leax      mkeys,pcr
+                    clrb
+cak1                cmpa      b,x
+                    beq       m_open1
+                    incb
+                    cmpb      #NMENU
+                    blo       cak1
+                    rts
+m_open1             tfr       b,a
+
+* m_open: run menu A until an item is chosen or it is closed
+m_open              sta       <mcur
+mo_new              clr       <msel
+mo_redo             lda       #RD.ALL             clear away the last drop-down
+                    ora       <redraw
+                    sta       <redraw
+                    lbsr      v_draw
+                    lbsr      m_layout
+                    lda       <mcur
+                    lbsr      v_menubar
+mo_draw             lbsr      m_drawbox
+                    lbsr      t_curoff
+                    lbsr      t_flush
+                    lbsr      getkey
+                    cmpa      #EK.ESC
+                    beq       mo_close
+                    cmpa      #EK.EOF
+                    beq       mo_close
+                    cmpa      #EK.UP
+                    bne       mo1
+                    bsr       m_prev
+                    bra       mo_draw
+mo1                 cmpa      #EK.DOWN
+                    bne       mo2
+                    bsr       m_next
+                    bra       mo_draw
+mo2                 cmpa      #EK.LEFT
+                    bne       mo3
+                    lda       <mcur
+                    deca
+                    bpl       mo2a
+                    lda       #NMENU-1
+mo2a                sta       <mcur
+                    bra       mo_new
+mo3                 cmpa      #EK.RIGHT
+                    bne       mo4
+                    lda       <mcur
+                    inca
+                    cmpa      #NMENU
+                    blo       mo2a
+                    clra
+                    bra       mo2a
+mo4                 cmpa      #EK.ALT             another menu's Alt key
+                    blo       mo5
+                    cmpa      #EK.ALT+25
+                    bhi       mo5
+                    suba      #EK.ALT-'A
+                    leax      mkeys,pcr
+                    clrb
+mo4a                cmpa      b,x
+                    beq       mo4b
+                    incb
+                    cmpb      #NMENU
+                    blo       mo4a
+                    bra       mo_draw
+mo4b                stb       <mcur
+                    bra       mo_new
+mo5                 cmpa      #C$CR
+                    beq       mo_run
+                    lbsr      m_letter            an item's first letter
+                    bcs       mo_draw
+mo_run              ldb       <msel
+                    lbsr      m_item
+                    ldd       ,x                  the handler
+                    pshs      d
+                    bsr       mo_close
+                    puls      d
+                    leax      cmdtab,pcr
+                    jmp       d,x
+mo_close            lda       #RD.ALL
+                    ora       <redraw
+                    sta       <redraw
+                    rts
+
+* m_next, m_prev: move the selection, skipping separators
+m_next              lda       <msel
+mn1                 inca
+                    cmpa      <mcnt
+                    blo       mn2
+                    clra
+mn2                 tfr       a,b
+                    lbsr      m_item
+                    ldx       ,x
+                    beq       mn1
+                    sta       <msel
+                    rts
+m_prev              lda       <msel
+mp1                 deca
+                    bpl       mp2
+                    lda       <mcnt
+                    deca
+mp2                 tfr       a,b
+                    lbsr      m_item
+                    ldx       ,x
+                    beq       mp1
+                    sta       <msel
+                    rts
+
+* m_letter: select the item whose text starts with key A; carry if none
+m_letter            cmpa      #'a
+                    blo       ml1
+                    cmpa      #'z
+                    bhi       ml1
+                    suba      #$20
+ml1                 clrb
+mlt2                cmpb      <mcnt
+                    bhs       mlt9
+                    lbsr      m_item
+                    ldy       ,x
+                    beq       mlt3
+                    cmpa      2,x
+                    beq       mlt4
+mlt3                incb
+                    bra       mlt2
+mlt4                stb       <msel
+                    andcc     #^Carry
+                    rts
+mlt9                orcc      #Carry
+                    rts
+
+* m_first: X = the first item of menu mcur
+m_first             leax      mitems,pcr
+                    ldb       <mcur
+                    aslb
+                    ldd       b,x
+                    leax      mitems,pcr
+                    leax      d,x
+                    rts
+
+* m_item: X = item B of menu mcur
+m_item              pshs      d
+                    bsr       m_first
+                    ldb       1,s
+mi1                 tstb
+                    beq       mi9
+                    bsr       m_skip
+                    decb
+                    bra       mi1
+mi9                 puls      d,pc
+
+* m_skip: X past the item at X
+m_skip              pshs      a
+                    lda       ,x++
+                    ora       -1,x
+                    beq       ms9                 a separator is just the 0
+msk1                lda       ,x+                 text
+                    bne       msk1
+msk2                lda       ,x+                 shortcut
+                    bne       msk2
+ms9                 puls      a,pc
+
+* m_layout: mcnt, mwid and mcol for menu mcur
+m_layout            bsr       m_first
+                    clr       <mcnt
+                    lda       #14
+                    sta       <mwid
+mla1                ldd       ,x
+                    cmpd      #$FFFF
+                    beq       mla5
+                    inc       <mcnt
+                    cmpd      #0
+                    beq       mla4
+                    leay      2,x                 text + shortcut + 3 spaces + 2 borders
+                    lbsr      strlen
+                    pshs      b
+                    lbsr      strlen
+                    addb      ,s+
+                    addb      #5
+                    cmpb      <mwid
+                    bls       mla4
+                    stb       <mwid
+mla4                bsr       m_skip
+                    bra       mla1
+mla5                leax      mtitle,pcr          column of the title
+                    ldb       #1
+                    lda       <mcur
+                    pshs      a
+mla6                tst       ,s
+                    beq       mla8
+                    tfr       x,y
+                    pshs      b
+                    lbsr      strlen
+                    addb      #2
+                    addb      ,s+
+                    tfr       y,x
+                    dec       ,s
+                    bra       mla6
+mla8                leas      1,s
+                    pshs      b                   keep the box on the screen
+                    addb      <mwid
+                    cmpb      <scrw
+                    puls      b
+                    bls       mla9
+                    ldb       <scrw
+                    subb      <mwid
+mla9                stb       <mcol
+                    rts
+
+* strlen: B = length of the string at Y; Y past its 0
+strlen              clrb
+sl1                 tst       ,y+
+                    beq       sl9
+                    incb
+                    bra       sl1
+sl9                 rts
+
+* m_drawbox: the drop-down of menu mcur, item msel selected
+m_drawbox           lda       <mcol
+                    sta       <bx.col
+                    lda       #1
+                    sta       <bx.row
+                    lda       <mwid
+                    sta       <bx.w
+                    lda       <mcnt
+                    adda      #2
+                    sta       <bx.h
+                    lda       #GL.TL1
+                    sta       <bx.st
+                    lbsr      bx_draw
+                    lbsr      m_first
+                    clrb                          item number
+mdb1                cmpb      <mcnt
+                    bhs       mdb9
+                    pshs      b
+                    lda       <mcol
+                    addb      #2
+                    ldy       ,x
+                    bne       mdb2
+                    lbsr      t_xy                separator: a line across the box
+                    lda       <glyphs+GL.LT1
+                    lbsr      t_ch
+                    ldb       <mwid
+                    subb      #2
+                    lda       <glyphs+GL.H1
+                    lbsr      t_rep
+                    lda       <glyphs+GL.RT1
+                    lbsr      t_ch
+                    bra       mdb8
+mdb2                inca
+                    lbsr      t_xy
+                    lda       ,s
+                    cmpa      <msel
+                    bne       mdb3
+                    lbsr      t_rev
+mdb3                lda       #C$SPAC
+                    lbsr      t_ch
+                    pshs      x
+                    leay      2,x                 text
+                    tfr       y,x
+                    lbsr      t_str
+                    lbsr      strlen              Y = the shortcut
+                    pshs      b
+                    tfr       y,x
+                    lbsr      strlen
+                    pshs      b
+                    lda       <mwid               spaces between them
+                    suba      #4
+                    suba      ,s+
+                    suba      ,s+
+                    tfr       a,b
+                    lda       #C$SPAC
+                    lbsr      t_rep
+                    lbsr      t_str               the shortcut
+                    lda       #C$SPAC
+                    lbsr      t_ch
+                    lbsr      t_norm
+                    puls      x
+mdb8                lbsr      m_skip
+                    puls      b
+                    incb
+                    bra       mdb1
+mdb9                rts
+
+********************************************************************
+* Boxes and dialogs
+
+* bx_draw: a frame at bx.col, bx.row, bx.w by bx.h, style bx.st, with
+* the inside cleared
+bx_draw             pshs      d,x,y
+                    ldx       <base
+                    leax      glyphs,x
+                    ldb       <bx.st
+                    abx                           X = TL TR BL BR H V
+                    lda       <bx.col
+                    ldb       <bx.row
+                    lbsr      t_xy
+                    lda       ,x
+                    lbsr      t_ch
+                    ldb       <bx.w
+                    subb      #2
+                    lda       4,x
+                    lbsr      t_rep
+                    lda       1,x
+                    lbsr      t_ch
+                    ldy       #1                  rows inside
+bxd1                tfr       y,d
+                    addb      #1
+                    cmpb      <bx.h
+                    bhs       bxd2
+                    tfr       y,d
+                    addb      <bx.row
+                    lda       <bx.col
+                    lbsr      t_xy
+                    lda       5,x
+                    lbsr      t_ch
+                    ldb       <bx.w
+                    subb      #2
+                    lda       #C$SPAC
+                    lbsr      t_rep
+                    lda       5,x
+                    lbsr      t_ch
+                    leay      1,y
+                    bra       bxd1
+bxd2                ldb       <bx.row
+                    addb      <bx.h
+                    decb
+                    lda       <bx.col
+                    lbsr      t_xy
+                    lda       2,x
+                    lbsr      t_ch
+                    ldb       <bx.w
+                    subb      #2
+                    lda       4,x
+                    lbsr      t_rep
+                    lda       3,x
+                    lbsr      t_ch
+                    puls      d,x,y,pc
+
+* bx_title: string X, centered in the top border of the box
+bx_title            pshs      d,x,y
+                    tfr       x,y
+                    lbsr      strlen
+                    addb      #2
+                    pshs      b
+                    lda       <bx.w
+                    suba      ,s+
+                    lsra
+                    adda      <bx.col
+                    ldb       <bx.row
+                    lbsr      t_xy
+                    lda       #C$SPAC
+                    lbsr      t_ch
+                    lbsr      t_str
+                    lbsr      t_ch
+                    puls      d,x,y,pc
+
+* dlg_box: a dialog box of bx.h rows, centered, titled X
+dlg_box             pshs      d
+                    lda       <scrw
+                    suba      #4
+                    cmpa      #60
+                    bls       dbx1
+                    lda       #60
+dbx1                sta       <bx.w
+                    nega
+                    adda      <scrw
+                    lsra
+                    sta       <bx.col
+                    lda       <scrh
+                    suba      <bx.h
+                    lsra
+                    sta       <bx.row
+                    lda       #GL.TL2
+                    sta       <bx.st
+                    lbsr      bx_draw
+                    lbsr      bx_title
+                    puls      d,pc
+
+* dlg_in: ask for a line of text in a dialog titled X.  The answer is in
+* inbuf (ending in 0); carry if Esc was pressed.
+dlg_in              pshs      x
+                    ldx       <base
+                    clr       inbuf,x
+din1                lda       #3
+                    sta       <bx.h
+                    ldx       ,s
+                    bsr       dlg_box
+                    lda       <bx.col             the answer
+                    adda      #2
+                    ldb       <bx.row
+                    incb
+                    lbsr      t_xy
+                    ldx       <base
+                    leax      inbuf,x
+                    lbsr      t_str
+                    lbsr      t_curon
+                    lbsr      t_flush
+                    lbsr      getkey
+                    ldx       <base
+                    leax      inbuf,x
+din2                tst       ,x+                 X = end of the answer
+                    bne       din2
+                    leax      -1,x
+                    cmpa      #C$CR
+                    beq       din_ok
+                    cmpa      #EK.ESC
+                    beq       din_esc
+                    cmpa      #EK.EOF
+                    beq       din_esc
+                    cmpa      #EK.BS
+                    bne       din3
+                    tfr       x,d
+                    subd      <base
+                    cmpd      #inbuf
+                    beq       din1                nothing to delete
+                    clr       ,-x
+                    bra       din1
+din3                cmpa      #C$SPAC
+                    blo       din1
+                    cmpa      #$7E
+                    bhi       din1
+                    pshs      a
+                    lda       <bx.w               room left in the box?
+                    suba      #5
+                    tfr       a,b
+                    clra
+                    addd      #inbuf
+                    pshs      d
+                    tfr       x,d
+                    subd      <base
+                    cmpd      ,s++
+                    puls      a
+                    bhs       din1
+                    sta       ,x+
+                    clr       ,x
+                    bra       din1
+din_ok              bsr       dlg_done
+                    andcc     #^Carry
+                    puls      x,pc
+din_esc             bsr       dlg_done
+                    orcc      #Carry
+                    puls      x,pc
+dlg_done            lda       #RD.ALL
+                    ora       <redraw
+                    sta       <redraw
+                    rts
+
+* dlg_ask: ask question X; A = 'Y' or 'N', carry if Esc was pressed
+dlg_ask             pshs      x
+dak1                lda       #3
+                    sta       <bx.h
+                    leax      asktl,pcr
+                    lbsr      dlg_box
+                    lda       <bx.col
+                    adda      #2
+                    ldb       <bx.row
+                    incb
+                    lbsr      t_xy
+                    ldx       ,s
+                    lbsr      t_str
+                    lbsr      t_flush
+                    lbsr      getkey
+                    cmpa      #EK.ESC
+                    beq       dak_esc
+                    cmpa      #EK.EOF
+                    beq       dak_esc
+                    anda      #$DF
+                    cmpa      #'Y
+                    beq       dak_ok
+                    cmpa      #'N
+                    bne       dak1
+dak_ok              bsr       dlg_done
+                    andcc     #^Carry
+                    puls      x,pc
+dak_esc             bsr       dlg_done
+                    orcc      #Carry
+                    puls      x,pc
+
+* dlg_msg: show message X until a key is pressed
+dlg_msg             pshs      x
+                    lda       #3
+                    sta       <bx.h
+                    leax      msgtl,pcr
+                    lbsr      dlg_box
+                    lda       <bx.col
+                    adda      #2
+                    ldb       <bx.row
+                    incb
+                    lbsr      t_xy
+                    ldx       ,s
+                    lbsr      t_str
+                    lbsr      t_curoff
+                    lbsr      t_flush
+                    lbsr      getkey
+                    bsr       dlg_done
+                    puls      x,pc
+
+asktl               fcn       "Confirm"
+msgtl               fcn       "l2b09ed"
+
+********************************************************************
+* Help
+
+c_help              lda       <scrw               a box over everything
+                    sta       <bx.w
+                    lda       <scrh
+                    deca
+                    sta       <bx.h
+                    clr       <bx.col
+                    clr       <bx.row
+                    lda       #GL.TL2
+                    sta       <bx.st
+                    lbsr      bx_draw
+                    leax      helptl,pcr
+                    lbsr      bx_title
+                    leax      helptx,pcr
+                    ldb       #2
+chl1                tst       ,x
+                    beq       chl9
+                    lda       #3
+                    lbsr      t_xy
+                    lbsr      t_str
+chl2                tst       ,x+
+                    bne       chl2
+                    incb
+                    pshs      b                   stop above the bottom border
+                    ldb       <bx.h
+                    decb
+                    cmpb      ,s
+                    puls      b
+                    bhi       chl1
+chl9                lbsr      t_curoff
+                    lbsr      t_flush
+                    lbsr      getkey
+                    lbra      dlg_done
+
+helptl              fcn       "Keys"
+helptx              fcn       "Arrows                    move"
+                    fcn       "Ctrl+Left, Ctrl+Right     word left, right"
+                    fcn       "Ctrl+Up, Ctrl+Down        page up, down"
+                    fcn       "Ctrl+Shift+Up, +Down      top, end of the file"
+                    fcn       "^J, ^K (K2: Home)         start, end of the line"
+                    fcn       "Backspace                 delete the character before the cursor"
+                    fcn       "Shift+Backspace           delete the character at the cursor"
+                    fcn       "Enter                     new line (indented like this one)"
+                    fcn       "^D                        delete the line"
+                    fcn       "^G                        go to a line"
+                    fcn       "^S, F2                    save"
+                    fcn       "^O, F3                    open a file"
+                    fcn       "^Q                        quit"
+                    fcn       "Alt+F E S R C D O H       menus: File Edit Search Run Compile"
+                    fcn       "                          Debug Options Help"
+                    fcn       "  in a menu:              arrows, Enter or the first letter; Esc"
+                    fcn       "F1                        this help"
+                    fcn       " "
+                    fcn       "Press any key."
+                    fcb       0
+
+c_about             leax      aboutm,pcr
+                    lbra      dlg_msg
+aboutm              fcn       "l2b09ed: the l2basic09 editor, edition 1"
+
+********************************************************************
+* The File commands and the others the menus need
+
+c_nyi               leax      nyims,pcr
+                    stx       <msgp
+                    rts
+nyims               fcn       "Not available yet"
+
+c_indent            com       <noindt
+                    leax      indon,pcr
+                    tst       <noindt
+                    beq       cin1
+                    leax      indoff,pcr
+cin1                stx       <msgp
+                    rts
+indon               fcn       "Auto indent on"
+indoff              fcn       "Auto indent off"
+
+* ask_save: if the text has changed, offer to save it; carry to cancel
+ask_save            tst       <modif
+                    beq       as9
+                    leax      askms,pcr
+                    lbsr      dlg_ask
+                    bcs       as8
+                    cmpa      #'N
+                    beq       as9
+                    lbra      c_save
+as8                 rts
+as9                 andcc     #^Carry
+                    rts
+askms               fcn       "Save the changes (Y/N)?"
+
+c_quit              bsr       ask_save
+                    bcs       cq9
+                    lbra      quit
+cq9                 rts
+
+c_new               bsr       ask_save
+                    bcs       cn9
+                    ldx       <base
+                    clr       fname,x
+                    bsr       buf_new
+cn9                 rts
+
+c_open              bsr       ask_save
+                    bcs       co9
+                    leax      opentl,pcr
+                    lbsr      dlg_in
+                    bcs       co9
+                    ldx       <base
+                    tst       inbuf,x
+                    beq       co9
+                    lbsr      in2name
+                    bsr       buf_new
+co9                 rts
+opentl              fcn       "Open file"
+
+* buf_new: drop the text and load fname (nothing if it has no name)
+buf_new             ldx       <first
+bn1                 beq       bn2
+                    ldy       DS.NEXT,x
+                    lbsr      d_free
+                    leax      ,y                  (sets Z; tfr would not)
+                    bra       bn1
+bn2                 ldd       #0
+                    std       <nlines
+                    lbsr      f_load
+                    bcc       bn3
+                    stb       <msgerr
+bn3                 lbra      buf_top
+
+* c_save: save to fname, asking for a name if there is none; carry if
+* it was not saved
+c_save              ldx       <base
+                    tst       fname,x
+                    beq       c_saveas
+                    lbsr      f_save
+                    bcs       csv_err
+                    leax      savedm,pcr
+                    stx       <msgp
+                    andcc     #^Carry
+                    rts
+csv_err             stb       <msgerr
+                    orcc      #Carry
+                    rts
+savedm              fcn       "Saved"
+
+c_saveas            leax      savetl,pcr
+                    lbsr      dlg_in
+                    bcs       csa9
+                    ldx       <base
+                    tst       inbuf,x
+                    beq       csa9
+                    bsr       in2name
+                    bra       c_save
+csa9                orcc      #Carry
+                    rts
+savetl              fcn       "Save as"
+
+* in2name: the answer in inbuf becomes the file name
+in2name             ldx       <base
+                    leax      inbuf,x
+                    ldy       <base
+                    leay      fname,y
+                    ldb       #63
+i2n1                lda       ,x+
+                    sta       ,y+
+                    beq       i2n9
+                    decb
+                    bne       i2n1
+                    clr       ,y
+i2n9                rts

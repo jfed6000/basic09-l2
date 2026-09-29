@@ -1,0 +1,5 @@
+* l2basic09 P5.2a: l2b09ed File commands, menus and dialogs
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09ed <keys.bin >/vt3 >>ed.err
+echo == done

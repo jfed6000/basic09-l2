@@ -67,7 +67,13 @@ gk1a                sta       <ksns
 gk2                 bsr       k_norm
                     sta       <key
                     puls      b,x,y,pc
-gk_eof              lda       #EK.EOF
+gk_eof              tst       <hold               -h: keep the screen for a snapshot
+                    beq       gk_eof1
+                    lbsr      t_flush
+gk_hold             ldx       #0
+                    os9       F$Sleep
+                    bra       gk_hold
+gk_eof1             lda       #EK.EOF
                     sta       <key
                     puls      b,x,y,pc
 

@@ -42,6 +42,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 
 ## Gotchas learned the hard way
 
+- **`TFR` sets no flags.** Use `leax ,y` (or a compare) when the next branch needs Z.
 - **`LEAU`/`LEAS` don't set Z** (only `LEAX`/`LEAY` do). A `leau -1,u` / `bne` loop never ends, so count with X or Y, or add `cmpu #0`.
 - **Branch range.** Inserting code inline often pushes 8-bit branches (`bsr`, `beq`, ...) out of range ("Byte overflow"). Put new code in a subroutine somewhere else and call it with `lbsr`, or make that one branch long under `ifne L2B09`.
 - **Hidden undefined symbols.** The build uses the `undefextern` pragma, which hides undefined symbols. After changing `src/`, reassemble the touched files with `lwasm.orig` without `undefextern` (see the git history for the exact command) to catch them.
@@ -58,6 +59,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **Stock Basic09 quirks:**
   - A second PACK fails with 51, because PACK strips the workspace copy.
   - `DATE$` prints 2026 as `<6`.
+- **The screen snapshot** in `mame.log` puts a `|` at each end of every row, so the row starts one character after `NN: |`. Characters above `$7E` show as `#`.
+- **`SS.FntChar` (Wildbits)** takes the font set from the caller's A register. For `I$SetStt` that is the path number, so path 0 means font set 0.
 - **Hung tests.** A test that hangs (for example an `expect` that never matches) shows up as short or missing output files, because the files are never closed. `run.out` is empty too if any later step hangs. To watch progress, run `l2b09run -t=/term` in a scratch test: `mame.log` ends with a screen snapshot.
 - **The top 8K slot is not all RAM.** On Wildbits, `$FD00-$FFFF` is fixed whatever is mapped in slot 7 (on the CoCo 3, `$FE00-$FFFF`). `F$MapBlk` returns the highest free slot, so a window there must stay below `$1D00`.
   - `F$Link` keeps a module out of slot 7 once the module passes 23,808 bytes. `l2b09run` is past that, which is why `L2GARD` exists (ARCHITECTURE.md, P7).

@@ -78,7 +78,8 @@ start=$(date +%s.%N)
 end=$(date +%s.%N)
 
 for f in run.out run.err $( [ -f "$tdir/fetch" ] && cat "$tdir/fetch" ); do
-    os9 copy -l -r "$img,L2B09/$f" "$out/$f" 2>/dev/null || echo "(missing: $f)" > "$out/$f"
+    os9 copy -l -r "$img,L2B09/$f" "$out/$f" 2>/dev/null || true
+    [ -f "$out/$f" ] || echo "(missing: $f)" > "$out/$f"
 done
 
 for f in run.out run.err $( [ -f "$tdir/fetch" ] && cat "$tdir/fetch" ); do

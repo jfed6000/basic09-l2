@@ -77,6 +77,7 @@ v_draw              lbsr      t_curoff
                     lda       <redraw
                     bita      #RD.ALL
                     beq       vd1
+                    lbsr      v_frame
                     ldd       <tpos
                     std       <wp
                     ldd       <tpos+2
@@ -212,44 +213,67 @@ vl_eof              lbsr      v_pad
                     orcc      #Carry
                     puls      d,x,y,u,pc
 
-* v_stat: the status line (a message if there is one)
-v_stat              ldx       <base
+* v_stat: the bottom border (modified mark, line:column) and the hint line
+v_stat              ldb       <scrh               bottom border
+                    subb      #2
+                    clra
+                    lbsr      t_xy
+                    lda       <glyphs+GL.BL2
+                    lbsr      t_ch
+                    lda       <glyphs+GL.H2
+                    tst       <modif
+                    beq       vs1
+                    lda       #'*
+vs1                 lbsr      t_ch
+                    lda       <glyphs+GL.H2
+                    lbsr      t_ch
+                    ldx       <base
+                    leax      sbuf,x
+                    lda       #C$SPAC
+                    sta       ,x+
+                    ldd       <curline
+                    addd      #1
+                    lbsr      n_dec
+                    lda       #':
+                    sta       ,x+
+                    ldd       <curcol
+                    addd      #1
+                    lbsr      n_dec
+                    lda       #C$SPAC
+                    sta       ,x+
+                    clr       ,x
+                    tfr       x,d
+                    subd      <base
+                    subd      #sbuf
+                    addb      #4                  columns used so far, and the corner
+                    pshs      b
+                    ldx       <base
+                    leax      sbuf,x
+                    lbsr      t_str
+                    ldb       <scrw
+                    subb      ,s+
+                    lda       <glyphs+GL.H2
+                    lbsr      t_rep
+                    lda       <glyphs+GL.BR2
+                    lbsr      t_ch
+* v_hint: the last row: a message, an error, or the key hints
+v_hint              ldx       <base
                     leax      sbuf,x
                     lda       #C$SPAC
                     sta       ,x+
                     ldy       <msgp
-                    bne       vs_msg
+                    bne       vh_msg
                     tst       <msgerr
-                    bne       vs_err
-                    ldy       <base               file name
-                    leay      fname,y
-                    tst       ,y
-                    bne       vs1
-                    leay      untitl,pcr
-vs1                 bsr       s_str
-                    lda       #C$SPAC
-                    tst       <modif
-                    beq       vs2
-                    lda       #'*
-vs2                 sta       ,x+
-                    leay      lnmsg,pcr
-                    bsr       s_str
-                    ldd       <curline
-                    addd      #1
-                    lbsr      n_dec
-                    leay      colmsg,pcr
-                    bsr       s_str
-                    ldd       <curcol
-                    addd      #1
-                    lbsr      n_dec
+                    bne       vh_err
+                    leay      hintms,pcr
+vh_msg              bsr       s_str
                     bra       vs_out
-vs_msg              bsr       s_str
-                    bra       vs_out
-vs_err              leay      errmsg,pcr
+vh_err              leay      errmsg,pcr
                     bsr       s_str
                     clra
                     ldb       <msgerr
                     lbsr      n_dec
+* vs_out: sbuf (up to X) in reverse video on the last row
 vs_out              clr       ,x
                     ldb       <scrh
                     decb
@@ -277,74 +301,113 @@ s_str               lda       ,y+
                     bra       s_str
 ss9                 rts
 
-untitl              fcc       "(untitled)"
-                    fcb       0
-lnmsg               fcc       "  Line "
-                    fcb       0
-colmsg              fcc       "  Col "
-                    fcb       0
-errmsg              fcc       "Error #"
-                    fcb       0
-
-* v_prompt: ask for a line on the status line.  X = prompt text.
-* The answer is in inbuf (ending in 0); carry if Esc was pressed.
-v_prompt            pshs      x
-                    ldx       <base
-                    leax      inbuf,x
-                    clr       ,x
-vpr1                ldx       <base               show the prompt and the answer
+* v_frame: menu bar, the top border with the file name, the side borders
+v_frame             lda       #$FF
+                    lbsr      v_menubar
+                    clra                          top border
+                    ldb       #1
+                    lbsr      t_xy
+                    lda       <glyphs+GL.TL2
+                    lbsr      t_ch
+                    ldy       <base               title: " name "
+                    leay      fname,y
+                    tst       ,y
+                    bne       vfr1
+                    leay      untitl,pcr
+vfr1                ldx       <base
                     leax      sbuf,x
                     lda       #C$SPAC
                     sta       ,x+
-                    ldy       ,s
                     bsr       s_str
-                    ldy       <base
-                    leay      inbuf,y
-                    bsr       s_str
+                    lda       #C$SPAC
+                    sta       ,x+
+                    clr       ,x
                     tfr       x,d
                     subd      <base
                     subd      #sbuf
-                    pshs      b                   cursor column
-                    lbsr      vs_out
-                    puls      a
-                    ldb       <scrh
-                    decb
-                    lbsr      t_xy
-                    lbsr      t_flush
-                    lbsr      getkey
+                    pshs      b                   title length
+                    ldb       <scrw
+                    subb      #2
+                    subb      ,s
+                    lsrb                          border on the left of it
+                    pshs      b
+                    lda       <glyphs+GL.H2
+                    lbsr      t_rep
                     ldx       <base
-                    leax      inbuf,x
-vpr2                tst       ,x+                 X = end of the answer
-                    bne       vpr2
-                    leax      -1,x
-                    cmpa      #C$CR
-                    beq       vpr_ok
-                    cmpa      #EK.ESC
-                    beq       vpr_esc
-                    cmpa      #EK.EOF
-                    beq       vpr_esc
-                    cmpa      #EK.BS
-                    bne       vpr3
-                    tfr       x,d
-                    subd      <base
-                    cmpd      #inbuf
-                    beq       vpr1                nothing to delete
-                    clr       ,-x
-                    bra       vpr1
-vpr3                cmpa      #C$SPAC
-                    blo       vpr1
-                    cmpa      #$7E
-                    bhi       vpr1
+                    leax      sbuf,x
+                    lbsr      t_str
+                    ldb       <scrw               the rest of the border
+                    subb      #2
+                    subb      ,s+
+                    subb      ,s+
+                    lda       <glyphs+GL.H2
+                    lbsr      t_rep
+                    lda       <glyphs+GL.TR2
+                    lbsr      t_ch
+                    ldb       <wtop               side borders
+vfr2                clra
+                    lbsr      t_xy
+                    lda       <glyphs+GL.V2
+                    lbsr      t_ch
+                    lda       <scrw
+                    deca
+                    lbsr      t_xy
+                    lda       <glyphs+GL.V2
+                    lbsr      t_ch
+                    incb
+                    lda       <wtop
+                    adda      <wrows
                     pshs      a
-                    tfr       x,d
-                    subd      <base
-                    cmpd      #inbuf+60
+                    cmpb      ,s+
+                    blo       vfr2
+                    rts
+
+* v_menubar: the menu titles on row 0; menu A (or none if $FF) is shown
+* selected
+v_menubar           pshs      a
+                    clra
+                    clrb
+                    lbsr      t_xy
+                    lbsr      t_rev
+                    lda       #C$SPAC
+                    lbsr      t_ch
+                    ldb       #1                  columns written
+                    leax      mtitle,pcr
+                    clra                          menu number
+vmb1                tst       ,x
+                    beq       vmb5
+                    cmpa      ,s
+                    bne       vmb2
+                    lbsr      t_norm
+vmb2                pshs      a
+                    lda       #C$SPAC
+                    lbsr      t_ch
+                    incb
+vmb3                lda       ,x+
+                    beq       vmb4
+                    lbsr      t_ch
+                    incb
+                    bra       vmb3
+vmb4                lda       #C$SPAC
+                    lbsr      t_ch
+                    incb
                     puls      a
-                    beq       vpr1                full
-                    sta       ,x+
-                    clr       ,x
-                    bra       vpr1
-vpr_ok              andcc     #^Carry
-                    puls      x,pc
-vpr_esc             orcc      #Carry
-                    puls      x,pc
+                    cmpa      ,s
+                    bne       vmb4a
+                    lbsr      t_rev
+vmb4a               inca
+                    bra       vmb1
+vmb5                pshs      b
+                    ldb       <scrw
+                    subb      ,s+
+                    lda       #C$SPAC
+                    lbsr      t_rep
+                    lbsr      t_norm
+                    puls      a,pc
+
+untitl              fcc       "(untitled)"
+                    fcb       0
+errmsg              fcc       "Error #"
+                    fcb       0
+hintms              fcc       "F1 Help  ^S Save  ^O Open  ^G Go to  ^B Make  ^R Run  Alt+letter Menus"
+                    fcb       0

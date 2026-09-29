@@ -4,9 +4,10 @@
 
 It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only the key tables and a few screen details are machine-specific, so a CoCo 3 port is possible.
 
-    l2b09ed [-c=<pages>] [<file>]
+    l2b09ed [-c=<pages>] [-h] [<file>]
 
 - **`-c=<pages>`:** number of 2K pages cached in memory, 3–24 (default 12). If memory is short it uses fewer, down to 3.
+- **`-h`:** at the end of the key input, sleep instead of quitting. Tests use it to take a screen snapshot of a menu or dialog.
 - **`<file>`:** the file to edit. A missing file starts empty and is created on the first save. With no name, the first save asks for one.
 
 ## Status
@@ -15,7 +16,10 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 |---|---|---|
 | P5.0 | Key and screen survey, this document | done |
 | P5.1 | Paged buffer, plain full-screen view, open, edit, save | done |
-| P5.2 | Turbo UI: menu bar, drop-down menus, dialogs, message window, block operations, find/replace, undo | |
+| P5.2a | Turbo layout, menu bar and drop-down menus, dialog boxes, help, File commands | done |
+| P5.2b | Selection and clipboard | |
+| P5.2c | Find and replace | |
+| P5.2d | Undo and redo | |
 | P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | |
 | P5.4 | Debugger UI: current line, step, continue, evaluate, watches | |
 | P5.5 | `l2b09run`: line breakpoints, run to cursor, step over | |
@@ -36,16 +40,16 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Enter | New line, indented like the current one | P5.1 |
 | ^D | Delete the line | P5.1 |
 | ^G | Go to line | P5.1 |
-| ^S, F2 | Save | P5.1 |
+| ^S, F2 | Save (asks for a name if there is none) | P5.1 |
 | ^Q | Quit (asks to save changes) | P5.1 |
+| Alt+letter | Open a menu (File, Edit, Search, Run, Compile, Debug, Options, Help) | P5.2a |
+| F1 | Help | P5.2a |
+| F3, ^O | Open | P5.2a |
 | Shift+arrows, Ctrl+Shift+Left/Right | Select | P5.2 |
 | ^A ^C ^X ^V | Select all, copy, cut, paste | P5.2 |
 | ^Z / ^Y | Undo / redo | P5.2 |
 | ^F / ^L | Find / find next | P5.2 |
-| Esc | Cancel (menu, dialog, selection) | P5.2 |
-| Alt+letter | Open a menu (File, Edit, Search, Run, Compile, Debug, Options, Help) | P5.2 |
-| F1 | Help | P5.2 |
-| F3, ^O | Open | P5.2 |
+| Esc | Cancel (menu, dialog, selection) | P5.2a |
 | ^B | Make (load the changed procedures) | P5.3 |
 | ^R | Run | P5.3 |
 | ^N | Next error | P5.3 |
@@ -84,7 +88,17 @@ Both drivers send a character. The modifier and arrow state comes from `SS.KySns
 
 The screen uses the CoCo/Wildbits VTIO control codes: `$02` cursor XY, `$0C` clear, `$1F $20/$21` reverse video, `$05 $20/$21` cursor off/on. The size comes from `SS.ScSiz` (80×30 on Wildbits), and the default is 80×30.
 
-The text window is every row but the last. The status line (file name, `*` if modified, line and column) and prompts use the last row. Tabs expand to every 8th column. A line wider than the window scrolls the whole window sideways.
+    row 0        File  Edit  Search  Run  Compile  Debug  Options  Help     menu bar (reverse)
+    row 1        ╔══════════════════ name.b09 ══════════════════╗          title: the file name
+    rows 2..h-3  ║ text                                          ║
+    row h-2      ╚*═ 1234:56 ═══════════════════════════════════╝          * = modified, line:column
+    row h-1       F1 Help  ^S Save  ...                                     hints or a message (reverse)
+
+- **Text window:** the rows and columns inside the frame. Tabs expand to every 8th column. A line wider than the window scrolls the whole window sideways.
+- **Menus:** Alt+letter opens a menu under its title in a single-line box. Up/Down move (skipping separators), Left/Right go to the next menu, Enter or an item's first letter runs it, and Esc closes the menu. Commands that come in later phases are in the menus already and say "Not available yet".
+- **Dialogs:** a centered double-line box for a line of text (Open, Save as, Go to line), for a Y/N question (Esc cancels), or for a message.
+- **Help:** F1 (Help ▸ Keys) shows the key list over the whole screen.
+- **Frame glyphs:** fonts differ, so the editor installs its own 14 glyphs (double frame, single frame, ├ ┤) over characters `$F2`–`$FF` of font set 0 with `SS.FntChar`, and puts the originals back on exit. te uses the same range. `SS.FntChar` takes the font set from the caller's A register, which for `I$SetStt` is the path number, so the calls go through path 0. When the keys come from a file, or the call fails (no `SS.FntChar`, e.g. a CoCo 3), the frames are ASCII (`+ - = |`).
 
 ## The paged buffer
 
@@ -106,3 +120,4 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Test data:** a test directory's `gen` script writes generated files, which are copied into the image unchanged (see `tools/emu-wildbits.sh`).
 - **`make p5atest` (P5.1):** `test/p5a/gen` builds a 3,000-line, 129 KB file and a key script. It also runs the same operations through a Python model of the editor's commands to produce the expected file. The editor runs with `-c=3` (so it swaps constantly), with keys from the script and the screen on `/vt3`. It saves, and the result must match the model byte for byte.
   - **Covered:** go to line, typing, Enter with indent, Backspace joining lines, Delete, delete line (200 in a row: page joins and removals), 40 inserted lines (page splits), vertical moves keeping the column, word moves, start/end of the line, top/bottom, page down, save and quit.
+- **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

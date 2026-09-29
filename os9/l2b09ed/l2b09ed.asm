@@ -6,9 +6,11 @@
 * are cached in memory, so a file can be much larger than the editor's
 * 64K address space.
 *
-* usage: l2b09ed [-c=<pages>] [<file>]
+* usage: l2b09ed [-c=<pages>] [-h] [<file>]
 *
 *   -c=<pages>  number of 2K pages cached in memory (3-24, default 12)
+*   -h          at the end of the key input, sleep instead of quitting
+*               (tests use it to take a screen snapshot)
 *
 * Keys are read from path 0 and the screen is written to path 1.  When
 * path 0 is not a terminal (a test script), SS.KySns fails and the key
@@ -40,6 +42,25 @@ TABW                equ       8                   tab stops
 OUTSZ               equ       256                 screen output buffer
 STKSZ               equ       768
 C$TAB               equ       $09
+SS.FntChar          equ       $C2                 Wildbits grfdrv256: get/set a font character
+GLYPH0              equ       $F2                 frame glyphs go here (as in te)
+
+* Frame glyphs (see term.asm)
+GL.TL2              equ       0                   double frame
+GL.TR2              equ       1
+GL.BL2              equ       2
+GL.BR2              equ       3
+GL.H2               equ       4
+GL.V2               equ       5
+GL.TL1              equ       6                   single frame
+GL.TR1              equ       7
+GL.BL1              equ       8
+GL.BR1              equ       9
+GL.H1               equ       10
+GL.V1               equ       11
+GL.LT1              equ       12                  single tees
+GL.RT1              equ       13
+NGLYPH              equ       14
 
 * Page descriptor
                     org       0
@@ -128,6 +149,20 @@ tk                  rmb       2                   offset change
 tmp                 rmb       2
 tmpc                rmb       2
 argp                rmb       2                   parameters
+glyphs              rmb       NGLYPH              character for each GL.* glyph
+glyok               rmb       1                   our glyphs are in the font
+noindt              rmb       1                   Enter does not indent
+hold                rmb       1                   -h: sleep at the end of the key input
+bx.col              rmb       1                   bx_draw: column
+bx.row              rmb       1                   row
+bx.w                rmb       1                   width
+bx.h                rmb       1                   height
+bx.st               rmb       1                   GL.TL2 or GL.TL1
+mcur                rmb       1                   open menu
+msel                rmb       1                   selected item
+mcnt                rmb       1                   items in it
+mcol                rmb       1                   its column
+mwid                rmb       1                   its width
 dpend               equ       .
 
                     org       256
@@ -136,6 +171,7 @@ optraw              rmb       32                  terminal options while editing
 fname               rmb       64                  file name
 inbuf               rmb       82                  prompt input
 sbuf                rmb       130                 status line text
+fntsav              rmb       NGLYPH*8            font characters under our glyphs
 outbuf              rmb       OUTSZ
 desctab             rmb       NDESC*DS.SIZE
 cachtab             rmb       NCMAX*CE.SIZE
@@ -182,13 +218,7 @@ st1                 clr       ,x+
                     lbsr      f_load
                     bcc       st2
                     stb       <msgerr
-st2                 ldd       <first
-                    std       <cpos
-                    std       <tpos
-                    std       <apos
-                    std       <xpos
-                    lda       #RD.ALL
-                    sta       <redraw
+st2                 lbsr      buf_top
                     lbsr      t_cls
                     lbra      m_loop
 
@@ -205,7 +235,11 @@ ga1                 lda       ,x+
                     bne       ga5
                     lda       ,x+
                     anda      #$DF
-                    cmpa      #'C
+                    cmpa      #'H
+                    bne       ga1a
+                    inc       <hold
+                    bra       ga1
+ga1a                cmpa      #'C
                     bne       ga4
                     lda       ,x+
                     cmpa      #'=
@@ -302,6 +336,7 @@ quit                lbsr      t_done
                     use       page.asm
                     use       view.asm
                     use       edit.asm
+                    use       menu.asm
 
                     emod
 eom                 equ       *
