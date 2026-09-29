@@ -1,0 +1,10 @@
+* l2basic09 P5.6: syntax colours
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09ed hl.b09 <k1.bin >scr.out
+date -t >t0
+/dd/l2b09/l2b09ed big.b09 <kon.bin >/term
+date -t >t1
+/dd/l2b09/l2b09ed big.b09 <koff.bin >/term
+date -t >t2
+echo == done

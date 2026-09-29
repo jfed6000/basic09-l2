@@ -107,6 +107,13 @@ mcomp               fdb       c_make-cmdtab
                     fdb       c_msgwin-cmdtab
                     fcn       "Messages"
                     fcn       "F6"
+                    fdb       0
+                    fdb       c_pp-cmdtab
+                    fcn       "Pretty print"
+                    fcn       ""
+                    fdb       c_ppall-cmdtab
+                    fcn       "All: pretty print"
+                    fcn       ""
                     fdb       $FFFF
 mdbg                fdb       c_step-cmdtab
                     fcn       "Trace into"
@@ -139,6 +146,9 @@ mopt                fdb       c_indent-cmdtab
                     fcn       ""
                     fdb       c_mcase-cmdtab
                     fcn       "Match case"
+                    fcn       ""
+                    fdb       c_colour-cmdtab
+                    fcn       "Syntax colours"
                     fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab

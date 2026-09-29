@@ -240,6 +240,13 @@ wwh                 rmb       1                   rows of the watch window (0 = 
 bpdirty             rmb       1                   the breakpoints changed since bp_sync
 bprt                rmb       1                   breakpoints l2b09run holds (0 = none)
 bptemp              rmb       1                   F4 set a breakpoint only for this run
+nocolr              rmb       1                   syntax colours are off
+hlout               rmb       1                   hl: the colour in force on the screen
+hlst                rmb       1                   hl_cls: HS.* state in this line
+hlrun               rmb       1                   characters left in the current word
+hlcur               rmb       1                   and their colour
+ulink               rmb       1                   u_new: 1 = link the records after the next
+ugrp                rmb       1                   c_undo/c_redo: a linked group
 dpend               equ       .
                     ifgt      dpend-(256-16)
                     error     "direct page overflow"
@@ -274,6 +281,17 @@ nbuf                rmb       NAMEMAX             mk_isproc: a procedure name
 dbname              rmb       NAMEMAX             the procedure it stopped in
 lastout             rmb       LASTMAX             the last text line from l2b09run
 estr                rmb       62                  the last expression evaluated
+hlnorm              rmb       1                   the normal text colour
+hp                  rmb       4                   hl: a look-ahead position
+hlbuf               rmb       HLMAX+1             hl_word: the word
+ppall               rmb       1                   pretty print: every procedure
+pphdr               rmb       1                   the LIST header line was read
+ppcont              rmb       1                   the last read had no CR
+ppcl                rmb       2                   the cursor line and column, the
+ppcc                rmb       2                   window's top line, before
+pptl                rmb       2
+bpsave              rmb       MAXBP*2             the breakpoints' lines, before
+pprec               rmb       UR.SIZE             the new text's chain (a scratch record)
 wtab                rmb       MAXWATCH*WT.SIZE      watches
 ptab                rmb       MAXPROC*PR.SIZE     procedures l2b09run holds
 mtab                rmb       MAXMSG*MS.SIZE      messages
@@ -486,6 +504,8 @@ quit                lbsr      rt_done
                     use       msg.asm
                     use       rt.asm
                     use       dbg.asm
+                    use       hl.asm
+                    use       pp.asm
 
                     emod
 eom                 equ       *

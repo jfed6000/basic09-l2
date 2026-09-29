@@ -186,6 +186,12 @@ vp1                 lda       <vcnt
                     bra       vp1
 vp9                 puls      a,pc
 
+* v_colput: v_put, in colour B unless colours are off
+v_colput            tst       <nocolr
+                    bne       v_put
+                    lbsr      hl_col
+                    bra       v_put
+
 * v_put: A into the current window row, if it still has room
 v_put               pshs      a
                     lda       <vcnt
@@ -229,22 +235,31 @@ vl00                lbsr      t_ch
                     cmpd      <dbfl
                     bne       vl0
                     inc       <vexec
-vl0                 ldu       <base
+vl0                 clr       <hlst               syntax colours start afresh
+                    clr       <hlrun
+                    ldu       <base
                     leau      wp,u
                     ldx       #0                  display column
 vl1                 lbsr      p_char
                     bcs       vl_eof
                     cmpa      #C$CR
                     beq       vl_eol
-                    cmpa      #C$TAB
+                    tst       <nocolr
+                    bne       vl1a
+                    lbsr      hl_cls              B = its colour
+vl1a                cmpa      #C$TAB
                     beq       vl_tab
                     cmpx      <leftcol
                     blo       vl2
                     lbsr      v_selat
-                    bsr       v_put
+                    lbsr      v_colput
 vl2                 leax      1,x
                     bra       vl3
 vl_tab              lbsr      v_selat
+                    tst       <nocolr
+                    bne       vlt0
+                    lbsr      hl_col
+vlt0                equ       *
                     tfr       x,y
                     lbsr      col_adv
                     pshs      x
@@ -278,8 +293,9 @@ vl_eof              bsr       v_endpad
                     puls      d,x,y,u,pc
 
 * v_endpad: the rest of the row, reversed on the line the program
-* stopped at
-v_endpad            tst       <vexec
+* stopped at; the colour goes back to normal first
+v_endpad            lbsr      hl_norm
+                    tst       <vexec
                     beq       vep1
                     tst       <vrev
                     bne       vep2

@@ -20,7 +20,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5htest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest` … `p5jtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make k2img` | `build/l2b09_k2.dsk`: the stock K2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
 
@@ -40,7 +40,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - The runtime's direct page is full (1 byte left). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
 - **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `l2b09ed/` is the editor (P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
-- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, and `edmodel.py`, a Python model of the editor's commands used to generate expected files).
+- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, `edmodel.py`, a Python model of the editor's commands used to generate expected files, and `mkkw.py`, which regenerates the editor's keyword table `os9/l2b09ed/kwtab.asm` from `KEYTAB`).
 
 ## Gotchas learned the hard way
 
