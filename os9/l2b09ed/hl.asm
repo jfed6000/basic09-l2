@@ -113,6 +113,19 @@ mb_off              tst       <nocolr
                     bsr       hl_pair
                     puls      d,x,pc
 
+* mi_on, mi_sel, mi_end: a drop-down menu grey, its selected item
+* green; with colours off only the selected item shows, in reverse
+* video.  They keep all registers.
+mi_on               tst       <nocolr
+                    beq       mb_on
+                    rts
+mi_sel              tst       <nocolr
+                    beq       mb_sel
+                    lbra      t_rev
+mi_end              tst       <nocolr
+                    beq       mb_on
+                    lbra      t_norm
+
 * hl_done: the terminal's own colours back (before the screen is
 * cleared on exit)
 hl_done             ldx       <base

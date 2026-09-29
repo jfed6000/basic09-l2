@@ -389,6 +389,7 @@ m_drawbox           lda       <mcol
                     sta       <bx.h
                     lda       #GL.TL1
                     sta       <bx.st
+                    lbsr      mi_on               grey, as in Turbo C
                     lbsr      bx_draw
                     lbsr      m_first
                     clrb                          item number
@@ -414,7 +415,7 @@ mdb2                inca
                     lda       ,s
                     cmpa      <msel
                     bne       mdb3
-                    lbsr      t_rev
+                    lbsr      mi_sel
 mdb3                lda       #C$SPAC
                     lbsr      t_ch
                     pshs      x
@@ -436,13 +437,13 @@ mdb3                lda       #C$SPAC
                     lbsr      t_str               the shortcut
                     lda       #C$SPAC
                     lbsr      t_ch
-                    lbsr      t_norm
+                    lbsr      mi_end
                     puls      x
 mdb8                lbsr      m_skip
                     puls      b
                     incb
                     bra       mdb1
-mdb9                rts
+mdb9                lbra      mb_off
 
 ********************************************************************
 * Boxes and dialogs

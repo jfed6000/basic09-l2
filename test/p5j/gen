@@ -21,6 +21,9 @@ k=k+i
 endif
 next i
 print "k=";k;"and a long line with many items to wrap";i;k;i;k;i;k;"tail"
+if k>99 then
+end
+endif
 run ppsub(k)
 end
 '''
@@ -40,13 +43,16 @@ pmain = '''PROCEDURE ppmain
     ENDIF
   NEXT i
   PRINT "k="; k; "and a long line with many items to wrap"; i; k; i; k; i; k; "tail"
+  IF k>99 THEN
+    END
+  ENDIF
   RUN ppsub(k)
-  END
+END
 '''
 psub = '''PROCEDURE ppsub
   PARAM n:INTEGER
   PRINT "n="; n
-  END
+END
 '''
 files = {'pp.b09': main + sub, 'pp1.exp': pmain + sub, 'pp3.exp': main + sub,
          'pp4.exp': pmain + psub}
@@ -68,7 +74,7 @@ alt-c "p"                   # again: the same text
 ^r                          # to the end
 alt-c "a"                   # every procedure
 %(sa)s "pp4.b09" enter
-^g "13" enter ^k " " ^b     # ppmain changed (a space): Make compiles the pretty text
+^g "16" enter ^k " " ^b     # ppmain changed (a space): Make compiles the pretty text
 ^q "n"
 ''' % {'sa': saveas}
 with open(os.path.join(out, 'keys.bin'), 'wb') as f:

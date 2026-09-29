@@ -415,13 +415,14 @@ vh_err              leay      errmsg,pcr
                     clra
                     ldb       <msgerr
                     lbsr      n_dec
-* vs_out: sbuf (up to X) in reverse video on the last row
+* vs_out: sbuf (up to X) on the last row: grey like the menu bar, or
+* in reverse video with colours off
 vs_out              clr       ,x
                     ldb       <scrh
                     decb
                     clra
                     lbsr      t_xy
-                    lbsr      t_rev
+                    lbsr      mb_on
                     ldx       <base
                     leax      sbuf,x
                     ldb       <scrw               all but the last column (no scroll)
@@ -434,7 +435,7 @@ vs4                 lda       #C$SPAC
 vs5                 lbsr      t_ch
                     decb
                     bne       vs3
-                    lbra      t_norm
+                    lbra      mb_off
 
 * s_str: copy the string at Y (ending in 0) to X
 s_str               lda       ,y+

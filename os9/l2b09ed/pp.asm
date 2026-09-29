@@ -7,8 +7,8 @@
 * pretty print makes sure the procedure is loaded as it stands (Make),
 * asks l2b09run to "list" it, cleans each line up, and puts the result
 * in place of the procedure's lines, the PROCEDURE line included.  The
-* body is indented PPIND under PROCEDURE, and a line number sits in that
-* gutter.
+* body is indented PPIND under PROCEDURE (a line number sits in that
+* gutter), except a top-level END, which lines up with PROCEDURE.
 *
 * LIST's first line is "PROCEDURE <name>".  The others are " XXXX" (a
 * marker and the I-code offset), a space, then a line number if there
@@ -223,7 +223,14 @@ ppc3                tfr       x,d                 the text's column: PPIND, and 
                     subd      #rline+PPCOL
                     bpl       ppc3a
                     clrb
-ppc3a               addb      #PPIND
+ppc3a               tstb                          an END at the top level closes the
+                    bne       ppc3b               procedure: column 0, under PROCEDURE
+                    ldu       <base
+                    tst       ppw,u
+                    bne       ppc3b
+                    lbsr      pp_isend
+                    beq       ppc5
+ppc3b               addb      #PPIND
                     ldu       <base
                     subb      ppw,u               spaces after the line number
                     bgt       ppc4
@@ -292,6 +299,22 @@ ppc11               cmpx      ,s
                     puls      y,pc                (carry)
 ppc12               andcc     #^Carry
                     puls      y,pc
+
+* pp_isend: Z if the text at X is the END statement
+pp_isend            pshs      d
+                    ldd       ,x
+                    cmpd      #'E*256+'N
+                    bne       pie8
+                    lda       2,x
+                    cmpa      #'D
+                    bne       pie8
+                    lda       3,x                 not ENDIF, ENDWHILE, ...
+                    lbsr      is_word
+                    bcs       pie8
+                    orcc      #Zero
+                    puls      d,pc
+pie8                andcc     #^Zero
+                    puls      d,pc
 
 * pp_put: the new text in place of the lines of the procedure of entry
 * Y (from the line after PROCEDURE up to the next PROCEDURE line or the

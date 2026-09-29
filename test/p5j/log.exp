@@ -20,8 +20,11 @@
 <  004E      NEXT i
 <  0059      PRINT "k="; k; "and a long line with many items to wrap"; i
             ; k; i; k; i; k; "tail"
-<  00AC      RUN ppsub(k)
-<  00B6      END 
+<  00AC      IF k>99 THEN 
+<  00B8        END 
+<  00BA      ENDIF 
+<  00BC      RUN ppsub(k)
+<  00C6      END 
 < %READY
 > list ppmain
 < PROCEDURE ppmain
@@ -36,8 +39,11 @@
 <  004E      NEXT i
 <  0059      PRINT "k="; k; "and a long line with many items to wrap"; i
             ; k; i; k; i; k; "tail"
-<  00AC      RUN ppsub(k)
-<  00B6      END 
+<  00AC      IF k>99 THEN 
+<  00B8        END 
+<  00BA      ENDIF 
+<  00BC      RUN ppsub(k)
+<  00C6      END 
 < %READY
 > bp ppmain 5
 < ok
@@ -60,8 +66,11 @@
 <  004E      NEXT i
 <  0059      PRINT "k="; k; "and a long line with many items to wrap"; i
             ; k; i; k; i; k; "tail"
-<  00AC      RUN ppsub(k)
-<  00B6      END 
+<  00AC      IF k>99 THEN 
+<  00B8        END 
+<  00BA      ENDIF 
+<  00BC      RUN ppsub(k)
+<  00C6      END 
 < %READY
 > list ppsub
 < PROCEDURE ppsub
