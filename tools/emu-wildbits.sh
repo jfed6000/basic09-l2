@@ -10,6 +10,8 @@
 #   fetch    optional list of files to copy back from /dd/l2b09 after the run
 #   expect   optional "<file> <text>" lines; each text must appear in that file,
 #            or "same <fileA> <fileB>": the two fetched files must be identical
+#   gen      optional executable, run as "gen <dir>"; every file it writes to
+#            <dir> is copied into /dd/l2b09 as it is (binary)
 #   *        every other file is copied into /dd/l2b09 as text (LF -> CR)
 #
 # The base image is copied, never modified. Results land in build/emu/<test>/:
@@ -41,10 +43,17 @@ cp "$BASEIMG" "$img"
 os9 makdir "$img,L2B09"
 for f in "$tdir"/*; do
     case $(basename "$f") in
-        modules|fetch|bootmods|expect) ;;
+        modules|fetch|bootmods|expect|gen) ;;
         *) os9 copy -l -r "$f" "$img,L2B09/$(basename "$f")" ;;
     esac
 done
+if [ -x "$tdir/gen" ]; then
+    mkdir -p "$out/gen"
+    "$tdir/gen" "$out/gen"
+    for f in "$out/gen"/*; do
+        os9 copy -r "$f" "$img,L2B09/$(basename "$f")"
+    done
+fi
 if [ -f "$tdir/modules" ]; then
     grep -v '^#' "$tdir/modules" | while read -r src dst; do
         [ -n "$src" ] || continue

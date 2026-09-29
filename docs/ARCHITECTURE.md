@@ -119,7 +119,9 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
     - The window needs one free 8K slot in the program's 64K.
     - Both limits are documented in FARMEM.md. P7's far arrays have no `free`: the runtime frees them when the procedure returns.
   - **Harness:** `expect` files can now say `same <fileA> <fileB>` (used for the mfree comparison).
-- **P5 – Editor integration.** This is either a minimal test client or the real editor, depending on where the editor ends up.
+- **P5 – Editor integration (in progress).** `l2b09ed` (`os9/l2b09ed/`, 6809 assembly) is a Turbo C–style IDE that edits one whole `.b09` file and drives `l2b09run` over the pipe protocol. It is specified in [EDITOR.md](EDITOR.md), which also covers the sub-phases P5.0–P5.5 and the keyboard survey.
+  - **P5.0/P5.1 (done):** keys from both Wildbits keyboard drivers are folded into one code set. The paged buffer keeps the text in 2K pages in a swap file with an LRU cache of `-c` pages, so files can be larger than the editor's 64K. There is a plain full-screen view with open, edit and save. `make p5atest` edits a 129 KB file with a 3-page cache and matches a Python model byte for byte. `l2b09ed` is 4,344 bytes.
+  - **Harness:** a test directory may have a `gen` script whose output is copied into the image unchanged (binary key scripts, generated sources).
 - **P6 – Transparent code banking (done).** `l2b09run -b=<kb>` keeps loaded procedures in far memory and maps each one in when it runs. Programs are unchanged. `make p6test` passes all 13 checks, including a program with about 48K of compiled code: it fails with "memory full" (32) in a 24K workspace without `-b`, and loads and runs with `-b=128` (1,355 lines in about 11 s, 22,232 bytes still free). `l2b09run` is 23,182 bytes.
   - **Stubs:** after LOAD binds a procedure (`L2BANK`), its image is copied into a far store (`F$AllRAM`, filled in order) and the workspace copy shrinks to a stub of about 34 bytes. The stub is the header and name, the `P.BANK` bit in `P.STAT`, then the far block and offset. The directory, name searches, `DIR` and the call-chain pointers (`U.PROC`) all point at stubs.
   - **Resolving:** `L2RSLV` turns a stub into a mapped address by mapping its block into the 8K code window (`L2MAPW`: `F$ClrBlk` + `F$MapBlk`). It runs in exactly two places: `EXECUT` (call) and the return path in `RUNSTM` (`RUNS50`, before `SETGLB`). Errors never unwind across procedure levels, so there is no third path. `I.APRC` always points at mapped code, and `INTERP`/`LIST` put it back to the stub afterwards.
@@ -191,7 +193,7 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
 ## Risks and open questions
 - **Stock compatibility.** I-code stays compatible with stock RunB until P6. Far arrays are opt-in, and PACK refuses procedures that use them.
 - **`l2b09run` size.** Past 23,808 bytes the code cannot use the top slot (P7). It is 24,382 bytes now; shrinking it under the limit would give one address slot back.
-- **Where the editor lives.** The editor itself (here or a separate project) is undecided. The pipe protocol makes this independent of everything else.
+- **Keyboard.** `keydrv_ps2` sends no F3–F12, Tab, Home, End, PgUp, PgDn, Ins or Del (and F7 sends a stray byte), so the editor keeps a Ctrl/Alt equivalent for every F-key. Extending that driver is a separate NitrOS-9 change.
 - **Pipes on Wildbits.** Pipes are not in the stock SD boot, so l2basic09 needs a boot file with them (see P1). A CoCo 3 port needs the same check. Named pipes would mean porting `pipeman_named` to NitrOS-9's IOMan.
 - **Syscall cost.** `F$MapBlk` costs a syscall per remap, so `farmem` should be measured on hardware or in MAME.
 

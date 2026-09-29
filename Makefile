@@ -28,7 +28,7 @@ STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
 L2B09 = $(BUILD)/l2b09run
 OS9DIR = os9
-TOOLS = $(BUILD)/l2b09ctl
+TOOLS = $(BUILD)/l2b09ctl $(BUILD)/l2b09ed
 
 # Test platform (Wildbits Jr2 under MAME for now; see tools/emu-wildbits.sh)
 PLATDIR  = $(NITROS9DIR)/recipes/wildbits/l2
@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test p6test p7test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test p5atest p6test p7test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -77,6 +77,15 @@ $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 $(BUILD)/%: $(OS9DIR)/%.asm $(OS9DIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) $(CURDIR)/$< -o$(CURDIR)/$@
 
+# The editor: 6809 only, and undefined symbols are errors (no undefextern)
+EDSRC = $(wildcard $(OS9DIR)/l2b09ed/*.asm)
+EDAS  = lwasm --no-warn=ifp1 --format=os9 \
+        --pragma=pcaspcr,nosymbolcase,condundefzero,dollarnotlocal,noforwardrefmax \
+        --includedir=$(NITROS9DIR)/defs
+$(BUILD)/l2b09ed: $(EDSRC) $(OS9DIR)/defsfile | $(BUILD)
+	cd $(BUILD) && $(EDAS) $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) \
+	    --includedir=$(CURDIR)/$(OS9DIR)/l2b09ed $(CURDIR)/$(OS9DIR)/l2b09ed/l2b09ed.asm -o$(CURDIR)/$@
+
 # Pipe modules are not in the stock Wildbits SD boot; tests load them at runtime
 pipes: $(PIPEMODS)
 
@@ -98,6 +107,9 @@ p3test: l2b09 tools pipes
 
 p4test: stock l2b09 subs
 	tools/emu-wildbits.sh test/p4
+
+p5atest: tools
+	EMU_SECONDS=240 tools/emu-wildbits.sh test/p5a
 
 p6test: l2b09
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6

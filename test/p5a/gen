@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""P5.1 test data: a large source file, a key script that edits it, and
+the file the edits must produce (from a model of the editor's commands).
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+CR = '\r'
+
+
+class Model:
+    """The editor's cursor and editing rules, on a plain string."""
+
+    def __init__(self, text):
+        self.t = text
+        self.c = 0
+        self.want = 0
+
+    def bol(self, i=None):
+        i = self.c if i is None else i
+        return self.t.rfind(CR, 0, i) + 1
+
+    def eol(self, i=None):
+        i = self.c if i is None else i
+        j = self.t.find(CR, i)
+        return len(self.t) if j < 0 else j
+
+    def col(self):
+        return self.c - self.bol()
+
+    def tocol(self, start, col):
+        return min(start + col, self.eol(start))
+
+    # commands; each returns True if it keeps wantcol (vertical moves)
+    def goto(self, n):
+        line = min(max(n - 1, 0), self.t.count(CR))
+        i = 0
+        for _ in range(line):
+            i = self.t.index(CR, i) + 1
+        self.c = i
+
+    def type(self, s):
+        self.t = self.t[:self.c] + s + self.t[self.c:]
+        self.c += len(s)
+
+    def enter(self):
+        b = self.bol()
+        n = 0
+        while b + n < self.c and self.t[b + n] == ' ':
+            n += 1
+        self.type(CR + ' ' * n)
+
+    def bs(self):
+        if self.c > 0:
+            self.t = self.t[:self.c - 1] + self.t[self.c:]
+            self.c -= 1
+
+    def delete(self):
+        if self.c < len(self.t):
+            self.t = self.t[:self.c] + self.t[self.c + 1:]
+
+    def delln(self):
+        self.c = self.bol()
+        j = self.t.find(CR, self.c)
+        j = len(self.t) if j < 0 else j + 1
+        self.t = self.t[:self.c] + self.t[j:]
+
+    def right(self):
+        self.c = min(self.c + 1, len(self.t))
+
+    def left(self):
+        self.c = max(self.c - 1, 0)
+
+    def up(self):
+        b = self.bol()
+        if b > 0:
+            self.c = self.tocol(self.bol(b - 1), self.want)
+        return True
+
+    def down(self):
+        e = self.eol()
+        if e < len(self.t):
+            self.c = self.tocol(e + 1, self.want)
+        return True
+
+    def home(self):
+        self.c = self.bol()
+
+    def end(self):
+        self.c = self.eol()
+
+    def top(self):
+        self.c = 0
+
+    def bottom(self):
+        self.c = len(self.t)
+
+    @staticmethod
+    def isword(ch):
+        return ch.isalnum() or ch == '_'
+
+    def wright(self):
+        while self.c < len(self.t) and self.isword(self.t[self.c]):
+            self.c += 1
+        while self.c < len(self.t) and not self.isword(self.t[self.c]):
+            self.c += 1
+
+    def wleft(self):
+        while self.c > 0 and not self.isword(self.t[self.c - 1]):
+            self.c -= 1
+        while self.c > 0 and self.isword(self.t[self.c - 1]):
+            self.c -= 1
+
+
+def source(nlines):
+    out = []
+    for i in range(1, nlines + 1):
+        indent = '  ' * (i % 4 == 0)
+        pad = 'x' * (i * 7 % 29)
+        out.append('%s%05d PRINT "line %d"; REM %s' % (indent, i, i, pad))
+    return CR.join(out) + CR
+
+
+def main():
+    outdir = sys.argv[1]
+    text = source(3000)
+    m = Model(text)
+    keys = []
+
+    def op(name, *args, k):
+        vertical = getattr(m, name)(*args)
+        if not vertical:
+            m.want = m.col()
+        keys.append(k)
+
+    def goto(n):
+        op('goto', n, k='^g "%d" enter' % n)
+
+    goto(1000)                                   # insert a line
+    op('type', 'REM inserted A', k='"REM inserted A"')
+    op('enter', k='enter')
+    goto(2500)                                   # delete three lines
+    for _ in range(3):
+        op('delln', k='^d')
+    goto(50)                                     # 40 new lines: page splits
+    for i in range(40):
+        s = 'REM split %02d ' % i + 'abcdefghij' * 5
+        op('type', s, k='"%s"' % s)
+        op('enter', k='enter')
+    goto(2000)                                   # delete 200 lines: merges
+    for _ in range(200):
+        op('delln', k='^d')
+    goto(700)                                    # join two lines
+    op('bs', k='bs')
+    goto(800)                                    # edit inside a line
+    for _ in range(5):
+        op('right', k='right')
+    op('type', 'XYZ', k='"XYZ"')
+    op('end', k='^k')
+    op('type', '!', k='"!"')
+    goto(900)
+    for _ in range(3):
+        op('delete', k='del')
+    goto(1200)                                   # vertical moves keep the column
+    for _ in range(4):
+        op('right', k='right')
+    for _ in range(3):
+        op('down', k='down')
+    op('up', k='up')
+    op('type', '#', k='"#"')
+    op('wright', k='wright')                     # words
+    op('wright', k='wright')
+    op('type', '_', k='"_"')
+    op('wleft', k='wleft')
+    op('type', '<', k='"<"')
+    goto(1500)                                   # auto-indent (line 1500 is indented)
+    op('end', k='^k')
+    op('enter', k='enter')
+    op('type', 'REM indented', k='"REM indented"')
+    op('home', k='^j')
+    op('type', '>', k='">"')
+    op('bottom', k='bottom')                     # end of the text
+    op('type', 'last', k='"last"')
+    op('top', k='top')                           # first line
+    op('delln', k='^d')
+    for _ in range(20):                          # page moves
+        op('down', k='pgdn')                     # (the model only needs the line)
+    keys.append('^s ^q')
+
+    with open(os.path.join(outdir, 'big.b09'), 'w', newline='') as f:
+        f.write(text)
+    with open(os.path.join(outdir, 'big.exp'), 'w', newline='') as f:
+        f.write(m.t)
+    with open(os.path.join(outdir, 'keys.bin'), 'wb') as f:
+        f.write(compile_keys('\n'.join(keys)))
+
+
+main()

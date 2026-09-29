@@ -1,0 +1,2 @@
+same big.b09 big.exp
+run.out == done

@@ -20,11 +20,11 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
-- A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files.
+- A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files, and a `gen` script whose output is copied in unchanged (binary).
 - `expect` lines are `<file> <text>`, or `same <fileA> <fileB>`.
 - Output lands in `build/emu/<test>/`, and `mame.log` ends with a text-screen snapshot.
 
@@ -37,11 +37,12 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - Direct-page variables are in `b09defs`; `L2B09` variables go after `BufOvf`.
   - `L2B09` builds also get `-DLevel=2`.
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
-- **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol.
-- **`tools/`:** host tools (the emulator runner, and `bootfile-add.py`).
+- **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `l2b09ed/` is the editor (P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
+- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, and `keys.py`, which compiles editor key scripts).
 
 ## Gotchas learned the hard way
 
+- **`LEAU`/`LEAS` don't set Z** (only `LEAX`/`LEAY` do). A `leau -1,u` / `bne` loop never ends, so count with X or Y, or add `cmpu #0`.
 - **Branch range.** Inserting code inline often pushes 8-bit branches (`bsr`, `beq`, ...) out of range ("Byte overflow"). Put new code in a subroutine somewhere else and call it with `lbsr`, or make that one branch long under `ifne L2B09`.
 - **Hidden undefined symbols.** The build uses the `undefextern` pragma, which hides undefined symbols. After changing `src/`, reassemble the touched files with `lwasm.orig` without `undefextern` (see the git history for the exact command) to catch them.
 - **The lwasm wrapper** writes `.map`/`.list` files into the current directory, so run it inside `build/`.
@@ -50,7 +51,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - Named pipes don't work on NitrOS-9's IOMan.
   - Pipes can't be polled.
 - **OS-9 shell:**
-  - `>>` redirects stderr; it does not append.
+  - `>>` redirects stderr; it does not append. It also fails with 218 if the file already exists.
   - `!` is a pipe, even inside `echo`.
   - `#mem` must come straight after the command name.
   - Basic09 `PRINT a;b` adds no spaces, so write `expect` text to match.
