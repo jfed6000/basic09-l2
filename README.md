@@ -29,12 +29,25 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
 
     make                    # stock basic09/runb variants + subroutine modules into build/
     make check              # byte-compare stock builds with the NitrOS-9 tree's prebuilt copies
+    make l2b09              # build/l2b09run, the l2basic09 runtime
     make p1test             # P1 pipeline test, headless on Wildbits Jr2 under MAME
+    make p2test             # l2b09run test: -t terminal, debugger over stdin/stderr, line numbers
+    make loadtime           # benchmark: compile the 937-line startrek sample
     make NITROS9DIR=/path/to/nitros9
 
 `NITROS9DIR` defaults to `~/projects/wild/joust/nitros9_complete/nitros9`.
 
 Emulator tests use that tree's MAME build (`mame/mame`, machine `wbjr2`) and its Level 2 image (`recipes/wildbits/l2/l2_wildbitsjr2.dsk`). The image is copied into `build/emu/<test>/` and never modified. Only 6809 builds are targeted; the 6309 variants are stock leftovers.
+
+## l2b09run
+
+    l2b09run [#mem] [-t=<terminal>] [<file> [<procedure>[(<params>)]]]
+
+`l2b09run` is Basic09 without the line editor.
+- It loads a source file, runs its first procedure (or the one named), then takes Basic09 commands.
+- Commands and the debugger use its standard input and standard error.
+- `-t` gives the program its own terminal, for example `-t=/vt2`.
+- The debugger reports where it stopped as `BREAK: PROCEDURE <name> line <n>`. Line 1 is the line after the `PROCEDURE` header.
 
 ## Origin
 

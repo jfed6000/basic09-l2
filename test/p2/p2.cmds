@@ -1,0 +1,9 @@
+run p2err
+state
+print k
+q
+list p2fib
+run p2outer
+state
+q
+bye

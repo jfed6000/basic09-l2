@@ -97,7 +97,11 @@ O.COMAND fdb ENTRYPT offset of self
  fdb 0 end of table
 
  ifne INCLUDED&EDITOR
+ ifne L2B09
+B09NAM fcs "l2b09run"
+ else
 B09NAM fcs "Basic09"
+ endc
  else
 B09NAM fcs "RunB"
  endc
@@ -112,6 +116,10 @@ B09NAM fcs "RunB"
 * and Terry Ritter at Motorola.
 
 CPYRIT
+ ifne L2B09
+ fcc "l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware"
+ fcb V$LF+$80
+ else
  ifne wildbits
  fcb V$LF
  fcb V$LF+$80
@@ -157,6 +165,7 @@ CPYRIT
  fcb V$LF
  fcc "(no trig functions)"
  fcb V$LF+$80
+ endc
  endc
  endc
 
@@ -985,16 +994,22 @@ CMDVRB equ *
  fdb DIR05-*
  fcb V$CR+$80
 
+ ifne L2B09
+ fdb 12 number of alphabetic entries (no EDIT/E)
+ else
  fdb 14 number of alphabetic entries
+ endc
  fcb 2 number of skip bytes per entry
  fdb BYEBYE-*
  fcs "BYE"
  fdb DIR-*
  fcs "DIR"
+ ifeq L2B09
  fdb EDIT-*
  fcs "EDIT"
  fdb EDIT-*
  fcs "E"
+ endc
  fdb LIST-*
  fcs "LIST"
  fdb INTERP-*
@@ -1056,6 +1071,7 @@ DBGVRB equ *
  fdb BREAK-*
  fcs "BREAK"
 
+ ifeq L2B09
 ***************
 * Editor Commands
 *
@@ -1088,6 +1104,7 @@ EDTVRB fdb ELIST-*
  fcs "R"
  fdb EQUIT-*
  fcs "Q"
+ endc
  endc
 
  ttl CHARACTER String constants
@@ -1237,6 +1254,11 @@ START15 lda #$7E JMP Opcode
  lbsr J$INTI Initialize interpreter
  puls Y get initial shell params
 
+ ifne L2B09
+ lbsr L2OPTS Parse l2b09run options
+ lda CMDIN
+ sta BASINP Command input from home path
+ endc
  ifne INCLUDED&EDITOR
  leax KEYTAB,PCR
  stx KEYWORDS save Keyword Table addr for compiler
@@ -1256,6 +1278,12 @@ START15 lda #$7E JMP Opcode
  bra EXIT cleanup stack
 
 START2 puls Y get shell param ptr
+ ifne L2B09
+START25 lda ,Y+ skip the file name; a procedure name may follow
+ cmpa #V$SPAC
+ bhi START25
+ leay -1,Y
+ endc
  endc
 
  bsr SETUP
@@ -1306,6 +1334,7 @@ SETEXT ldd SP.ERR previous exit ptr
  stx 2,S set up exit return addr
  tfr D,PC return to caller
 
+
  ifne INCLUDED&EDITOR
 ***************
 * Subroutine COMAND
@@ -1353,9 +1382,17 @@ RUNCMD pshs X,Y Save regs
  lbsr PRTSTR print prompt
  bsr EXNLIN reset I/O buffer
  lda BASINP get working path number
+ ifne L2B09
+ cmpa CMDIN home command path?
+ endc
  beq RUNCMD05
  OS9 I$Close Close input path
+ ifne L2B09
+RUNCMD05 lda CMDIN Default back to home command input
+ sta BASINP
+ else
 RUNCMD05 clr BASINP Default back to standard input
+ endc
  lbsr INLINE read input line
  bcc RUNC10 ..continue if no error
  cmpb #E$EOF End of file?
@@ -2052,7 +2089,11 @@ OPNCH1 ldd  ,S get mode
  ldy #OVWLEN
  lda BASOUT to 'normal' command path
  OS9 I$WritLn File exists, rewrite?:
+ ifne L2B09
+ lda CMDIN from home command input
+ else
  clra from Std input path
+ endc
  leax ,--S Input buffer
  ldy #2 Read one byte
  OS9 I$ReadLn
@@ -2617,6 +2658,57 @@ BASLEN2             equ       *-BASL2
 NEWLN               fcb       $1b,$33,$06,$0c,$0d
 NEWLNLEN            equ	*-NEWLN
 				endc
+ ifne L2B09
+***************
+* Subroutine L2OPTS
+*   Parse l2b09run options ahead of the file name
+*
+*   -t=<path>  Program terminal.  Standard input and output
+*              (paths 0 and 1) are moved to <path> so the
+*              program, and anything it SHELLs, uses it.
+*              Commands and the debugger keep the original
+*              standard input (CMDIN) and standard error.
+
+* Passed: (Y)=Shell parameter ptr
+* Returns: (Y)=Updated past options
+* Exits to OS-9 with the error code on a bad option or path
+
+L2OPTS lda ,Y+
+ cmpa #V$SPAC skip spaces
+ beq L2OPTS
+ cmpa #'-
+ bne L2OPT9 ..not an option; done
+ ldd ,Y++ get option letter and '='
+ anda #^('a-'A) upper case
+ cmpd #'T*256+'=
+ bne L2OPTE ..unknown option
+ bsr L2TERM
+ bcc L2OPTS
+L2OPTX OS9 F$Exit report error to parent
+L2OPTE ldb #E$IllArg illegal argument
+ bra L2OPTX
+L2OPT9 leay -1,Y back up to first non-option char
+ rts
+
+* Move paths 0 and 1 to the program terminal at (Y)
+L2TERM clra
+ OS9 I$Dup copy of standard input
+ bcs L2TER9
+ sta CMDIN becomes the home command input
+ clra
+ OS9 I$Close free path 0
+ leax ,Y
+ lda #UPDAT. open terminal; lowest free path is 0
+ OS9 I$Open
+ bcs L2TER9
+ leay ,X updated past pathname
+ lda #1
+ OS9 I$Close free path 1
+ clra
+ OS9 I$Dup terminal becomes path 1 too
+L2TER9 rts
+ endc
+
 * End of Command routines
 
  use editor

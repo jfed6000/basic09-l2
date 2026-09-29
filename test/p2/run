@@ -1,0 +1,13 @@
+* l2basic09 P2: l2b09run with the program on its own terminal (-t)
+-x
+chd /dd/l2b09
+echo == l2b09run -t=term.out, commands from p2.cmds
+echo >term.out
+/dd/l2b09/l2b09run -t=/dd/l2b09/term.out p2prog.b09 <p2.cmds >cmd.out >>cmd.err
+echo == l2b09run without -t, commands piped in
+list p2.cmds ! /dd/l2b09/l2b09run p2prog.b09 >plain.out >>plain.err
+echo == l2b09run naming the procedure to run
+/dd/l2b09/l2b09run p2prog.b09 p2outer <named.cmds >named.out >>named.err
+echo == bad option
+/dd/l2b09/l2b09run -q p2prog.b09
+echo == done

@@ -425,6 +425,9 @@ LNMTBL rmb 2 Line number table ptr
 RESCAN rmb 1 legal format rescan if non-zero
 InpSprtr rmb 1 Input item separator
 BufOvf rmb 1 I/O Buffer Overflow flag
+ ifne L2B09
+CMDIN rmb 1 Home command input path (0 unless -t moved stdin)
+ endc
 
  pag
 * Procedure Environment Table Definition

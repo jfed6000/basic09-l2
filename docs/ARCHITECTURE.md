@@ -1,7 +1,7 @@
 # l2basic09 Architecture and Roadmap
 
 **Name:** the project is called `l2basic09`. Nothing in any name refers to a specific machine, because it may also run on a CoCo 3.
-- Deliverable names follow the same rule: `l2b09c` (compiler), `l2b09run` (runtime/debugger), `farmem`.
+- Deliverable names follow the same rule: `l2b09run` (compiler, runtime and debugger; see P2 for why there is no separate `l2b09c`), `farmem`.
 - Machine-specific code sits behind conditionals, the way `wildbits` already does.
 - **6809 only.** There will be no 6309 version. The existing `H6309` conditionals in the Microware source still build, but new code does not need to support them.
 - MMU window sizes come from `DAT.BlSz`, so nothing is hard-coded to one machine. Wildbits and the CoCo 3 both use 8K blocks.
@@ -23,25 +23,24 @@ Goal: a Level 2 environment in which:
 - **Command I/O is already separate from program I/O.** The command/debugger paths `BASINP`/`BASOUT` are distinct from the program paths `I.IPTH`/`I.OPTH`. So the debugger can talk on a different terminal from the running program with small changes.
 - **The debugger is small and uses a fixed hook.** It is the `DEBUG` routine in `comand.asm` (around line 2490), with the verbs `$ CONT DIR Q LIST PRINT STATE TRON TROFF DEG RAD LET`. The interpreter reaches it at one point, `STMLUP` in `stmts.asm:260`, through `J$DBUG` when the `I.RUNM` debug bit is set. Signals set `G.SIGN` via `INTCPT`.
 - **The debugger needs the compiler and decompiler.** `PRINT`/`LET` compile an expression, and `LIST` decompiles. So "runtime + debugger" is really "everything except the interactive line editor/command shell". It is smaller, but not RunB-small.
-- **PACK throws away what a debugger needs.** PACK (`DUMP` routine, `comand.asm:1739`) rebinds with `SMASH` cleared, which removes REMs, DIMs and symbol names. A "debug pack" that keeps symbols is a small change.
+- **PACK throws away what a debugger needs.** PACK (`DUMP` routine, `comand.asm:1739`) rebinds with `SMASH` cleared, which removes REMs, DIMs and symbol names. That is why the runtime loads source rather than packed modules (see P2).
 - **Unpacked procedures are already module-shaped.** Workspace procedures are already laid out like modules (`P.MHDR`, `P.SYMB`, `P.DSCB`, and so on). That makes a disk format for debuggable modules natural.
 - **The kernel side is already there.** The Level 2 kernel has `F$AllRAM`, `F$MapBlk`, `F$ClrBlk`, `F$CpyMem`, `F$GPrDsc`, and there are pipes (see the P1 findings for the limits). Wildbits has 8K blocks (`defs/wildbits.d`), and `vt1`–`vt8` give multiple terminals. The `samples/mapblk` sample already maps blocks from Basic09 through the `wild` module.
 
 ## Proposed architecture
 ```
  [Editor process, vtN]      text .b09 source; could be a new full-screen editor
-        |  editor forks runtime; anonymous pipes on its stdin/stdout + F$Send for BREAK
+        |  forks l2b09run -t=/vtM; anonymous pipes on its stdin/stderr; F$Send for BREAK
+        |  sends "load <file>" with the changed procedures only
         v
- [l2b09c compiler]  text -> I-code -> "debug module" (symbols + line table kept) -> /r0 or file
-        v
- [l2b09run runtime/debugger process, own 64K, own vt]  F$Load module, run.
-        program I/O -> a /vtN it opens itself;  debugger I/O -> the control pipes
+ [l2b09run process, own 64K]  compiles source to I-code (symbols kept), runs, debugs
+        program I/O -> /vtM (paths 0,1);  commands/debugger -> the control pipes
 ```
-- **Hand-off format:** a module file. The Level 2 module directory is system-wide, so `F$Load` gives the runtime the code without a shared-memory trick.
+- **Hand-off format:** source text. The runtime compiles it with the stock compiler, so it keeps full symbols for the debugger. Recompiling is slow (937 lines take about 20 s at 6.29 MHz), so the runtime stays running between runs and the editor re-sends only the procedures it changed; LOAD replaces procedures by name. Packed modules still run in RunB for production use.
 - **Protocol:** plain text lines, easy to test by piping a command file into the runtime (`list cmds ! l2b09run`).
   - Editor to runtime: `LOAD`, `RUN proc args`, `BREAK`, `STEP n`, `CONT`, `TRON/TROFF`, `PRINT expr`, `LET`, `STATE`, `QUIT`.
   - Runtime to editor: `READY`, `STOPPED proc line`, `ERROR code proc line`, `EXITED`.
-- **Mapping back to source lines:** Basic09 has no mandatory line numbers, so the compiler must emit an I-code-offset → source-line table in the debug module. This is new, and it is the key enabler for an editor that jumps to the error.
+- **Mapping back to source lines:** LOAD turns every source line after a `PROCEDURE` header into exactly one I-code line, including blank and comment lines. So "procedure P, line N" is file line (line of `PROCEDURE P`) + N, and no separate line table is needed. `l2b09run` reports `BREAK: PROCEDURE <name> line <n>` (P2). This holds for loaded source only; PACK drops DIM/REM lines.
 - **Debugger process:** start with it in the same process as the runtime, using the existing hook, with its command paths redirected to a pipe or a second terminal. A truly separate debugger process would only need a thin front-end. Moving the debug engine out of the runtime would need `F$CpyMem` for reads and a stub for writes. That adds a lot of complexity for little gain, so it is deferred.
 
 ## Beyond 64K (in order of effort)
@@ -81,9 +80,21 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
   - **Named pipes do not work.** `pipeman_named` (Level 2 source) assembles and handles anonymous pipes. But a second process opening an existing named pipe fails with error 190: the `OldPipe` path checks and rewrites IOMan's stack frame (`IOMAGIC`), and NitrOS-9's IOMan does not lay out its stack the way that code assumes. The control channel therefore uses anonymous pipes, with the editor as the runtime's parent (P3).
   - **RunB details.** RunB links its module by name, so a packed file must be `load`ed (or be in the exec dir) first. It also needs a memory size (for example `runb #24k`) when a program has large arrays.
   - **Not yet automated.** An OS-9-side `l2b09make` script was not written, because the OS-9 shell has no parameter substitution. `l2b09c` (P2) replaces it.
-- **P2 – Build variants.**
-  - Split the `INCLUDED` flags into `EDITOR` (interactive shell + line editor) and a new `DEBUG`/`COMPILER`. The aim is to build `l2b09c` (headless compile + debug-pack) and `l2b09run` (runtime + debugger, no editor).
-  - Add debug-pack (skip `SMASH`, keep symbols) plus the line table.
+- **P2 – Build variants (done).** `make l2b09` builds `build/l2b09run` (22,385 bytes; stock basic09 is 23,232). `make p2test` passes all 14 checks, and `make check` still shows the stock builds are byte-identical.
+  - **One flag, `L2B09`, instead of splitting `INCLUDED`.** The stock module stores the `INCLUDED` value (`fcb INCLUDED`), so redefining `FULL` would change stock bytes. `L2B09` (in `src/b09type`) is undefined for stock builds. When set, it:
+    - drops the line editor (`EDIT`/`E` and the editor command table);
+    - names the module `l2b09run` and gives it a neutral banner;
+    - turns off the CoCo ^N output (`Tandy`);
+    - adds the features below.
+  - **Everything else stays.** The debugger's PRINT/LET compile and run statements, and LIST decompiles, so the compiler, binder and decompiler are all needed in the runtime. That is also why there is no separate `l2b09c`: it would be the same code. Compiling is done by the running `l2b09run` (`load`, or `pack*` for RunB modules).
+  - **Usage:** `l2b09run [#mem] [-t=<terminal>] [<file> [<procedure>[(<params>)]]]`
+    - With a file, it loads the file, runs the named procedure (or the first one), then reads commands. Stock basic09 wrongly tried to run a procedure named after the file.
+    - With no file, it starts in command mode.
+    - `-t=<path>` moves standard input and output (paths 0 and 1) to `<path>`, so the program and anything it `SHELL`s use that terminal. Commands and the debugger keep the original stdin (the new `CMDIN` variable) and stderr (path 2, `CMDOUT`/`BASOUT`). The code is `L2OPTS`/`L2TERM` in `comand.asm`. `RUNCMD`, the "Rewrite?" prompt and `HALT` all respect `CMDIN`.
+    - A bad option exits with `E$IllArg` (187).
+  - **Line numbers:** the debugger header is `BREAK: PROCEDURE <name> line <n>` (`PAPRLN`/`ACTLIN` in `editor`). `<n>` is the line holding the current statement, so it is right for `\`-joined statements and for errors in called procedures, both of which are tested.
+  - **Found, left for P3:** the debugger's `PRINT` output goes to the program terminal, not the command channel, because it runs as a direct statement through `I.OPTH`.
+  - **Dropped: debug-pack.** It was meant to keep symbols in a packed module. The runtime compiles source instead, which keeps symbols anyway, and incremental reloads make up for compile time. Revisit only if restart times become a problem.
 - **P3 – Runtime control channel.** `l2b09run` gets:
   - the debugger's `BASINP`/`BASOUT` on anonymous pipes created by the parent (editor) before `F$Fork`;
   - program paths `I.IPTH`/`I.OPTH` on a `/vtN` the runtime opens itself;

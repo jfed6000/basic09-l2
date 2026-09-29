@@ -1,0 +1,44 @@
+PROCEDURE p2main
+DIM i:INTEGER
+DIM r:REAL
+PRINT "p2main: program output"
+FOR i:=1 TO 5
+RUN p2fib(i,r)
+PRINT "fib("; i; ")="; r
+NEXT i
+END
+
+PROCEDURE p2fib
+PARAM n:INTEGER; r:REAL
+DIM a,b,t:REAL
+DIM k:INTEGER
+a:=0.
+b:=1.
+FOR k:=1 TO n
+t:=a+b
+a:=b
+b:=t
+NEXT k
+r:=a
+END
+
+PROCEDURE p2err
+DIM k,z:INTEGER
+k:=7
+z:=0
+PRINT "p2err: about to divide"
+k:=k/z
+PRINT "p2err: not reached"
+END
+
+PROCEDURE p2outer
+DIM v:INTEGER
+PRINT "p2outer: calling p2inner"
+RUN p2inner(v)
+END
+
+PROCEDURE p2inner
+PARAM v:INTEGER
+DIM a(3):INTEGER
+v:=1 \a(v):=2 \v:=4 \a(v):=9
+END

@@ -9,7 +9,13 @@
 *
 *CPUType set Normal
 
+* L2B09 (non-zero) builds the l2basic09 runtime: no line editor, no
+* machine-specific output. Undefined means a stock build.
+ ifne L2B09
+Tandy equ 0
+ else
 Tandy equ 1  (non-zero prints ^N before Ready, Break for Tandy)
+ endc
 Dragon equ 0 (non-zero prints Dragon startup msg)
 *            (NOTE: When setting Dragon non-zero you must also)
 *            ( set Tandy to non-zero.)

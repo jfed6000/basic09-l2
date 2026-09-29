@@ -29,7 +29,11 @@ DEBUG pshs D,X,Y,U Preserve registers
 DEBUG1 lbsr NEWLIN Clean up I/O buffer
  leax DBGMSG,PCR Get debug message
  lbsr STRSPC
+ ifne L2B09
+ lbsr PAPRLN Print active procedure name and line
+ else
  lbsr PAPRCN Print active procedure name
+ endc
 DEBUG2 leax DBGPMT,PCR Get prompt string
  leay DBGVRB,PCR Get debug verb table ptr
  lbsr RUNCMD Execute debug command
@@ -50,6 +54,10 @@ HALT lbsr J$TROF Insure trace is turned off
  lda #3
 HALT10 cmpa BASOUT command output path?
  beq HALT20 ..Yes; don't close it
+ ifne L2B09
+ cmpa CMDIN home command input path?
+ beq HALT20 ..Yes; don't close it
+ endc
  OS9 I$Close Close all but std I/O paths
 HALT20 inca
  cmpa #NumPaths
@@ -344,6 +352,7 @@ PRTNAM pshs X Save
  leax P.NAME,X Get ptr to name string
  bsr STREOL Print the name (followed by crlf)
  puls X,PC Return
+
 
 ***************
 * Subroutine PRTLIN
@@ -933,6 +942,45 @@ PARENS ldx  ,S Get return address
  stx ,--Y Push left paren on operator stack
  rts return
 
+ ifne L2B09
+***************
+* Subroutine PAPRLN
+*   Print "PROCEDURE <name> line <n>" for the active procedure.
+*   <n> counts I-Code lines from the procedure start; line 1 is
+*   the line after the PROCEDURE header, as in a SAVEd file.
+
+PAPRLN leax PRCEDR,PCR get "PROCEDURE"
+ lbsr STRSPC
+ ldx I.APRC
+ leax P.NAME,X
+ lbsr STRSPC name
+ leax LINMSG,PCR
+ lbsr STRSPC "line"
+ bsr ACTLIN
+ lbsr ItoA line number
+ lbra PRTEOL
+
+***************
+* Subroutine ACTLIN
+*   Line number of the statement at I.ICPT
+
+* Returns: (D)=Line number (1 = first line of procedure)
+
+ACTLIN pshs X,Y
+ ldx #0
+ ldy I.ICBG
+ACTLI1 leax 1,X line (X) starts at (Y)
+ lbsr NXTONE (Y)=start of next line
+ cmpy I.ICPT
+ bhi ACTLI2 ..current statement is on line (X)
+ cmpy I.ICLM
+ blo ACTLI1
+ACTLI2 tfr X,D
+ puls X,Y,PC
+
+LINMSG fcs "line"
+ endc
+
 * End of Decompiler routines
 
  endc
@@ -1006,6 +1054,7 @@ PARENS ldx  ,S Get return address
 *   Q          Bind procedure and return to Command
 
  pag
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 EDIT lbsr PRCREF Get procedure name
  lbsr DIRADD Get procedure directory address
  ldy  ,X Get procedure address
@@ -1069,6 +1118,7 @@ EINSRT bsr INSERT
  bcc EMOVE1 Print the current line, and return
  rts just return if error
 
+ endc
 INSERT tst G.VARS enough memory to compile?
  beq INSERR ..no; error: memory full
  clr DEBUGGER Normal compil
@@ -1160,6 +1210,7 @@ GETLI2 sty I.ICPT insure "CLEAN" edit ptr
 * ELIST
 *   Process List command
 
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 ELIST bsr LIMITS Get list limits
  bsr CHKEOL Make sure we've hit end of line
  cmpx I.ICBG List from beginning of procedure?
@@ -1176,6 +1227,7 @@ ELIST1 ldd I.ICLM
  clra (return Carry clear)
  rts
 
+ endc
 ***************
 * Subroutine CHKEOL
 *   Check for end of line
@@ -1193,6 +1245,7 @@ CHKEO1 leas 5,S Pull of b,x,pc
 * Subroutine LIMITS
 *   Find Low and High limits to List or Delete
 
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 LIMITS lda ,Y+
  cmpa #V$SPAC Space?
  beq LIMITS ..Yes; skip it
@@ -1266,6 +1319,7 @@ TRGERR ldy I.ICPT Return with current line
  com ,S+ Return carry set
  rts
 
+ endc
 ***************
 * Subroutine GETNUM
 *   Get positive integer from command line
@@ -1287,6 +1341,7 @@ GETNU9 rts
 
 * Passed: (Y)=Line ptr
 
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 SEARCH clrb clear Change mode
  bra SCHSUB
 CHANGE ldb #1 set change mode as "bne if change mode"
@@ -1471,6 +1526,7 @@ NXDLI9 clr -1,Y
  com -1,Y warning: V$ESTR must equal $FF
  rts
  endc
+ endc
 
 ***************
 * Subroutine SUBST
@@ -1508,6 +1564,7 @@ SUBST3 puls X,Y (y)=addr of string that was found
 * Subroutine ERESEQ
 *   Resequence numbered procedure lines
 
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 ERESEQ ldd #100 Defalut first line#
  ldx #10 Default increment
  pshs D,X
@@ -1590,12 +1647,15 @@ SCHER9 lbra CMDERR Error - what?
 RESER2 leax RNGERR,PCR
  lbsr PRTLIN print BAD RANGE
  bra RESEQ3 Unbind procedure and return
+ endc
 
 ***************
 * Subroutine EQUIT
 *   Quit Editing; return to Command mode
 
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 EQUIT leas 4,S Throw away return addr & TEMP
+ endc
 REBIND lbsr J$BIND Bind the procedure & return
  clra (return Carry clear)
  rts
@@ -1604,10 +1664,12 @@ REBIND lbsr J$BIND Bind the procedure & return
 * Subroutine EDELET
 *   Process Editor's delete command
 
+ ifeq L2B09 line editor commands are not in the l2b09 runtime
 EDELET lbsr LIMITS
  lbsr CHKEOL
  bsr DELLIN Delete the line
  lbra EMOVE1 Print the current line, return
+ endc
 
 DELLIN ldd I.STBG
  std ICDPTR Insure nothing gets inserted

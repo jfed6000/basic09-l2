@@ -26,6 +26,7 @@ AFLAGS = -DNOS9VER= -DNOS9MAJ= -DNOS9MIN=
 STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
         $(BUILD)/runb_6809 $(BUILD)/runb_6309
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey
+L2B09 = $(BUILD)/l2b09run
 
 # Test platform (Wildbits Jr2 under MAME for now; see tools/emu-wildbits.sh)
 PLATDIR  = $(NITROS9DIR)/recipes/wildbits/l2
@@ -34,9 +35,11 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs pipes check p1test clean
+.PHONY: all stock subs l2b09 pipes check p1test p2test loadtime clean
 
-all: stock subs
+all: stock subs l2b09
+
+l2b09: $(L2B09)
 
 stock: $(STOCK)
 subs: $(SUBS)
@@ -59,6 +62,10 @@ $(BUILD)/runb_6809: $(DEPS) | $(BUILD)
 $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 	$(PYTHON) $(SCRIPT) runb $@ -DCOMMUNITY=1 -DH6309=1
 
+# l2basic09 runtime: Basic09 without the line editor (see src/b09type, L2B09)
+$(BUILD)/l2b09run: $(DEPS) | $(BUILD)
+	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1
+
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
 
@@ -74,6 +81,13 @@ $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe: $(BUILD)/%: $(NITROS9DIR)/level1/
 # P1: compile with stock basic09 from a script, run the packed module with runb
 p1test: stock pipes
 	tools/emu-wildbits.sh test/p1
+
+p2test: l2b09 pipes
+	tools/emu-wildbits.sh test/p2
+
+# Benchmark: time l2b09run compiling the 937-line startrek sample
+loadtime: l2b09
+	tools/emu-wildbits.sh test/loadtime
 
 # Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
 check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809

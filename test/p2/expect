@@ -1,0 +1,15 @@
+# program output goes to the -t terminal, commands and debugger to stdin/stderr
+term.out  p2main: program output
+term.out  fib(5)=5.
+term.out  p2err: about to divide
+cmd.err   p2err
+cmd.err   ERROR #
+cmd.err   D:
+cmd.err   PROCEDURE p2fib
+plain.out p2main: program output
+plain.err PROCEDURE p2fib
+run.err   ERROR #187
+cmd.err   BREAK: PROCEDURE p2err line 5
+cmd.err   BREAK: PROCEDURE p2inner line 3
+named.out p2outer: calling p2inner
+named.err BREAK: PROCEDURE p2inner line 3

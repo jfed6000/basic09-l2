@@ -1,0 +1,6 @@
+* l2basic09 P2: how long does l2b09run take to compile a large program
+-x
+chd /dd/l2b09
+date -t
+/dd/l2b09/l2b09run #40k <load.cmds >>load.err
+date -t
