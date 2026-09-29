@@ -1,0 +1,6 @@
+same ed.log log.exp
+same pp1.b09 pp1.exp
+same pp2.b09 pp1.exp
+same pp3.b09 pp3.exp
+same pp4.b09 pp4.exp
+run.out == done

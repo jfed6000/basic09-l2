@@ -20,6 +20,7 @@ UR.FL               equ       8
 UR.SIZE             equ       9
 UF.DEL              equ       $01                 a deletion (otherwise an insertion)
 UF.OUT              equ       $02                 its text is out of the buffer
+UF.LINK             equ       $04                 undone and redone with the one before
 
 * pos2abs: ua = the offset of position U from the start of the text
 pos2abs             pshs      d,x
@@ -155,7 +156,15 @@ un5                 clr       ,x+
                     inc       <ucnt
                     lda       <ucnt
                     sta       <ucur
-                    puls      d,y,u,pc
+                    lda       <ulink              one edit made of several records?
+                    beq       un9
+                    cmpa      #1
+                    beq       un8                 the first one stands alone
+                    lda       #UF.LINK
+                    sta       UR.FL,x
+                    bra       un9
+un8                 inc       <ulink
+un9                 puls      d,y,u,pc
 
 * u_last: X = the last record, if nothing could be redone; carry if none
 u_last              ldb       <ucnt
@@ -163,7 +172,7 @@ u_last              ldb       <ucnt
                     cmpb      <ucur
                     bne       ul9
                     decb
-                    bsr       u_ptr
+                    lbsr      u_ptr
                     andcc     #^Carry
                     rts
 ul9                 orcc      #Carry
@@ -331,6 +340,7 @@ udt2                pshs      x
                     puls      d
                     std       UR.CH,x
                     lda       #UF.DEL+UF.OUT
+                    ora       UR.FL,x
                     sta       UR.FL,x
 udt8                dec       <ubusy
                     puls      d,x,y,u
@@ -428,25 +438,69 @@ chain_cr            lda       2,s
                     std       DS.LINES,x
 ccr9                rts
 
-* c_undo, c_redo
+* c_undo, c_redo (records linked with UF.LINK go together)
 c_undo              ldb       <ucur
                     beq       cun8
-                    decb
+                    decb                          a group (pretty print)? then the
+                    lbsr      u_ptr               breakpoints keep their lines
+                    lda       UR.FL,x
+                    anda      #UF.LINK
+                    sta       <ugrp
+                    beq       cun0
+                    lbsr      bp_keep
+cun0                ldb       <ucur
+cun1                decb
                     stb       <ucur
                     lbsr      u_ptr
-                    bra       u_toggle
+                    lbsr      u_toggle
+                    lda       UR.FL,x
+                    bita      #UF.LINK
+                    beq       cun9
+                    ldb       <ucur
+                    bne       cun1
+cun9                bra       u_grpend
 cun8                leax      noundm,pcr
                     stx       <msgp
                     rts
 c_redo              ldb       <ucur
                     cmpb      <ucnt
                     beq       crd8
+                    clr       <ugrp
+                    incb                          a group (pretty print)?
+                    cmpb      <ucnt
+                    bhs       crd1
+                    lbsr      u_ptr
+                    lda       UR.FL,x
+                    anda      #UF.LINK
+                    sta       <ugrp
+                    beq       crd1
+                    lbsr      bp_keep
+crd1                ldb       <ucur               (u_ptr does not keep B)
                     lbsr      u_ptr
                     inc       <ucur
-                    bra       u_toggle
+                    bsr       u_toggle
+                    ldb       <ucur
+                    cmpb      <ucnt
+                    beq       crd9
+                    lbsr      u_ptr
+                    lda       UR.FL,x
+                    bita      #UF.LINK
+                    bne       crd1
+crd9                bra       u_grpend
 crd8                leax      noredm,pcr
                     stx       <msgp
                     rts
+* u_grpend: after a group, the breakpoints back on their lines; the
+* cursor stays on its line
+u_grpend            tst       <ugrp
+                    beq       uge9
+                    ldd       <curline
+                    pshs      d
+                    lbsr      bp_back
+                    puls      d
+                    lbsr      goto_line
+                    lbsr      v_center
+uge9                rts
 noundm              fcn       "Nothing to undo"
 noredm              fcn       "Nothing to redo"
 

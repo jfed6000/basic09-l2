@@ -648,6 +648,45 @@ pln4                leas      2,s
                     tfr       x,d
                     puls      x,y,u,pc
 
+* bp_keep: note the breakpoints' lines (in bpsave), for an edit that
+* keeps the line count but replaces whole lines (pretty print)
+bp_keep             pshs      d,x,u
+                    lbsr      bp_lines
+                    ldx       <base
+                    leau      bpline,x
+                    leax      bpsave,x
+                    ldb       #MAXBP*2
+bpk1                lda       ,u+
+                    sta       ,x+
+                    decb
+                    bne       bpk1
+                    puls      d,x,u,pc
+
+* bp_back: the breakpoints back on the lines bp_keep noted (the cursor
+* moves: the caller puts it back)
+bp_back             ldx       <base
+                    leax      bpsave,x
+                    ldu       <base
+                    leau      bppos,u
+                    ldb       #MAXBP
+bpb1                pshs      b,x,u
+                    ldd       ,x
+                    cmpd      #$FFFF
+                    beq       bpb2
+                    lbsr      goto_line
+                    ldu       3,s
+                    ldd       <cpos
+                    std       ,u
+                    ldd       <cpos+2
+                    std       2,u
+                    lbsr      p_eol
+bpb2                puls      b,x,u
+                    leax      2,x
+                    leau      4,u
+                    decb
+                    bne       bpb1
+                    rts
+
 * bp_on: carry if a breakpoint is on line D (by bpline)
 bp_on               pshs      d,x
                     ldx       <base

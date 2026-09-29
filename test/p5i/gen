@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""P5.6 test data: syntax colours (a small file drawn to a file, checked
+on the host by test/p5i/check) and a redraw benchmark with colours on
+and off.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+small = '''PROCEDURE hl
+DIM s:STRING
+s:="hi" \\ REM note
+FOR i=1 TO $1F
+PRINT left$(s,1); 2.5E3 (* c *) i
+NEXT i
+'''
+lines = []
+for n in range(5000):
+    k = n % 5
+    if k == 0:
+        lines.append('PROCEDURE p%d' % n if n % 250 == 0 else 'REM block %d of the benchmark text' % n)
+    elif k == 1:
+        lines.append('  FOR i=1 TO %d STEP 2 \\ total:=total+SIN(i)*%d.5' % (n, n))
+    elif k == 2:
+        lines.append('    PRINT "line %d: "; LEFT$(name,3); total (* a comment *)' % n)
+    elif k == 3:
+        lines.append('    IF total>$%04X THEN total:=0 ELSE count:=count+1' % n)
+    else:
+        lines.append('  NEXT i')
+files = {'hl.b09': small, 'big.b09': '\n'.join(lines) + '\n'}
+for name, text in files.items():
+    with open(os.path.join(out, name), 'w', newline='') as f:
+        f.write(text.replace('\n', '\r'))
+keys = {'k1.bin': '^q', 'kon.bin': 'pgdn*150 ^q', 'koff.bin': 'alt-o "s" pgdn*150 ^q'}
+for name, text in keys.items():
+    with open(os.path.join(out, name), 'wb') as f:
+        f.write(compile_keys(text))

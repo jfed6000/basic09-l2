@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""P5.6: check the colour escapes in the editor's screen output, and
+report the benchmark.  usage: check <outdir>"""
+import re
+import sys
+
+out = sys.argv[1]
+scr = open(out + '/scr.out', 'rb').read()
+
+
+def c(n):
+    return b'\x1b2' + bytes([n])
+
+
+N, KW, FN, STR, CMT, NUM = c(1), c(14), c(3), c(5), c(12), c(8)
+want = [
+    ('keyword, string, REM', b's:=' + STR + b'"hi"' + N + b' \\ ' + CMT + b'REM note' + N),
+    ('FOR, number, TO, hex', KW + b'FOR' + N + b' i=' + NUM + b'1' + N + b' ' + KW + b'TO' + N + b' ' + NUM + b'$1F' + N),
+    ('function, real, (* *)', KW + b'PRINT' + N + b' ' + FN + b'left$' + N + b'(s,' + NUM + b'1' + N + b'); '
+     + NUM + b'2.5E3' + N + b' ' + CMT + b'(* c *)' + N + b' i'),
+    ('PROCEDURE', KW + b'PROCEDURE' + N + b' hl'),
+]
+fail = 0
+for what, seq in want:
+    if seq in scr:
+        print('PASS  colours: %s' % what)
+    else:
+        print('FAIL  colours: %s' % what)
+        fail = 1
+
+
+def secs(name):
+    t = open(out + '/' + name).read()
+    m = re.search(r'(\d+):(\d+):(\d+)', t)
+    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+
+
+try:
+    on = secs('t1') - secs('t0')
+    off = secs('t2') - secs('t1')
+    print('bench: 150 pages with colours %d s, without %d s (%+.0f%%)'
+          % (on, off, (on - off) * 100.0 / max(off, 1)))
+except (OSError, AttributeError) as e:
+    print('FAIL  bench: %s' % e)
+    fail = 1
+sys.exit(fail)

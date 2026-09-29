@@ -27,6 +27,7 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 | P5.3 | Runtime: Make (only changed procedures), Run, error jump, user screen | done |
 | P5.4 | Debugger UI: current line, step, continue, evaluate, watches | done |
 | P5.5 | Line breakpoints, run to cursor, step over (`l2b09run` and the editor) | done |
+| P5.6 | Syntax colours and pretty print | done |
 
 ## Keys
 
@@ -70,6 +71,8 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | F8 | Step over (a `RUN` runs the whole call) | P5.5 |
 | ^T | Breakpoint on the cursor line, on or off | P5.5 |
 | Debug ▸ Clear breakpoints | Clear them all | P5.5 |
+| Options ▸ Syntax colours | Syntax colours on or off (on by default) | P5.6 |
+| Compile ▸ Pretty print, All: pretty print | Pretty print the procedure at the cursor, or every procedure | P5.6 |
 
 The base bindings follow the user's `te` editor (`~/projects/f256/jfed/te`), and the Turbo roles sit on F1–F8.
 
@@ -121,8 +124,28 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 - **Menus:** Alt+letter opens a menu under its title in a single-line box. Up/Down move (skipping separators), Left/Right go to the next menu, Enter or an item's first letter runs it, and Esc closes the menu.
 - **Dialogs:** a centered double-line box for a line of text (Open, Save as, Go to line), for a Y/N question (Esc cancels), or for a message.
 - **Help:** F1 (Help ▸ Keys) shows the key list over the whole screen.
+- **Syntax colours:** keywords, functions, strings, comments (`REM` to the end of the line, `(* ... *)`) and numbers (with `$hex` and a leading line number) each have a colour, set with VTIO's `$1B $32 <n>`. See "Syntax colours" below.
 - **Breakpoints:** a line with a breakpoint has a mark (a dot on the frame, or `*`) in the left border.
 - **Frame glyphs:** fonts differ, so the editor installs its own 15 glyphs (double frame, single frame, ├ ┤, the breakpoint mark) over characters `$F1`–`$FF` of font set 0 with `SS.FntChar`, and puts the originals back on exit. te uses `$F2`–`$FF`. `SS.FntChar` takes the font set from the caller's A register, which for `I$SetStt` is the path number, so the calls go through path 0. When the keys come from a file, or the call fails (no `SS.FntChar`, e.g. a CoCo 3), the frames are ASCII (`+ - = |`).
+
+## Syntax colours
+
+- **Per line:** Basic09 has nothing that spans lines, so `v_line` colours each line as it draws it, from the line's start (`hl.asm`). There is no state between lines and no extra pass over the text.
+- **Keywords** come from the compiler's own table (`KEYTAB` in `src/comand.asm`). `tools/mkkw.py` turns it into `os9/l2b09ed/kwtab.asm` (115 words, by first letter), so the two agree. Statements, reserved words and operator words are keywords, and the rest are functions. Case is ignored, as in the compiler.
+- **Colours** (Wildbits text palette): keywords 14, functions 3, strings 5, comments 12, numbers 8. Normal text uses the terminal's own foreground, read with `SS.FBRgs` (a file or other non-terminal gets 1). A colour is sent only when it changes, and each row ends in the normal colour, so the frame, menus and dialogs never set one.
+- **Cost:** `make p5itest` pages through a 5,000-line file 150 times: 79 s with colours and 67 s without (+18%). Options ▸ Syntax colours turns them off.
+
+## Pretty print
+
+- **Where the text comes from:** Basic09 keeps no source, only I-code, and `LIST` decompiles it with the keywords in capitals, standard spacing and the control structures indented. That is stock Basic09's pretty print. `SAVE` writes the same text without the indent.
+- **Compile ▸ Pretty print** (the procedure at the cursor):
+  1. Make, so that the procedure is loaded as it stands. A procedure with errors, or a program stopped in the debugger, is refused with a message.
+  2. `list <procedure>`. Each line comes back as a marker, the I-code offset, a line number if there is one, and the text from column 11 on, two columns more per level of indent. The editor keeps the line number and the text, and makes the indent two spaces a level. It joins lines that `LIST` wrapped at its margin (an LF in the line), and drops trailing spaces.
+  3. The result replaces the lines after the `PROCEDURE` line, which stays as typed. If it is the same text already, nothing changes.
+- **Compile ▸ All: pretty print** does the same for every procedure, and stops at the first one that has errors.
+- **What changes:** keyword case, spacing, the indent and number formats (`1.50` becomes `1.5`, `1E3` becomes `1000.`). Comments and names stay as written.
+- **What stays:** the number of lines, because every source line is one I-code line. So the cursor, the window and the breakpoints stay on their lines, and the procedure counts as loaded: its text came from the loaded code, so the next Make does not recompile it.
+- **Undo:** one ^Z takes a whole pretty print back, and ^Y redoes it. Its undo records carry `UF.LINK` ("goes with the record before"). Undo and redo of such a group also put the breakpoints back on their lines.
 
 ## The paged buffer
 
@@ -226,6 +249,8 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5ctest` (P5.2b):** a 64 KB file with a 4-page cache. It covers typing over a selection, cut and paste of lines, word selection, a selection across lines deleted, an upward selection, Esc and plain moves ending a selection, a 300-line cut pasted inside a line, and select all, copy and two pastes (the result is 196 KB). The saved file must match the model.
 - **`make p5dtest` (P5.2c):** a match across a page boundary, typing over a match, find next, Match case on and off, Replace answered Y/N/Esc, then Replace answered A (1,443 replacements), and a search that finds nothing. The result must match the model.
 - **`make p5etest` (P5.2d):** undo and redo of grouped typing, Delete and Backspace, ^D, cut and paste, 1,500 replacements undone 60 times (only 50 records are kept), select-all delete undone and redone, and an edit that ends redo. The result must match the model, which follows the same grouping rules.
+- **`make p5itest` (P5.6):** `test/p5i`. A small file is drawn with the screen going to a file, and `test/p5i/check` finds the expected colour codes around a keyword, a string, `REM`, `FOR`/`TO`, a number, `$hex`, a function, a real and `(* *)`. Then the benchmark: 150 page-downs through a 5,000-line file with colours on and off, timed with `date -t`.
+- **`make p5jtest` (P5.6):** `test/p5j`. A procedure with no indent, lower-case keywords, odd spacing, a line longer than `LIST`'s margin and a breakpoint is pretty printed and saved. Pretty printing it again changes nothing. One ^Z brings back the original exactly, and ^Y redoes it. ^R then sends nothing (it counts as loaded) and stops at the breakpoint on the same statement. All: pretty print does the other procedure, and a real reload compiles the pretty text without errors. Four saved files and the whole protocol log must match.
 - **`make p5htest` (P5.5):** `test/p5h`. F7 starts the program (`step`), F8 steps over, a breakpoint in a called procedure stops a Continue and then an F8 over its `RUN`, ^T clears it at the stop, F4 runs to the cursor from a program that is not running and again from a stop, and a line inserted above a breakpoint moves it (it is sent again with the new line after Make). The whole protocol log must match `log.exp`, and the saved file must match. A second session with `-h` sets two breakpoints and checks their marks in the snapshot.
 - **`make p5gtest` (P5.4):** `test/p5g`. A session steps from a `PAUSE` into a called procedure and back, with three watches (one of them invalid in the callee), sets a variable with ^E and evaluates an invalid one, deletes a watch, continues into a subscript error (55), resets, runs again, and uses Until return. The whole protocol log must match `log.exp`, and the program's output must show the value that was set. A second session with `-h` leaves the screen up, and the checks read the watch window and the hint line from the snapshot in `mame.log`.
 - **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make: the program is stopped at the error, so Make asks, and Y resets it before the `kill` and the load. The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, ^P resets it, a second Run sends nothing new and stops again, and quitting sends `q` before `bye`.

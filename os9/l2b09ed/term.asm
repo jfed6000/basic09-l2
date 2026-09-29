@@ -61,7 +61,8 @@ ti4                 stb       <scrw
                     sta       <wtop
                     lda       #1
                     sta       <wleft
-                    lbra      t_glyph
+                    lbsr      t_glyph
+                    lbra      hl_init
 
 * t_done: put the terminal back
 t_done              lbsr      t_flush

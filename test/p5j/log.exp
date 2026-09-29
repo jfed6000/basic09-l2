@@ -1,0 +1,75 @@
+# -t=/dd/l2b09/term.out
+< l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware
+
+< l2b09run
+< %READY
+> load l2b09ed.tmp
+< ppmain
+< ppsub
+< %READY
+> list ppmain
+< PROCEDURE ppmain
+<  0000      DIM i,k:INTEGER
+<  000B      k=0
+<  0012      FOR i=1 TO 3
+<  0022        IF i=2 THEN 
+<  002E          k=k+10
+<  0039        ELSE 
+<  003D          k=k+i
+<  0049        ENDIF 
+<  004B      NEXT i
+<  0056      PRINT "k="; k; "and a long line with many items to wrap"; i
+            ; k; i; k; i; k; "tail"
+<  00A9      RUN ppsub(k)
+<  00B3      END 
+< %READY
+> list ppmain
+< PROCEDURE ppmain
+<  0000      DIM i,k:INTEGER
+<  000B      k=0
+<  0012      FOR i=1 TO 3
+<  0022        IF i=2 THEN 
+<  002E          k=k+10
+<  0039        ELSE 
+<  003D          k=k+i
+<  0049        ENDIF 
+<  004B      NEXT i
+<  0056      PRINT "k="; k; "and a long line with many items to wrap"; i
+            ; k; i; k; i; k; "tail"
+<  00A9      RUN ppsub(k)
+<  00B3      END 
+< %READY
+> bp ppmain 5
+< ok
+< %READY
+> run ppmain
+< BREAK: PROCEDURE ppmain line 5
+< %DEBUG ppmain 5
+> cont
+< %READY
+> list ppmain
+< PROCEDURE ppmain
+<  0000      DIM i,k:INTEGER
+<  000B      k=0
+<  0012      FOR i=1 TO 3
+<  0022        IF i=2 THEN 
+<  002E          k=k+10
+<  0039        ELSE 
+<  003D          k=k+i
+<  0049        ENDIF 
+<  004B      NEXT i
+<  0056      PRINT "k="; k; "and a long line with many items to wrap"; i
+            ; k; i; k; i; k; "tail"
+<  00A9      RUN ppsub(k)
+<  00B3      END 
+< %READY
+> list ppsub
+< PROCEDURE ppsub
+<  0000      PARAM n:INTEGER
+<  0007      PRINT "n="; n
+<  0011      END 
+< %READY
+> load l2b09ed.tmp
+< ppmain
+< %READY
+> bye
