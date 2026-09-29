@@ -1,0 +1,20 @@
+PROCEDURE demo
+DIM i:INTEGER
+PRINT "l2b09ed demo"
+FOR i:=1 TO 5
+RUN square(i)
+NEXT i
+PRINT "Now try BREAK (Ctrl+C) in this window."
+RUN spin
+END
+PROCEDURE square
+PARAM n:INTEGER
+PRINT n; " squared is "; n*n+
+END
+PROCEDURE spin
+DIM n:INTEGER
+n:=0
+LOOP
+n:=n+1
+ENDLOOP
+END

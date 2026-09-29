@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p6test p7test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes k2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p6test p7test loadtime clean
 
 all: stock subs l2b09 tools
 
@@ -135,6 +135,25 @@ p7test: l2b09
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09
 	tools/emu-wildbits.sh test/loadtime
+
+# An SD card image for trying the editor on a Wildbits K2: the stock K2
+# image with the pipe modules added to OS9Boot, l2b09ed, l2b09run and the
+# subroutine modules in CMDS, and examples/ in /dd/l2b09
+K2IMG = $(BUILD)/l2b09_k2.dsk
+k2img: $(K2IMG)
+
+$(K2IMG): $(TOOLS) $(L2B09) $(SUBS) $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe $(wildcard examples/*)
+	cp $(PLATDIR)/l2_wildbitsk2.dsk $@.tmp
+	os9 copy -r $@.tmp,OS9Boot $(BUILD)/k2boot.orig
+	tools/bootfile-add.py $(BUILD)/k2boot.orig $(BUILD)/k2boot \
+	    $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe
+	os9 copy -r $(BUILD)/k2boot $@.tmp,OS9Boot
+	for m in l2b09ed l2b09run syscall inkey farmem; do \
+	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
+	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
+	os9 makdir $@.tmp,L2B09
+	for f in examples/*; do os9 copy -l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done
+	mv $@.tmp $@
 
 # Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
 check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809
