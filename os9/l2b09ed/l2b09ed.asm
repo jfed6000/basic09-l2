@@ -49,6 +49,7 @@ OUTSZ               equ       256                 screen output buffer
 STKSZ               equ       768
 C$TAB               equ       $09
 SS.FntChar          equ       $C2                 Wildbits grfdrv256: get/set a font character
+SS.WSig             equ       $E1                 Wildbits: signal on going background/forward
 GLYPH0              equ       $F1                 frame glyphs go here (te uses $F2-$FF)
 
 * Frame glyphs (see term.asm)
@@ -298,6 +299,26 @@ ppcc                rmb       2                   window's top line, before
 pptl                rmb       2
 bpsave              rmb       MAXBP*2             the breakpoints' lines, before
 pprec               rmb       UR.SIZE             the new text's chain (a scratch record)
+muon                rmb       1                   the mouse is polled (mouse.asm)
+mupath              rmb       1                   path SS.Mouse goes to
+mulive              rmb       1                   our terminal is on the screen
+musx                rmb       1                   pixels per cell, as shifts: across
+musy                rmb       1                   and down
+mubtn               rmb       1                   buttons at the last poll
+mux                 rmb       1                   the pointer's cell at the last poll
+muy                 rmb       1
+muev                rmb       1                   the event (MV.*)
+mucol               rmb       1                   its cell
+murow               rmb       1
+mudbl               rmb       1                   MV.DOWN: a double click
+mutick              rmb       2                   ticks slept while polling
+mult                rmb       2                   the last MV.DOWN: its tick
+mulc                rmb       1                   its cell ($FF = none)
+mulr                rmb       1
+murep               rmb       1                   repeat MV.DRAG while held (scrolling)
+murept              rmb       1                   ticks to the next repeat
+mudrag              rmb       1                   a drag in the text is selecting
+muagn               rmb       1                   getkey returns this event again
 wtab                rmb       MAXWATCH*WT.SIZE      watches
 ptab                rmb       MAXPROC*PR.SIZE     procedures l2b09run holds
 mtab                rmb       MAXMSG*MS.SIZE      messages
@@ -513,6 +534,7 @@ quit                lbsr      rt_done
                     use       dbg.asm
                     use       hl.asm
                     use       pp.asm
+                    use       mouse.asm
 
                     emod
 eom                 equ       *
