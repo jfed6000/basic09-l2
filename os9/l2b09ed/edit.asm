@@ -103,6 +103,8 @@ cmdtab              fcb       C$CR
                     fdb       c_eval-cmdtab
                     fcb       $17                 ^W watch
                     fdb       c_watch-cmdtab
+                    fcb       EK.CSPC             Ctrl+Space pretty print all
+                    fdb       c_ppall-cmdtab
                     fcb       $14                 ^T breakpoint
                     fdb       c_bptog-cmdtab
                     fcb       EK.F1+3             F4 run to the cursor

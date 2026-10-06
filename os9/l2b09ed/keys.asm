@@ -37,6 +37,7 @@ EK.BS               equ       $90                 Backspace
 EK.DEL              equ       $91                 Shift+Backspace
 EK.ESC              equ       $92                 Esc (PS/2), BREAK (K2)
 EK.HOME             equ       $93                 Home (K2)
+EK.CSPC             equ       $94                 Ctrl+Space
 EK.F1               equ       $A1                 F1-F8 are $A1-$A8
 EK.F2               equ       $A2
 EK.SF1              equ       $A9                 Shift+F1 (PS/2)
@@ -138,7 +139,15 @@ kn4b                cmpa      #'A
                     bhi       kn6
 kn5                 adda      #EK.ALT-'A
                     rts
-kn6                 cmpa      #$08                Backspace (no LEFT bit)
+kn6                 bitb      #KB.CTRL            Ctrl+Space: $20 (K2) or
+                    beq       kn6b                $20-$60 = $C0 (PS/2)
+                    cmpa      #C$SPAC
+                    beq       kn6a
+                    cmpa      #$C0
+                    bne       kn6b
+kn6a                lda       #EK.CSPC
+                    rts
+kn6b                cmpa      #$08                Backspace (no LEFT bit)
                     bne       kn7
                     lda       #EK.BS
                     rts

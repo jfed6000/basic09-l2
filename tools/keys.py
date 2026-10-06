@@ -13,6 +13,8 @@ comment):
     home bs del esc enter tab
     f1 ... f8
     ^a ... ^z     Ctrl+letter
+    ^space        Ctrl+Space as the PS/2 driver sends it ($C0)
+    k2^space      Ctrl+Space as the K2 driver sends it ($20)
     alt-a ...     Alt+letter
     name*N        repeat a key N times
 
@@ -43,6 +45,7 @@ NAMED = {
     'swleft': pfx(LEFT | CTRL | SHF, 0x08), 'swright': pfx(RIGHT | CTRL | SHF, 0x09),
     'home': b'\x01', 'bs': b'\x08', 'del': pfx(SHF, 0x18), 'esc': b'\x05',
     'enter': b'\x0d', 'tab': b'\x09',
+    '^space': pfx(CTRL, 0xC0), 'k2^space': pfx(CTRL, 0x20),
 }
 for n in range(1, 9):
     NAMED['f%d' % n] = bytes([0xA0 + n])
