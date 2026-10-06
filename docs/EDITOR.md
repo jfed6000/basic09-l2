@@ -28,6 +28,7 @@ It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only 
 | P5.4 | Debugger UI: current line, step, continue, evaluate, watches | done |
 | P5.5 | Line breakpoints, run to cursor, step over (`l2b09run` and the editor) | done |
 | P5.6 | Syntax colours and pretty print | done |
+| — | Mouse (click, drag select, menus, dialogs, message window, breakpoint border) | parked on branch `mouse-wip`: waits for `mousedrv_ps2` to store the buttons through `D.KbdSta` (the live terminal); today they reach only `/term`'s statics |
 
 ## Keys
 
