@@ -2,6 +2,8 @@
 
 A Level 2 development environment for Basic09 on NitrOS-9.
 
+Repository: <https://github.com/jfed6000/basic09-l2>
+
 Goals:
 
 - **Split the monolith.** The editor, the compiler and the runtime/debugger become separate processes, each with its own 64K address space. The runtime and debugger run the program in their own terminal.
