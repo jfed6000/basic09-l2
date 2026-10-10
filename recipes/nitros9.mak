@@ -13,11 +13,7 @@ NITROS9DIR ?= $(HOME)/projects/wild/main/nitros9
 override NITROS9DIR := $(abspath $(NITROS9DIR))
 export NITROS9DIR
 
-# basic09_wildbits and runb come from nitros9-languages, which the tree
-# expects beside it; fall back to the joust checkout until main has one.
-ifeq ($(wildcard $(NITROS9DIR)/../nitros9-languages),)
-LANGUAGES ?= $(HOME)/projects/wild/joust/nitros9_complete/nitros9-languages
-endif
+# basic09_wildbits and runb come from nitros9-languages beside the tree
 LANGUAGES ?= $(abspath $(NITROS9DIR)/../nitros9-languages)
 export LANGUAGES
 

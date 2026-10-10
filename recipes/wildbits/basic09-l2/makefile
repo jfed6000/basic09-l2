@@ -12,7 +12,7 @@ include $(NITROS9DIR)/recipes/wildbits/l2/makefile
 .PHONY: b09l2 b09l2-mods
 b09l2-mods:
 	$(MAKE) -C $(B09L2DIR) BUILD=build/main l2b09 subs build/main/basic09-l2
-b09l2: $(DSKIMAGE) b09l2-mods
+b09l2: libs $(DSKIMAGE) b09l2-mods
 	for m in $(B09L2MODS); do \
 	    os9 copy -r $(B09L2BUILD)/$$m $(DSKIMAGE),CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $(DSKIMAGE),CMDS/$$m || exit 1; done

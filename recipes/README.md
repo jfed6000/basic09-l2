@@ -9,7 +9,7 @@ recipes build a basic09-l2 disk image from it **without copying it**.
 make k2main                     # from the top: recipes/wildbits/basic09-l2/l2_basic09-l2k2.dsk
 make jr2main                    #               recipes/wildbits/basic09-l2/l2_basic09-l2jr2.dsk
 cd recipes/wildbits/basic09-l2 && make PLATFORM=jr2      # the same thing
-make k2main NITROS9DIR=/other/nitros9 LANGUAGES=/other/nitros9-languages
+make k2main NITROS9MAIN=/other/nitros9   # nitros9-languages is taken from beside it
 ```
 
 The image is the tree's stock Wildbits Level 2 image plus:
@@ -36,8 +36,10 @@ recipe for another project is a copy of `wildbits/basic09-l2/` (with these
 forwarding files beside it).
 
 Notes:
-- `nitros9-languages` (stock `basic09`, `runb`) is taken from beside the
-  tree, or from the joust checkout while the main tree has none.
+- `nitros9-languages` (stock `basic09`, `runb`), `nitros9-apps` and
+  `nitros9-games` are taken from beside the tree.
+- From the top-level Makefile, set `NITROS9MAIN`, not `NITROS9DIR`: the
+  top level exports `NITROS9DIR` for the emulator (joust) tree.
 - The stock recipe writes the generated fonts and backgrounds into the
   tree's `level1/wildbits/sys/`; that is upstream behaviour.
 - The K2 OS9Boot with the pipes is 31,744 bytes; the tree's limit is 32,256.
