@@ -1,6 +1,6 @@
 PROCEDURE demo
 DIM i:INTEGER
-PRINT "l2b09ed demo"
+PRINT "basic09-l2 demo"
 FOR i:=1 TO 5
 RUN square(i)
 NEXT i

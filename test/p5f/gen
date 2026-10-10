@@ -64,7 +64,7 @@ log = '''# -t=/dd/l2b09/term.out
 
 < l2b09run
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < main
 < sub
 < x:=n*2+
@@ -77,13 +77,13 @@ log = '''# -t=/dd/l2b09/term.out
 < ERROR #034
 < %CERR 34 crash 2
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < sub
 < crash
 < %READY
 > run main
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < main
 < %READY
 > run main
@@ -96,7 +96,7 @@ log = '''# -t=/dd/l2b09/term.out
 < %READY
 > kill crash
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < crash2
 < %READY
 > bye

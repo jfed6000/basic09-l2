@@ -1,12 +1,12 @@
 ********************************************************************
-* l2b09ed - the l2basic09 editor
+* basic09-l2 - the l2basic09 editor
 *
 * A full-screen editor for Basic09 source (docs/EDITOR.md).  The text
 * is paged: it lives in 2K pages in a swap file, and only a few pages
 * are cached in memory, so a file can be much larger than the editor's
 * 64K address space.
 *
-* usage: l2b09ed [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>]
+* usage: basic09-l2 [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>]
 *                [-h] [<file>]
 *
 *   -c=<pages>  number of 2K pages cached in memory (3-24, default 12)
@@ -21,7 +21,7 @@
 * path 0 is not a terminal (a test script), SS.KySns fails and the key
 * sense bits come from a prefix: $FF <kysns> <char>.
 
-                    nam       l2b09ed
+                    nam       basic09-l2
                     ttl       l2basic09 editor
 
                     ifp1
@@ -309,10 +309,10 @@ cachtab             rmb       NCMAX*CE.SIZE
 stktop              equ       .
 size                equ       .                   cache buffers follow
 
-name                fcs       /l2b09ed/
+name                fcs       /basic09-l2/
                     fcb       edition
 
-swpnm               fcc       "l2b09ed.swp"
+swpnm               fcc       "basic09-l2.swp"
                     fcb       C$CR
 
 start               tfr       u,d

@@ -1,5 +1,5 @@
-* l2basic09 P5.2c: l2b09ed find and replace
+* l2basic09 P5.2c: basic09-l2 find and replace
 -x
 chd /dd/l2b09
-/dd/l2b09/l2b09ed -c=4 fnd.b09 <keys.bin >/vt3 >>ed.err
+/dd/l2b09/basic09-l2 -c=4 fnd.b09 <keys.bin >/vt3 >>ed.err
 echo == done

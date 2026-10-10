@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate os9/l2b09ed/kwtab.asm, the editor's keyword table for syntax
+"""Generate os9/basic09-l2/kwtab.asm, the editor's keyword table for syntax
 colours, from the compiler's own keyword table (KEYTAB in src/comand.asm).
 
 Statements, reserved words and operator words (STMBEG, RESRVD, OPRTR) are
@@ -18,7 +18,7 @@ import sys
 
 top = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 src = sys.argv[1] if len(sys.argv) > 1 else os.path.join(top, 'src', 'comand.asm')
-out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(top, 'os9', 'l2b09ed', 'kwtab.asm')
+out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(top, 'os9', 'basic09-l2', 'kwtab.asm')
 
 lines = open(src, encoding='latin1').read().splitlines()
 start = next(i for i, l in enumerate(lines) if l.startswith('KEYTAB'))

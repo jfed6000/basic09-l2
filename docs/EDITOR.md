@@ -1,10 +1,10 @@
-# l2b09ed — the l2basic09 editor
+# basic09-l2 — the l2basic09 editor
 
-`l2b09ed` is a full-screen editor for Basic09 source, modeled on the DOS Borland Turbo C IDE and reworked for Basic09. It edits one whole `.b09` text file and, from P5.3 on, drives `l2b09run` over the pipe protocol ([PROTOCOL.md](PROTOCOL.md)) to load, run and debug the program.
+`basic09-l2` is a full-screen editor for Basic09 source, modeled on the DOS Borland Turbo C IDE and reworked for Basic09. It edits one whole `.b09` text file and, from P5.3 on, drives `l2b09run` over the pipe protocol ([PROTOCOL.md](PROTOCOL.md)) to load, run and debug the program.
 
-It is written in 6809 assembly (`os9/l2b09ed/`, built as `build/l2b09ed`). Only the key tables and a few screen details are machine-specific, so a CoCo 3 port is possible.
+It is written in 6809 assembly (`os9/basic09-l2/`, built as `build/basic09-l2`). Only the key tables and a few screen details are machine-specific, so a CoCo 3 port is possible.
 
-    l2b09ed [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>] [-h] [<file>]
+    basic09-l2 [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [-l=<log>] [-h] [<file>]
 
 - **`-c=<pages>`:** number of 2K pages cached in memory, 3–24 (default 12). If memory is short it uses fewer, down to 3.
 - **`-t=<term>`:** the terminal the program runs on. The default is a free window from the `/vt` factory (loaded by the stock startup). A file works too; there is then no user screen.
@@ -133,7 +133,7 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 ## Syntax colours
 
 - **Per line:** Basic09 has nothing that spans lines, so `v_line` colours each line as it draws it, from the line's start (`hl.asm`). There is no state between lines and no extra pass over the text.
-- **Keywords** come from the compiler's own table (`KEYTAB` in `src/comand.asm`). `tools/mkkw.py` turns it into `os9/l2b09ed/kwtab.asm` (115 words, by first letter), so the two agree. Statements, reserved words and operator words are keywords, and the rest are functions. Case is ignored, as in the compiler.
+- **Keywords** come from the compiler's own table (`KEYTAB` in `src/comand.asm`). `tools/mkkw.py` turns it into `os9/basic09-l2/kwtab.asm` (115 words, by first letter), so the two agree. Statements, reserved words and operator words are keywords, and the rest are functions. Case is ignored, as in the compiler.
 - **Colours:** the editor uses its own, as Turbo C did: yellow text (7) on blue (6), with keywords white (1), functions pale cyan (3), strings green (5), comments light grey (15) and numbers orange (8), in the Wildbits text palette. Window frames (the text, message and watch windows, with their titles and the line:column) are white (1). The menu bar, the drop-down menus and the hint line are black on light grey (15), with the open menu's title and the selected item on green (5); with colours off they are in reverse video as before. The terminal's own colours are read with `SS.FBRgs` at start and put back on exit, and also when colours are turned off. A colour is sent only when it changes, and each row ends in the normal colour, so the frame, menus and dialogs never set one. `$0A` and `$0D` are not used as colour numbers.
 - **Cost:** `make p5itest` pages through a 5,000-line file 150 times: 81 s with colours and 67 s without (+21%). Options ▸ Syntax colours turns them off.
 
@@ -154,7 +154,7 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 
 The text is paged, so a file can be far larger than the editor's 64K.
 
-- **Pages:** a doubly linked chain of up to 512 pages, each at most 2K. Every page owns a 2K slot in the swap file `l2b09ed.swp`, which sits in the current data directory and is deleted on exit. A page descriptor (13 bytes) holds the links, the byte count, the number of carriage returns, the slot, the cache entry and flags.
+- **Pages:** a doubly linked chain of up to 512 pages, each at most 2K. Every page owns a 2K slot in the swap file `basic09-l2.swp`, which sits in the current data directory and is deleted on exit. A page descriptor (13 bytes) holds the links, the byte count, the number of carriage returns, the slot, the cache entry and flags.
 - **Cache:** only `-c` pages are in memory, in an LRU cache. A dirty page is written to its slot when its buffer is reused. The page mapped last is never the one evicted, so code can hold two page pointers at a time.
 - **Loading:** the file is read into pages 1,536 bytes full, so typing rarely splits a page right away. Saving walks the chain.
 - **Editing:**
@@ -203,7 +203,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Blocking:** pipes cannot be polled, so the editor waits for each reply. Make shows "Making..." while `l2b09run` compiles.
 - **Procedures:** a line `PROCEDURE <name>` (any case, spaces before it) starts a procedure, which runs to the next such line. Text before the first one is not sent.
 - **What Make sends:** a table holds each procedure `l2b09run` has, with a signature of the text it was loaded from: two 16-bit sums (of the bytes, and of those sums) and the length. Make scans the text and compares.
-  - A procedure whose signature changed, a new one, or one with a compile or bind error last time is written to `l2b09ed.tmp` (in the current directory, deleted on exit), and all of them go in one `load l2b09ed.tmp`.
+  - A procedure whose signature changed, a new one, or one with a compile or bind error last time is written to `basic09-l2.tmp` (in the current directory, deleted on exit), and all of them go in one `load basic09-l2.tmp`.
   - A name that is no longer in the text gets `kill <name>` first.
   - The scan reads the page buffers directly and looks for `PROCEDURE` only at the start of each line. It does not depend on which pages were edited, so undoing an edit makes the procedure unchanged again.
   - If a load fails without an event (an `ERROR #` line with no `%CERR` or `%BERR`), every procedure in it is sent again next time, and the message window says so.

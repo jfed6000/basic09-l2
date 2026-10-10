@@ -1,6 +1,6 @@
 # l2b09run command-channel protocol
 
-This document is for the editor author. It defines how an editor drives `l2b09run`: loading source, running it, debugging it, and getting error locations back. `os9/l2b09ctl.asm` is a small working client, and `test/p3/script.ctl` shows a full session. The editor, `l2b09ed` (`os9/l2b09ed/rt.asm`, EDITOR.md "Make and Run"), is the full one.
+This document is for the editor author. It defines how an editor drives `l2b09run`: loading source, running it, debugging it, and getting error locations back. `os9/l2b09ctl.asm` is a small working client, and `test/p3/script.ctl` shows a full session. The editor, `basic09-l2` (`os9/basic09-l2/rt.asm`, EDITOR.md "Make and Run"), is the full one.
 
 ## Connecting
 

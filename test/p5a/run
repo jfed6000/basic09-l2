@@ -1,5 +1,5 @@
-* l2basic09 P5.1: l2b09ed edits a large file through its paged buffer
+* l2basic09 P5.1: basic09-l2 edits a large file through its paged buffer
 -x
 chd /dd/l2b09
-/dd/l2b09/l2b09ed -c=3 big.b09 <keys.bin >/vt3 >>ed.err
+/dd/l2b09/basic09-l2 -c=3 big.b09 <keys.bin >/vt3 >>ed.err
 echo == done

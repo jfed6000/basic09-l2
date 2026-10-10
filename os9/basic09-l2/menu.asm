@@ -679,7 +679,7 @@ dlg_msgt            pshs      x
                     puls      x,pc
 
 asktl               fcn       "Confirm"
-msgtl               fcn       "l2b09ed"
+msgtl               fcn       "basic09-l2"
 
 ********************************************************************
 * Help
@@ -748,7 +748,7 @@ helptx              fcn       "Arrows                    move"
 
 c_about             leax      aboutm,pcr
                     lbra      dlg_msg
-aboutm              fcn       "l2b09ed: the l2basic09 editor, edition 1"
+aboutm              fcn       "basic09-l2: the l2basic09 editor, edition 1"
 
 ********************************************************************
 * The File commands and the others the menus need

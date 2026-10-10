@@ -3,7 +3,7 @@
 
 < l2b09run
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < dmain
 < dsub
 < %READY

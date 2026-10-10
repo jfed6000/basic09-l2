@@ -28,7 +28,7 @@ STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
 L2B09 = $(BUILD)/l2b09run
 OS9DIR = os9
-TOOLS = $(BUILD)/l2b09ctl $(BUILD)/l2b09ed
+TOOLS = $(BUILD)/l2b09ctl $(BUILD)/basic09-l2
 
 # Test platform (Wildbits Jr2 under MAME for now; see tools/emu-wildbits.sh)
 PLATDIR  = $(NITROS9DIR)/recipes/wildbits/l2
@@ -79,13 +79,13 @@ $(BUILD)/%: $(OS9DIR)/%.asm $(OS9DIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) $(CURDIR)/$< -o$(CURDIR)/$@
 
 # The editor: 6809 only, and undefined symbols are errors (no undefextern)
-EDSRC = $(wildcard $(OS9DIR)/l2b09ed/*.asm)
+EDSRC = $(wildcard $(OS9DIR)/basic09-l2/*.asm)
 EDAS  = lwasm --no-warn=ifp1 --format=os9 \
         --pragma=pcaspcr,nosymbolcase,condundefzero,dollarnotlocal,noforwardrefmax \
         --includedir=$(NITROS9DIR)/defs
-$(BUILD)/l2b09ed: $(EDSRC) $(OS9DIR)/defsfile | $(BUILD)
+$(BUILD)/basic09-l2: $(EDSRC) $(OS9DIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(EDAS) $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) \
-	    --includedir=$(CURDIR)/$(OS9DIR)/l2b09ed $(CURDIR)/$(OS9DIR)/l2b09ed/l2b09ed.asm -o$(CURDIR)/$@
+	    --includedir=$(CURDIR)/$(OS9DIR)/basic09-l2 $(CURDIR)/$(OS9DIR)/basic09-l2/basic09-l2.asm -o$(CURDIR)/$@
 
 # Pipe modules are not in the stock Wildbits SD boot; tests load them at runtime
 pipes: $(PIPEMODS)
@@ -151,7 +151,7 @@ loadtime: l2b09
 	tools/emu-wildbits.sh test/loadtime
 
 # SD card images for trying the editor on a Wildbits K2 or Jr2: the stock
-# image with the pipe modules added to OS9Boot, l2b09ed, l2b09run and the
+# image with the pipe modules added to OS9Boot, basic09-l2, l2b09run and the
 # subroutine modules in CMDS, and examples/ in /dd/l2b09
 K2IMG  = $(BUILD)/l2b09_k2.dsk
 JR2IMG = $(BUILD)/l2b09_jr2.dsk
@@ -164,7 +164,7 @@ $(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BU
 	tools/bootfile-add.py $(BUILD)/$*boot.orig $(BUILD)/$*boot \
 	    $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe
 	os9 copy -r $(BUILD)/$*boot $@.tmp,OS9Boot
-	for m in l2b09ed l2b09run syscall inkey farmem; do \
+	for m in basic09-l2 l2b09run syscall inkey farmem; do \
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
 	os9 makdir $@.tmp,L2B09

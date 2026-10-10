@@ -1,4 +1,4 @@
-"""A model of l2b09ed's editing commands, for generating test expectations.
+"""A model of basic09-l2's editing commands, for generating test expectations.
 
 The model works on a plain string with '\\r' line ends and a cursor index.
 Each command mirrors the editor's rules (docs/EDITOR.md).  A Session runs

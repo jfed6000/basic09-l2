@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile an l2b09ed key script into the raw bytes the editor reads.
+"""Compile an basic09-l2 key script into the raw bytes the editor reads.
 
 A key script is a sequence of tokens (whitespace separated, '#' starts a
 comment):

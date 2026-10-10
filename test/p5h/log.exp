@@ -3,7 +3,7 @@
 
 < l2b09run
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < bmain
 < bsub
 < %READY
@@ -59,7 +59,7 @@
 < %DEBUG bmain 4
 > q
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < bmain
 < %READY
 > bp bmain 10

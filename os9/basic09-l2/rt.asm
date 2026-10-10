@@ -34,7 +34,7 @@ prognm              fcc       "l2b09run"
                     fcb       C$CR
 vtnm                fcc       "/vt"
                     fcb       C$CR
-tmpnm               fcc       "l2b09ed.tmp"
+tmpnm               fcc       "basic09-l2.tmp"
                     fcb       C$CR
 errnm               fcc       "/dd/sys/errmsg"
                     fcb       C$CR
@@ -813,7 +813,7 @@ mkp1                cmpb      <nproc
 mkp2                incb
                     bra       mkp1
 mkp9                rts
-ldcmd               fcc       "load l2b09ed.tmp"
+ldcmd               fcc       "load basic09-l2.tmp"
                     fcb       C$CR
 
 * mk_lderr: the load failed without saying where: a message, and every

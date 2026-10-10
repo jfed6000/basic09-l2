@@ -3,7 +3,7 @@
 
 < l2b09run
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < ppmain
 < ppsub
 < %READY
@@ -78,7 +78,7 @@
 <  0007      PRINT "n="; n
 <  0011      END 
 < %READY
-> load l2b09ed.tmp
+> load basic09-l2.tmp
 < ppmain
 < %READY
 > bye
