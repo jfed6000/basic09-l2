@@ -31,8 +31,15 @@ send save* p3sv
 expect %ASK Rewrite?
 send y
 expect %READY
+* PACK runs from the overlay module l2b09ovl (in /dd/CMDS): an error
+* in the runtime unlinks it on the way out, and it loads again
+send pack nosuch
+expect %READY
 * export for RunB (PACK strips the workspace copy; reload before packing again)
 send pack* p3pk
+expect %READY
+* an error inside the overlay: the second PACK fails with 51
+send pack* p3pk2
 expect %READY
 send bye
 wait

@@ -6,3 +6,5 @@ ctl.out   exit 000
 term.out  p3main: start
 term.out  p3calc x=5
 ctl.out   < %ASK Rewrite?
+ctl.out   < ERROR #043
+ctl.out   < ERROR #051

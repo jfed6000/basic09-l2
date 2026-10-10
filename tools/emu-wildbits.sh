@@ -6,6 +6,7 @@
 # The test directory holds:
 #   run      OS-9 shell script, executed at boot from /dd/l2b09
 #   modules  optional "<build file> <name>" lines; copied from build/ with exec attrs
+#            to /dd/L2B09/<name>, or to /dd/<path> for a name /<path> (e.g. /CMDS/x)
 #   bootmods optional list of build/ modules to add to OS9Boot (drivers, managers)
 #   fetch    optional list of files to copy back from /dd/l2b09 after the run
 #   expect   optional "<file> <text>" lines; each text must appear in that file,
@@ -57,8 +58,9 @@ fi
 if [ -f "$tdir/modules" ]; then
     grep -v '^#' "$tdir/modules" | while read -r src dst; do
         [ -n "$src" ] || continue
-        os9 copy -r "$top/build/$src" "$img,L2B09/$dst"
-        os9 attr -q -e -pe -r -pr "$img,L2B09/$dst"
+        case "$dst" in /*) dst=${dst#/} ;; *) dst=L2B09/$dst ;; esac
+        os9 copy -r "$top/build/$src" "$img,$dst"
+        os9 attr -q -e -pe -r -pr "$img,$dst"
     done
 fi
 

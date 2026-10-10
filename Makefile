@@ -14,7 +14,7 @@ MODDIR  = modules
 SCRIPT  = $(SRCDIR)/build-modular-basic09.py
 
 SRCS = $(addprefix $(SRCDIR)/, comand.asm compil.asm binder.asm stmts.asm \
-       exprsn.asm cnvio.asm defs b09defs b09type jmpdefs linkage editor)
+       exprsn.asm cnvio.asm defs b09defs b09type jmpdefs linkage editor pack)
 DEPS = Makefile $(SCRIPT) $(SRCS)
 
 AS = lwasm --no-warn=ifp1 --6309 --format=os9 \
@@ -26,7 +26,7 @@ AFLAGS = -DNOS9VER= -DNOS9MAJ= -DNOS9MIN=
 STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
         $(BUILD)/runb_6809 $(BUILD)/runb_6309
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
-L2B09 = $(BUILD)/l2b09run
+L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl
 OS9DIR = os9
 TOOLS = $(BUILD)/l2b09ctl $(BUILD)/basic09-l2
 
@@ -70,6 +70,10 @@ $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
 	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DLevel=2
 	@[ $$(stat -c %s $@) -le 24576 ] || echo "WARNING: $@ is over 24,576 bytes: it needs a fourth 8K block (ARCHITECTURE.md, P5.5)"
+
+# Cold commands (PACK) that l2b09run loads when they are typed
+$(BUILD)/l2b09ovl: $(SRCDIR)/overlay.asm $(DEPS) | $(BUILD)
+	cd $(BUILD) && $(AS) $(AFLAGS) -DCOMMUNITY=1 -DL2B09=1 -DLevel=2 --includedir=$(CURDIR)/$(SRCDIR) $(CURDIR)/$< -o$(CURDIR)/$@
 
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
@@ -164,7 +168,7 @@ $(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BU
 	tools/bootfile-add.py $(BUILD)/$*boot.orig $(BUILD)/$*boot \
 	    $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe
 	os9 copy -r $(BUILD)/$*boot $@.tmp,OS9Boot
-	for m in basic09-l2 l2b09run syscall inkey farmem; do \
+	for m in basic09-l2 l2b09run l2b09ovl syscall inkey farmem; do \
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
 	os9 makdir $@.tmp,L2B09

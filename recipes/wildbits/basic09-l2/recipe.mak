@@ -18,5 +18,5 @@ BOOTMODS_EXTRA += pipeman piper pipe
 # basic09-l2's own modules, assembled with this tree's defs into
 # build/main/ of the repository; the makefile copies them into the image
 B09L2BUILD = $(B09L2DIR)/build/main
-B09L2MODS = basic09-l2 l2b09run syscall inkey farmem
+B09L2MODS = basic09-l2 l2b09run l2b09ovl syscall inkey farmem
 all: b09l2

@@ -14,7 +14,7 @@ make k2main NITROS9MAIN=/other/nitros9   # nitros9-languages is taken from besid
 
 The image is the tree's stock Wildbits Level 2 image plus:
 - the pipe modules (`pipeman piper pipe`) in OS9Boot;
-- `basic09-l2`, `l2b09run`, `farmem`, `syscall` and `inkey` in CMDS, built
+- `basic09-l2`, `l2b09run` and its overlay `l2b09ovl`, `farmem`, `syscall` and `inkey` in CMDS, built
   with the main tree's defs into `build/main/`;
 - `examples/` in `/dd/L2B09`.
 

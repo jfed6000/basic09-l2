@@ -197,6 +197,13 @@ CMDENT equ *
  fdb PRTEXP-CMDENT Print (opstack) expression
  ifne L2B09
  fdb L2EVNT-CMDENT Write a protocol event line
+* for the overlay module l2b09ovl (PACK)
+ fdb L2BPZ-CMDENT  Clear all breakpoints
+ fdb DEFILE-CMDENT Procedure list and pathname
+ fdb OPNCH0-CMDENT Open the command output path
+ fdb CLSCHL-CMDENT Close it again
+ fdb UNBIND-CMDENT Unbind a procedure
+ fdb NXTVAR-CMDENT Next variable reference in I-code
  endc
  endc
 
@@ -1861,165 +1868,58 @@ PRCLI1 lda ,X+
  clra
 PRCLI9 rts RETURN to user
 
+ ifeq L2B09
+ use pack
+ else
 ***************
 * Subroutine Dump
-*   Pack <Procedure List>;<File Spec> (?)
-*   saves procedure icode suitable for Roming
+*   PACK lives in the overlay module l2b09ovl (src/overlay.asm,
+*   which assembles src/pack); L2OVLY loads and calls it
 
-DUMP equ *
- ifne L2B09
- lbsr L2BPZ PACK strips procedures: breakpoints go
- endc
- lbsr DEFILE Parse procedure names, get pathnname
- ldu I.OPBG
- bra DUMP02 Repeat
-DUMP01 ldy  ,Y get proc addr
- tst M$TYPE,Y internal (un-typed) procedure?
- lbne ERABRT ..no; illegal to compile
- ifne L2B09
- lda P.STAT,Y
- bita #P.BANK+P.FAR PACK rebinds in place: not for banked procedures;
- lbne ERABRT RunB has no far arrays
- endc
- lda P.STAT,Y
- rora any errors in procedure?
- lbcs ERABRT ..Yes; abort
- ldd P.SYMB,Y
- leay D,Y
- ldd -3,Y number of entries in symbol tbl
- aslb
- rola (times 2)
- inca plus $100 for safety
- cmpd G.VARS enough free space to pack?
- lbhi ERMFUL ..No; abort
-DUMP02 ldy ,--U get next procedure in list
- bne DUMP01 Until end of list
- ldd #(EXEC.+WRITE.)*256+UPDAT.+EXEC. Mode
- lbsr OPNCH0 Open output path
- ldy I.OPBG
- stu I.OPBG chop out used portion of opstack
- lbra DUMP04 Repeat
-DUMP03 pshs Y Save opstack (procedure list) ptr
+DUMP clrb overlay entry 0: PACK
+*     (Fall Through to L2OVLY)
 
- lbsr UNBIND Unbind procedure
- clr SMASH Tell binder to smash rems, dims, types, etc.
- lbsr J$BIND Rebind squished procedure
- inc SMASH Reset
- ldx I.SYMT get symbol tbl ptr
- leay  ,X (in case of no symbols)
- ldd G.WSPA
- addd G.WSPS
- tfr D,U ptr to top of free space
- ldd -3,X
- beq DUMP20 No symbols; exit squish phase
- pshs U
-DUMP1 pshs D Save symbol table count
- leax 1,X
- ldd  ,X
- pshu D Build stack of save info from symbol table
- clr ,X+ Clear out symbol table entry
- clr ,X+
-DUMP2 lda ,X+
- bpl DUMP2 Skip over name to next entry
- puls D Restore symbol table count
- subd #1
- bne DUMP1 Repeat until whole table copied
- ldy I.ICBG
- bra DUMP4 While not end of icode
-DUMP3 ldd  ,Y get symbol table ptr
- ldx I.SYMT
- leax D,X Actual addr of symbol tbl entry
- ldd 1,X get linked list
- sty 1,X Make new head
- std ,Y++ Build link
-DUMP4 lbsr NXTVAR Skip to next complex variable or run
- bcc DUMP3 Endwhile
- puls U get top of free space again
- ldx I.SYMT get old symbol table ptr
- ldd -3,X Number of entries in symbol table
- leay  ,X Set beginning of new symbol table
-DUMP5 leau -2,U Move to current entry
- pshs D,U Save number of entries, stack ptr
+***************
+* Subroutine L2OVLY
+*   Run a cold command from the overlay module l2b09ovl.  Link it
+*   (or load it from the execution directory), call entry B with
+*   the command line in (Y), and unlink it again.  An error exits
+*   through our trap, which unlinks it and goes on to the
+*   previous trap.
+
+L2OVLY pshs B,Y
+ leax L2OVNM,PCR
+ clra any type
+ OS9 F$Link
+ bcc L2OVL1
+ leax L2OVNM,PCR
  clra
- ldu 1,X get header link
- beq DUMP8 Branch unreferenced entry
- pshs X Save old symbol ptr
- tfr Y,D Copy new symbol ptr
- subd I.SYMT Make ptr into offset
- bra DUMP7
-DUMP6 std  ,U Set symbol offset
- leau  ,X Copy ptr to next reference
-DUMP7 ldx  ,U get ptr to next reference
- bne DUMP6 Branch if there is one
- std  ,U Set offset of last
- puls X Retrieve old symbol ptr
- lda  ,X get type byte
- sta ,Y+ Copy it
- ldu [2,S] get old contents
- stu ,Y++ Copy them
-DUMP8 leax 3,X Skip symbol info
-DUMP9 ldb ,X+ get next name byte
- cmpa #S.PROC Copy name?
- bne DUMP10 Branch if not
- stb ,Y+
-DUMP10 tstb
- bpl DUMP9
- puls D,U
- subd #1 Decrement symbol table count
- bne DUMP5
-DUMP20 equ *
-
-* Now, symbols are removed, Icode ptrs are fixed up
-
- ldx I.APRC get procedure addr
- ldd P.SIZE,X Adjust procedure size
- pshs D Save old size
- clr ,Y+ Make room for checksum
- clr ,Y+
- clr ,Y+
- tfr Y,D Copy procedure end ptr
- subd I.APRC Make ptr into size
- std P.SIZE,X Set size
- ldd  ,S get difference
- subd P.SIZE,X
- std  ,S Save it
- addd G.VARS Adjust free space size
- std G.VARS
- ldd G.PRCS Adjust procedure space
- subd ,S++
- std G.PRCS
- addd G.PRCA
- std I.STBG Adjust bottom of free space
- ldb #SBRTN+ICODE
- stb M$TYPE,X
- ldb #$80
- stb P.STAT,X Set compiled (and external) status
- leau  ,Y (u)=end of module
- ldd #$FFFF
- std ,--U initialize crc to $FFFFFF
- sta ,-U
- ldb #7
-DUMP25 eora B,X form header parity
- decb
- bpl DUMP25
- sta M$Parity,X save header parity
- ldy P.SIZE,X Procedure size - 3
- leay -3,Y := size of area to perform crc
- OS9 F$CRC form crc
- com ,U+
- com ,U+
- com ,U+ (u)=end of procedure
- ldy P.SIZE,X get procedure size
- lda #CMDOUT
- OS9 I$Write Write the procedure
- lda #$C0 Set compiled and internal status
- sta P.STAT,X
- lbcs ERRST Error; reset std I/O
- puls Y Retrieve procedure list ptr
-
-DUMP04 ldx ,--Y get next procedure directory addr
- lbne DUMP03 Repeat until there are no more
- lbra CLSCHL Close output path, exit
+ OS9 F$Load
+ lbcs ERREXT
+L2OVL1 ldb ,S+ entry number
+ lda #3 (each entry is a LBRA)
+ mul
+ leay D,Y entry addr
+ ldx ,S command line
+ stu ,S module, for the unlink
+ pshs X,Y
+ leax L2OVL8,PCR
+ lbsr SETEXT
+ ldy 4,S command line
+ jsr [6,S] run the command
+ puls D
+ std SP.ERR remove our trap
+ leas 6,S
+ puls U
+ OS9 F$UnLink
+ clrb carry clear: the command was found
+ rts
+L2OVL8 leas 4,S error: the command line and entry go
+ puls U
+ OS9 F$UnLink
+ lbra EXIT on to the previous trap
+L2OVNM fcs /l2b09ovl/
+ endc
 
 ***************
 * Defile

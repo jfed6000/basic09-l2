@@ -24,6 +24,13 @@ X$TEXP rmb 2 Trace expression address
 X$TEXR rmb 2 Trace result
  ifne L2B09
 X$L2EV rmb 2 Write a protocol event line
+* for the overlay module l2b09ovl (PACK)
+X$BPZ  rmb 2 Clear all breakpoints
+X$DEFL rmb 2 Procedure list and pathname
+X$OPN0 rmb 2 Open the command output path
+X$CLSC rmb 2 Close it again
+X$UNBD rmb 2 Unbind a procedure
+X$NXVR rmb 2 Next variable reference in I-code
  endc
  endc
 
