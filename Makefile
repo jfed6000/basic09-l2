@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p6test p7test loadtime clean
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p6test p7test loadtime clean k2main jr2main
 
 all: stock subs l2b09 tools
 
@@ -170,6 +170,15 @@ $(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BU
 	os9 makdir $@.tmp,L2B09
 	for f in examples/*; do os9 copy -l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done
 	mv $@.tmp $@
+
+# The same images for the new (Longview) core, built from the NitrOS-9
+# main tree by the recipe in recipes/wildbits/basic09-l2 (recipes/README.md).
+# They are for real hardware: MAME does not run the new core yet.
+RECIPEDIR = recipes/wildbits/basic09-l2
+k2main:
+	$(MAKE) -C $(RECIPEDIR) PLATFORM=k2
+jr2main:
+	$(MAKE) -C $(RECIPEDIR) PLATFORM=jr2
 
 # Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
 check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809

@@ -1,0 +1,5 @@
+# Build output: everything except the recipe itself
+*
+!.gitignore
+!makefile
+!recipe.mak
