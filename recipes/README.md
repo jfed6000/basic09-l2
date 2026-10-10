@@ -6,8 +6,8 @@ NitrOS-9 tree at `~/projects/wild/main/nitros9` tracks that work. These
 recipes build a basic09-l2 disk image from it **without copying it**.
 
 ```sh
-make k2main                     # from the top: recipes/wildbits/basic09-l2/l2_basic09-l2k2.dsk
-make jr2main                    #               recipes/wildbits/basic09-l2/l2_basic09-l2jr2.dsk
+make k2main                     # from the top: build/main/l2_basic09-l2k2.dsk
+make jr2main                    #               build/main/l2_basic09-l2jr2.dsk
 cd recipes/wildbits/basic09-l2 && make PLATFORM=jr2      # the same thing
 make k2main NITROS9MAIN=/other/nitros9   # nitros9-languages is taken from beside it
 ```
@@ -49,7 +49,7 @@ Notes:
 | | Emulator tests (`make p*test`, `k2img`, `jr2img`) | Hardware with the new core (`k2main`, `jr2main`) |
 |---|---|---|
 | NitrOS-9 tree | `~/projects/wild/joust/nitros9_complete/nitros9` | `~/projects/wild/main/nitros9` |
-| Build output | `build/` | `build/main/`, image in the recipe folder |
+| Build output | `build/` | `build/main/`, images included |
 
 basic09-l2 uses only the defs and OS-9 system calls (no hardware
 addresses), so the same source builds for both. When the Wildbits MAME in

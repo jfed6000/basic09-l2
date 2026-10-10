@@ -172,7 +172,8 @@ $(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BU
 	mv $@.tmp $@
 
 # The same images for the new (Longview) core, built from the NitrOS-9
-# main tree by the recipe in recipes/wildbits/basic09-l2 (recipes/README.md).
+# main tree by the recipe in recipes/wildbits/basic09-l2 (recipes/README.md)
+# and copied to build/main/l2_basic09-l2{k2,jr2}.dsk.
 # They are for real hardware: MAME does not run the new core yet.
 # NITROS9DIR is exported for the emulator tree, so the main tree is passed
 # explicitly: make k2main NITROS9MAIN=/other/nitros9
@@ -180,8 +181,10 @@ RECIPEDIR   = recipes/wildbits/basic09-l2
 NITROS9MAIN ?= $(HOME)/projects/wild/main/nitros9
 k2main:
 	$(MAKE) -C $(RECIPEDIR) PLATFORM=k2 NITROS9DIR=$(NITROS9MAIN) LANGUAGES=$(NITROS9MAIN)/../nitros9-languages
+	cp $(RECIPEDIR)/l2_basic09-l2k2.dsk $(BUILD)/main/
 jr2main:
 	$(MAKE) -C $(RECIPEDIR) PLATFORM=jr2 NITROS9DIR=$(NITROS9MAIN) LANGUAGES=$(NITROS9MAIN)/../nitros9-languages
+	cp $(RECIPEDIR)/l2_basic09-l2jr2.dsk $(BUILD)/main/
 
 # Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
 check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809
