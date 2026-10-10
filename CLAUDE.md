@@ -4,6 +4,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **Goal:** an editor process drives `l2b09run` (compiler, runtime and debugger) over pipes, and programs can use memory beyond 64K.
 - **Design and roadmap:** `docs/ARCHITECTURE.md`. It records what each phase (P0–P7) did and what was found.
 - **Reference specs:** `docs/PROTOCOL.md` (the editor/runtime protocol), `docs/FARMEM.md` and `docs/FARARRAYS.md`.
+- **Proposals and decisions not built yet:** see "Risks and open questions" and the naming plan under "Name" in `docs/ARCHITECTURE.md`. They cover the cold-command overlay, the automatic workspace size, `runb-l2`, and the multi-language editor as a separate project.
+- **Repository:** https://github.com/jfed6000/basic09-l2. Besides `main`: `p5.6` (merged) and `mouse-wip` (parked mouse work).
 
 ## Ground rules
 
@@ -13,8 +15,9 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 
 ## Build and test
 
-- **Toolchain:** `lwasm` and `os9` (toolshed), from `~/projects/coco-shelf/bin`.
+- **Toolchain:** `lwasm` and `os9` (toolshed).
 - **NitrOS-9 tree:** `NITROS9DIR` defaults to `~/projects/wild/joust/nitros9_complete/nitros9`. Only its `defs/`, its MAME build (`mame/mame`, machine `wbjr2`) and its Level 2 image are used.
+- **Two NitrOS-9 trees until MAME catches up.** The Longview core (rc22+) moved the device pages to `$FC`-`$FF`; `~/projects/wild/main/nitros9` (tracks main) supports it, but the Wildbits MAME (`~/projects/wild/mame`) doesn't run it yet. Emulator tests stay on the joust tree; `make k2main`/`jr2main` build hardware images from the main tree through `recipes/` (`recipes/README.md`). New disk images go in a recipe there, built from the main tree's sources, not by patching a stock image. Stick to the defs: no hardware addresses in our code.
 
 | Command | What it does |
 |---|---|
@@ -22,6 +25,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
 | `make p1test` … `p4test`, `p5atest` … `p5jtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
+| `make k2main`, `make jr2main` | Hardware images for the new core from the main tree: `recipes/wildbits/basic09-l2/l2_basic09-l2{k2,jr2}.dsk`. |
 | `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the stock K2 or Jr2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
@@ -39,8 +43,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `L2B09` builds also get `-DLevel=2`.
   - The runtime's direct page is full (1 byte left). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
-- **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `l2b09ed/` is the editor (P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
-- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, `edmodel.py`, a Python model of the editor's commands used to generate expected files, and `mkkw.py`, which regenerates the editor's keyword table `os9/l2b09ed/kwtab.asm` from `KEYTAB`).
+- **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `basic09-l2/` is the editor, `basic09-l2` (formerly `l2b09ed`; P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
+- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, `edmodel.py`, a Python model of the editor's commands used to generate expected files, and `mkkw.py`, which regenerates the editor's keyword table `os9/basic09-l2/kwtab.asm` from `KEYTAB`).
 
 ## Gotchas learned the hard way
 
