@@ -40,11 +40,12 @@ You need `lwasm` and `python3`, plus a NitrOS-9 source tree for its `defs` direc
     make p6test             # code banking: 48K program in a 24K workspace, debugger, LIST/SAVE
     make p7test             # far arrays: REAL/BYTE/STRING/record arrays past 64K, errors, leaks, benchmark
     make loadtime           # benchmark: compile the 937-line startrek sample
-    make NITROS9DIR=/path/to/nitros9
+    make main               # new-core disk images: build/main/l2_{wildbits,basic09-l2}{k2,jr2}.dsk
+    make NITROS9DIR=/path/to/nitros9 BASEIMG=/path/to/l2_wildbitsjr2.dsk
 
-`NITROS9DIR` defaults to `~/projects/wild/joust/nitros9_complete/nitros9`.
+The NitrOS-9 tree is an export of the nitros9project clones in `~/projects/wild/main` (`MAINDIR`): every `make` copies each clone's committed HEAD into `build/main/src/` when it has changed, and builds there, so the clones are never written to (`recipes/README.md`).
 
-Emulator tests use that tree's MAME build (`mame/mame`, machine `wbjr2`) and its Level 2 image (`recipes/wildbits/l2/l2_wildbitsjr2.dsk`). The image is copied into `build/emu/<test>/` and never modified. Only 6809 builds are targeted; the 6309 variants are stock leftovers.
+Emulator tests use the Wildbits MAME (`~/projects/wild/mame/mame`, machine `wbjr2`, override with `MAME`) and the stock Level 2 image built in that copy (`build/main/l2_wildbitsjr2.dsk`, override with `BASEIMG`). The image is copied into `build/emu/<test>/` and never modified. Only 6809 builds are targeted; the 6309 variants are stock leftovers.
 
 ## l2b09run
 

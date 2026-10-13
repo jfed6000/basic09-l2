@@ -19,14 +19,15 @@
 # run.out/run.err (stdout/stderr of the script), fetched files, and mame.log
 # (which ends with the emulator's text-screen snapshot).
 #
-# Environment overrides: NITROS9DIR, MAME, BASEIMG, EMU_SECONDS (emulated seconds).
+# Environment overrides: MAME, BASEIMG, EMU_SECONDS (emulated seconds).
+# The defaults are the Wildbits MAME and the stock Jr2 image that
+# "make jr2main" builds from the NitrOS-9 main repos (recipes/README.md).
 
 set -euo pipefail
 
 top=$(cd "$(dirname "$0")/.." && pwd)
-NITROS9DIR=${NITROS9DIR:-$HOME/projects/wild/joust/nitros9_complete/nitros9}
-MAME=${MAME:-$NITROS9DIR/mame/mame}
-BASEIMG=${BASEIMG:-$NITROS9DIR/recipes/wildbits/l2/l2_wildbitsjr2.dsk}
+MAME=${MAME:-$HOME/projects/wild/mame/mame}
+BASEIMG=${BASEIMG:-$top/build/main/l2_wildbitsjr2.dsk}
 EMU_SECONDS=${EMU_SECONDS:-60}
 
 [ $# -eq 1 ] || { echo "usage: $0 <testdir>" >&2; exit 2; }

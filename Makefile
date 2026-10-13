@@ -1,14 +1,33 @@
 # l2basic09 top-level build
 #
-# Only the NitrOS-9 defs directory (os9.d, scf.d, ...) is used from the
-# NitrOS-9 tree; point NITROS9DIR at a checkout to override the default.
-
-NITROS9DIR ?= $(HOME)/projects/wild/joust/nitros9_complete/nitros9
-REFDIR     ?= $(NITROS9DIR)/../nitros9-languages/basic09
-export NITROS9DIR
+# The NitrOS-9 tree is a copy of the nitros9project clones in $(MAINDIR),
+# which stay pristine: recipes/export-main.sh writes each one's HEAD into
+# build/main/src/ (again only when HEAD changes; recipes/README.md).  Its
+# defs, pipe modules and stock Level 2 image are used, and the stock
+# basic09/runb built there are the reference for "make check".
+# Point NITROS9DIR at another checkout (and BASEIMG at its image) to
+# override, e.g. the old-core joust tree.
 
 PYTHON  ?= python3
 BUILD   = build
+
+MAINDIR    ?= $(HOME)/projects/wild/main
+MAINSRC     = $(CURDIR)/build/main/src
+NITROS9DIR ?= $(MAINSRC)/nitros9
+REFDIR     ?= $(NITROS9DIR)/../nitros9-languages/basic09
+MAME       ?= $(HOME)/projects/wild/mame/mame
+BASEIMG    ?= $(CURDIR)/build/main/l2_wildbitsjr2.dsk
+export NITROS9DIR MAME BASEIMG
+
+# Export (or refresh) the copy before anything reads it
+ifeq ($(NITROS9DIR),$(MAINSRC)/nitros9)
+ifneq ($(filter-out clean,$(or $(MAKECMDGOALS),all)),)
+$(foreach l,$(shell recipes/export-main.sh $(MAINDIR) $(MAINSRC) | tr ' ' '~'),$(info $(subst ~, ,$(l))))
+ifneq ($(.SHELLSTATUS),0)
+$(error recipes/export-main.sh failed)
+endif
+endif
+endif
 SRCDIR  = src
 MODDIR  = modules
 SCRIPT  = $(SRCDIR)/build-modular-basic09.py
@@ -101,57 +120,57 @@ $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe: $(BUILD)/%: $(NITROS9DIR)/level1/
 	cd $(BUILD) && $(PLATAS) $< -o$(CURDIR)/$@
 
 # P1: compile with stock basic09 from a script, run the packed module with runb
-p1test: stock pipes
+p1test: stock pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p1
 
-p2test: l2b09 pipes
+p2test: l2b09 pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p2
 
-p3test: l2b09 tools pipes
+p3test: l2b09 tools pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p3
 
-p4test: stock l2b09 subs
+p4test: stock l2b09 subs $(BASEIMG)
 	tools/emu-wildbits.sh test/p4
 
-p5atest: tools
+p5atest: tools $(BASEIMG)
 	EMU_SECONDS=240 tools/emu-wildbits.sh test/p5a
 
-p5btest: tools
+p5btest: tools $(BASEIMG)
 	tools/emu-wildbits.sh test/p5b
 
-p5ctest: tools
+p5ctest: tools $(BASEIMG)
 	EMU_SECONDS=300 tools/emu-wildbits.sh test/p5c
 
-p5dtest: tools
+p5dtest: tools $(BASEIMG)
 	EMU_SECONDS=300 tools/emu-wildbits.sh test/p5d
 
-p5etest: tools
+p5etest: tools $(BASEIMG)
 	EMU_SECONDS=400 tools/emu-wildbits.sh test/p5e
 
-p5ftest: tools l2b09 pipes
+p5ftest: tools l2b09 pipes $(BASEIMG)
 	EMU_SECONDS=150 tools/emu-wildbits.sh test/p5f
 
-p5gtest: tools l2b09 pipes
+p5gtest: tools l2b09 pipes $(BASEIMG)
 	EMU_SECONDS=150 tools/emu-wildbits.sh test/p5g
 
-p5htest: tools l2b09 pipes
+p5htest: tools l2b09 pipes $(BASEIMG)
 	EMU_SECONDS=150 tools/emu-wildbits.sh test/p5h
 
-p5itest: tools
+p5itest: tools $(BASEIMG)
 	EMU_SECONDS=400 tools/emu-wildbits.sh test/p5i
 	test/p5i/check build/emu/p5i
 
-p5jtest: tools l2b09 pipes
+p5jtest: tools l2b09 pipes $(BASEIMG)
 	EMU_SECONDS=150 tools/emu-wildbits.sh test/p5j
 
-p6test: l2b09
+p6test: l2b09 $(BASEIMG)
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6
 
-p7test: l2b09
+p7test: l2b09 $(BASEIMG)
 	EMU_SECONDS=300 tools/emu-wildbits.sh test/p7
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
-loadtime: l2b09
+loadtime: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/loadtime
 
 # SD card images for trying the editor on a Wildbits K2 or Jr2: the stock
@@ -162,7 +181,7 @@ JR2IMG = $(BUILD)/l2b09_jr2.dsk
 k2img: $(K2IMG)
 jr2img: $(JR2IMG)
 
-$(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe $(wildcard examples/*)
+$(BUILD)/l2b09_%.dsk: $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe $(wildcard examples/*)
 	cp $< $@.tmp
 	os9 copy -r $@.tmp,OS9Boot $(BUILD)/$*boot.orig
 	tools/bootfile-add.py $(BUILD)/$*boot.orig $(BUILD)/$*boot \
@@ -175,35 +194,35 @@ $(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BU
 	for f in examples/*; do os9 copy -l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done
 	mv $@.tmp $@
 
-# Disk images for the new (Longview) core from the NitrOS-9 main repos
-# in $(MAINDIR) (recipes/README.md).  Those clones stay pristine:
-# recipes/export-main.sh copies each one's HEAD into build/main/src/
-# (again only when it changes), and everything is built in that copy.
-#   k2main, jr2main   build/main/l2_wildbits{k2,jr2}.dsk (the stock image,
-#                     for tests) and l2_basic09-l2{k2,jr2}.dsk (basic09-l2
-#                     added by the recipe in recipes/wildbits/basic09-l2)
+# Disk images for the new (Longview) core, built in the copy of the main
+# repos (recipes/README.md):
+#   k2main, jr2main   build/main/l2_wildbits{k2,jr2}.dsk (the stock image;
+#                     the jr2 one is the tests' BASEIMG) and
+#                     l2_basic09-l2{k2,jr2}.dsk (basic09-l2 added by the
+#                     recipe in recipes/wildbits/basic09-l2)
 #   main              both
-# NITROS9DIR is exported for the emulator tree, so the copy is passed
-# explicitly.
-MAINDIR  ?= $(HOME)/projects/wild/main
-MAINSRC   = $(CURDIR)/$(BUILD)/main/src
+# The stock image is rebuilt when a clone's HEAD changes; building it also
+# builds the reference basic09_wildbits and runb_6809 for "make check".
 MAINRCP   = $(MAINSRC)/nitros9/recipes/wildbits
+MAINHEADS = $(MAINSRC)/nitros9.head $(MAINSRC)/nitros9-languages.head $(MAINSRC)/nitros9-apps.head
 MAINMAKE  = $(MAKE) NITROS9DIR=$(MAINSRC)/nitros9 LANGUAGES=$(MAINSRC)/nitros9-languages \
             NITROS9_APPS_DIR=$(MAINSRC)/nitros9-apps B09L2DIR=$(CURDIR)
 .PHONY: main mainsrc
 main: k2main jr2main
 mainsrc:
 	recipes/export-main.sh $(MAINDIR) $(MAINSRC)
+$(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk: $(MAINHEADS)
+	$(MAINMAKE) -C $(MAINRCP)/l2 PLATFORM=$*
+	cp $(MAINRCP)/l2/l2_wildbits$*.dsk $@
+k2main jr2main: %main: mainsrc $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk
 	mkdir -p $(MAINRCP)/basic09-l2
 	cp -p recipes/wildbits/basic09-l2/makefile recipes/wildbits/basic09-l2/recipe.mak $(MAINRCP)/basic09-l2/
-k2main jr2main: %main: mainsrc
-	$(MAINMAKE) -C $(MAINRCP)/l2 PLATFORM=$*
-	cp $(MAINRCP)/l2/l2_wildbits$*.dsk $(BUILD)/main/
 	$(MAINMAKE) -C $(MAINRCP)/basic09-l2 PLATFORM=$*
 	cp $(MAINRCP)/basic09-l2/l2_basic09-l2$*.dsk $(BUILD)/main/
 
-# Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
-check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809
+# Byte-for-byte comparison against the stock modules built in the copy
+# (or the prebuilt ones in REFDIR, for another tree)
+check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809 $(if $(filter $(MAINSRC)/%,$(REFDIR)),$(CURDIR)/$(BUILD)/main/l2_wildbitsjr2.dsk)
 	cmp $(BUILD)/basic09_wildbits $(REFDIR)/basic09_wildbits
 	cmp $(BUILD)/runb_6809 $(REFDIR)/runb_6809
 	@echo "check: stock builds match $(REFDIR)"

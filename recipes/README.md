@@ -15,7 +15,7 @@ make main MAINDIR=/other/main   # clones somewhere else
 
 | Image | What it is | For |
 |---|---|---|
-| `l2_wildbits{k2,jr2}.dsk` | The stock Wildbits Level 2 image, from the tree's own `recipes/wildbits/l2` | Emulator tests: `make p3test BASEIMG=$PWD/build/main/l2_wildbitsjr2.dsk` |
+| `l2_wildbits{k2,jr2}.dsk` | The stock Wildbits Level 2 image, from the tree's own `recipes/wildbits/l2` | Emulator tests (the default `BASEIMG`) |
 | `l2_basic09-l2{k2,jr2}.dsk` | The stock image plus basic09-l2 (below) | Real hardware |
 
 The basic09-l2 image adds:
@@ -51,8 +51,9 @@ Notes:
   in the copy.
 - `make clean` removes `build/`, the copy included; the next `make main`
   exports and builds everything again (about three minutes).
-- From the top-level Makefile, `NITROS9DIR` is the emulator (joust) tree;
-  the main build passes the copy explicitly.
+- The top-level Makefile runs `export-main.sh` whenever it is read (except
+  for `make clean`), and its default `NITROS9DIR` is the copy, so `defs`,
+  the pipe modules and `make check`'s reference builds all come from it.
 - The K2 OS9Boot with the pipes is 31,744 bytes; the tree's limit is 32,256.
 - The stock images are 262,134 blocks. The emulated SD card accepts only
   sizes it can express, so `tools/emu-wildbits.sh` pads its copy to a power
@@ -61,7 +62,7 @@ Notes:
 ## Emulator
 
 Since 2026-10-12 the Wildbits MAME (`~/projects/wild/mame`) emulates the
-Longview core. The tests still default to the old-core joust image
-(`~/projects/wild/joust/nitros9_complete/nitros9`), on which the screen
-tests (p5g, p5h, p5i) now see a blank screen; pass
-`BASEIMG=$PWD/build/main/l2_wildbitsjr2.dsk` to run them on the new core.
+Longview core, and since 2026-10-13 the tests run on
+`build/main/l2_wildbitsjr2.dsk` (built on demand). The old-core joust tree
+still builds with `NITROS9DIR=~/projects/wild/joust/nitros9_complete/nitros9
+BASEIMG=<its l2_wildbitsjr2.dsk>`, but MAME no longer shows its screen.

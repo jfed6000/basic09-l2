@@ -16,8 +16,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 ## Build and test
 
 - **Toolchain:** `lwasm` and `os9` (toolshed).
-- **NitrOS-9 tree:** `NITROS9DIR` defaults to `~/projects/wild/joust/nitros9_complete/nitros9`. Only its `defs/`, its MAME build (`mame/mame`, machine `wbjr2`) and its Level 2 image are used.
-- **Two NitrOS-9 trees.** The Longview core (rc22+) moved the device pages to `$FC`-`$FF`. The nitros9project clones in `~/projects/wild/main` (`nitros9`, `-languages`, `-apps`, `-games`) support it and **must stay pristine**: never build in them or write to them. `make main` exports their HEAD into `build/main/src/` (`recipes/export-main.sh`, `git archive`) and builds there (`recipes/README.md`). The Wildbits MAME (`~/projects/wild/mame`) emulates Longview since 2026-10-12; the tests still default to the old-core joust tree, where the screen tests (p5g/h/i) see a blank screen, so run them with `BASEIMG=$PWD/build/main/l2_wildbitsjr2.dsk`. New disk images go in a recipe under `recipes/`, built in the exported copy, not by patching a stock image. Stick to the defs: no hardware addresses in our code.
+- **NitrOS-9 tree:** `NITROS9DIR` defaults to `build/main/src/nitros9`, an export of the nitros9project clones in `~/projects/wild/main` that every `make` refreshes when a clone's HEAD changes (`recipes/export-main.sh`). Its defs, pipe modules, stock Level 2 image (`build/main/l2_wildbitsjr2.dsk`, the tests' `BASEIMG`) and stock basic09/runb (for `make check`) are used. MAME is `~/projects/wild/mame/mame` (machine `wbjr2`, Longview core).
+- **The main clones stay pristine.** The Longview core (rc22+) moved the device pages to `$FC`-`$FF`; the clones in `~/projects/wild/main` (`nitros9`, `-languages`, `-apps`, `-games`) support it. Never build in them or write to them: everything builds in the export (`recipes/README.md`). The old-core joust tree (`~/projects/wild/joust/nitros9_complete/nitros9`) still works with `NITROS9DIR=` and `BASEIMG=` overrides, but MAME no longer shows its screen. New disk images go in a recipe under `recipes/`, built in the export, not by patching a stock image. Stick to the defs: no hardware addresses in our code.
 
 | Command | What it does |
 |---|---|
@@ -26,7 +26,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 | `make p1test` … `p4test`, `p5atest` … `p5jtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make main` (`k2main`, `jr2main`) | New-core images built in an export of the main repos: `build/main/l2_wildbits{k2,jr2}.dsk` (stock, for tests) and `l2_basic09-l2{k2,jr2}.dsk` (for hardware). |
-| `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the stock K2 or Jr2 image plus the pipe modules in OS9Boot, the editor and runtime in CMDS, and `examples/` in `/dd/l2b09`, for real hardware. |
+| `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the same as `l2_basic09-l2{k2,jr2}.dsk` from `make main`, made by patching the stock image's OS9Boot instead of the recipe. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
 - A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files, and a `gen` script whose output is copied in unchanged (binary).

@@ -75,7 +75,7 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
 - **P0 – Project bootstrap (done).**
   - The Microware modular source is in `src/`: the six `.asm` files plus `defs`, `b09defs`, `b09type`, `jmpdefs`, `linkage`, `editor` and `build-modular-basic09.py`.
   - `syscall.asm`/`inkey.asm` are in `modules/`, and the stock samples are in `samples/`.
-  - The build takes only the defs directory from `NITROS9DIR`, which defaults to `~/projects/wild/joust/nitros9_complete/nitros9`.
+  - The build takes only the defs directory from `NITROS9DIR`, which defaulted to `~/projects/wild/joust/nitros9_complete/nitros9`. Since 2026-10-13 the default is an export of the main repos (Longview core; `recipes/README.md`).
   - `make` builds all five stock variants (6809, 6309, wildbits, and both RunBs). `basic09_wildbits`, `runb_6809` and `basic09_6809` are verified byte-for-byte; the 6309 builds have not been compared yet. `make check` compares `basic09_wildbits` and `runb_6809` against the prebuilt copies in nitros9_complete. `basic09_6809` was checked against a build from that tree.
 - **P1 – Prove the pipeline with stock binaries (done).** `make p1test` runs `test/p1` headless under MAME via `tools/emu-wildbits.sh`. All checks pass.
   - What it does: stock basic09, driven by a command file (`load`, `pack*`, `bye`), compiles a three-procedure program into packed modules. RunB runs them (Fibonacci, then an 8K sieve). The same program also runs with its I/O on `/vt2`. basic09 is also driven through an anonymous pipe (`list cmds ! basic09`), including a decompiling `LIST`.
