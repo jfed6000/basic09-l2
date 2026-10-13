@@ -31,6 +31,14 @@ X$OPN0 rmb 2 Open the command output path
 X$CLSC rmb 2 Close it again
 X$UNBD rmb 2 Unbind a procedure
 X$NXVR rmb 2 Next variable reference in I-code
+* (DIR, RENAME, MEM)
+X$NWLN rmb 2 Reset the I/O buffer
+X$PUTC rmb 2 Put a character in it
+X$STSP rmb 2 Put a string and a space in it
+X$STEL rmb 2 Put a string in it and print it
+X$PEOL rmb 2 Print it
+X$ITOA rmb 2 Put a number in it
+X$DSCH rmb 2 Search the procedure directory
  endc
  endc
 

@@ -1,0 +1,30 @@
+***************
+* Subroutine CHGMEM
+*   Change Basic09'S Workspace Size
+
+* Passed: (Y)=Command Line
+
+CHGMEM lbsr CMDSEP Skip command separator
+ bne CHGME1
+ leax  ,Y
+ ldd G.PRCA
+ addd G.PRCS Find top of procedure storage
+ inca round up
+ subd G.WSPA Minimum amount of memory needed
+ pshs D
+ lbsr GETNUM get an integer
+ bcs CHGERR ..error; what?
+ cmpd ,S++ Higher than minimum needed?
+ blo CHGER1 ..no; error
+ OS9 F$MEM Set memory size
+ bcs CHGME1 ..error; print current size
+ subd #1 >>experimental fix<<
+ std G.WSPS
+CHGME1 lbsr NEWLIN Reset I/O ptrs
+ ldd G.WSPS get current mem size
+ bsr ItoA Put number in I/O buffer
+CHGME9 lbra PRTEOL Print buffer; then end of line
+
+CHGERR leas 2,S
+CHGER1 coma RETURN Error - carry set
+ rts

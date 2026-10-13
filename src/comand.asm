@@ -204,6 +204,14 @@ CMDENT equ *
  fdb CLSCHL-CMDENT Close it again
  fdb UNBIND-CMDENT Unbind a procedure
  fdb NXTVAR-CMDENT Next variable reference in I-code
+* (DIR, RENAME, MEM)
+ fdb NEWLIN-CMDENT Reset the I/O buffer
+ fdb PUTCHR-CMDENT Put a character in it
+ fdb STRSPC-CMDENT Put a string and a space in it
+ fdb STREOL-CMDENT Put a string in it and print it
+ fdb PRTEOL-CMDENT Print it
+ fdb ItoA-CMDENT   Put a number in it
+ fdb DIRSCH-CMDENT Search the procedure directory
  endc
  endc
 
@@ -1169,12 +1177,16 @@ READY equ *
  endc
  fcs "Ready"
 WHAT fcs "What?"
+ ifeq L2B09
 FREE fcs " free"
+ endc
 DEFNAM fcs "Program"
 PRCEDR fcs "PROCEDURE"
 CR.RET fcb V$CR
+ ifeq L2B09
 DIRHDR fcb $A
  fcs "  Name      Proc-Size  Data-Size"
+ endc
 
  ifne L2B09
 OVWRIT fcc "%ASK Rewrite?"
@@ -1509,100 +1521,10 @@ RUNC20 ldd  ,X
 RUNC90 coma return carry set
  puls X,Y,PC
 
-***************
-* Subroutine CHGMEM
-*   Change Basic09'S Workspace Size
-
-* Passed: (Y)=Command Line
-
-CHGMEM lbsr CMDSEP Skip command separator
- bne CHGME1
- leax  ,Y
- ldd G.PRCA
- addd G.PRCS Find top of procedure storage
- inca round up
- subd G.WSPA Minimum amount of memory needed
- pshs D
- lbsr GETNUM get an integer
- bcs CHGERR ..error; what?
- cmpd ,S++ Higher than minimum needed?
- blo CHGER1 ..no; error
- OS9 F$MEM Set memory size
- bcs CHGME1 ..error; print current size
- subd #1 >>experimental fix<<
- std G.WSPS
-CHGME1 lbsr NEWLIN Reset I/O ptrs
- ldd G.WSPS get current mem size
- bsr ItoA Put number in I/O buffer
-CHGME9 lbra PRTEOL Print buffer; then end of line
-
-CHGERR leas 2,S
-CHGER1 coma RETURN Error - carry set
- rts
-
-***************
-* Subroutine DIR
-*   Print (procedure) Directory list
-
-* Passed: (Y)=Pathname Ptr
-* Return: Nothing Useful
-* Destroys: A,B,X,Y,CC
-
-DIR leax  ,Y get pathname of listing device
- lbsr OPNCHL Open output path
-DIR05 leax DIRHDR,PCR
- lbsr PRTLIN Print line
- ldy G.DIRA get proc. directory addr
- bra DIR2
-DIR1 pshs X,Y Save 'em
- lda #V$SPAC
- tst M$TYPE,X internal (no type) procedure?
- beq DIR10 ..yes; don't mark it
- lda #'- Compiled marker
-DIR10 lbsr  Putchr mark compiled/non-compiled state
- lda #V$SPAC
- cmpx I.APRC Is this procedure the active one?
- bne DIR15 ..no
- lda #'* Mark it with a star
-DIR15 lbsr PUTCHR
-
- ldd M$NAME,X
- leax D,X
- lbsr STRSPC
-
- ldd #17*256+P.SIZE
- bsr DIRNUM Print procedure size
-
- ldd #28*256+P.VARC
- bsr DIRNUM Print variable size
-
- ldd P.VARC,X
- addd #64
- cmpd G.VARS Danger of overflowing memory?
- blo DIR18 ..no; print line
- lda #'?
- lbsr PUTCHR Print warning character
-
-DIR18 bsr CHGME9 (prteol) print the buffer
- puls X,Y Restore 'em
- tst G.SIGN Any (abort) signals given?
- bne DIR3 ..yes; quit
-DIR2 ldx ,Y++ get next procedure address
- bne DIR1 Loop until there are no more
-
-DIR3 ldd G.VARS get free space count
- bsr ItoA Print it
- leax FREE,PCR
- lbsr STREOL PRINT " free BYTES"
- lbra CLSCHL Close output path
-
-DIRNUM pshs B
- ldb #V$TAB
- lbsr J$CVIO Tab over to column given in (a)
- puls B Restore code of number to print
- ldx 2,S Restore procedure address (necessary?)
- ldd B,X get number to print
-* Fall through to ItoA
+ ifeq L2B09
+ use mem
+ use dir
+ endc
 
 ***************
 * Subroutine ItoA
@@ -1682,49 +1604,9 @@ CHXD10 leax  ,Y (x)=pathname ptr
  bcs ERREXT if error; report it
  rts else return carry clear
 
-***************
-* Subroutine Rename
-*   Rename <Old Proc Name>,<New Proc Name>
-
-* Passed: (Y)=Command Line Following "Rename"
-
-RENAME bsr PRCREF get (old) procedure name
- lbsr DIRSCH Is it in directory?
- bcs ERUPRC No; error - not in workspace
- pshs X
- ldx  ,X get procedure address
- tst M$TYPE,X internal (un-typed) procedure?
- bne ERUPRC ..no; sorry
- bsr CMDSEP Skip separator
- beq RENAM0 ..continue if separator present
-RENAMErr comb
- puls X,PC Return error
-
-RENAM0 lbsr J$NAME get (new) procedure name
- beq RENAMErr ..abort if not present
- pshs Y Save ptr to new name
- lbsr DIRSCH Is it in directory?
- bcs RENA05 ..no; good
- cmpx 2,S renaming same procedure?
- bne ERPRCX No; error - procedure already exists
-RENA05 ldx 2,S get directory address
- lbsr UNBIND Unbind the procedure
- puls X get ptr to new name
- ldy I.STBG
-RENAM1 lda ,X+ Move new name to workspace
- sta ,Y+
- bpl RENAM1
- sty ICDPTR Set end of name ptr
- ldx [,S++] get address of procedure
- ldd M$NAME,X
- leay D,X get address of old name
- ldb P.NAMS,X get size of old name
- lda NAMLEN Replace it with size of new name
- sta P.NAMS,X
- clra
- lbsr REPLAC Replace old name with new name
- addd I.ICBG
- std I.ICBG
+ ifeq L2B09
+ use rename
+ endc
 RBIND1 lbra REBIND Rebind the procedure and return carry clear
  endc
 
@@ -1872,20 +1754,29 @@ PRCLI9 rts RETURN to user
  use pack
  else
 ***************
-* Subroutine Dump
-*   PACK lives in the overlay module l2b09ovl (src/overlay.asm,
-*   which assembles src/pack); L2OVLY loads and calls it
+* Cold commands
+*   PACK, DIR (and the empty line), RENAME and MEM live in the overlay module l2b09ovl
+*   (src/overlay.asm, which assembles src/pack, src/dir, src/rename
+*   and src/mem); L2OVLY loads it and calls the entry
 
-DUMP clrb overlay entry 0: PACK
+DIR ldb #1 overlay entry 1: DIR
+ fcb $8C (cmpx #: skip the next ldb)
+RENAME ldb #2 entry 2: RENAME
+ fcb $8C
+CHGMEM ldb #3 entry 3: MEM
+ fcb $8C
+DIR05 ldb #4 entry 4: DIR to the command path (an empty line)
+ fcb $8C
+DUMP ldb #0 entry 0: PACK
 *     (Fall Through to L2OVLY)
 
 ***************
 * Subroutine L2OVLY
 *   Run a cold command from the overlay module l2b09ovl.  Link it
 *   (or load it from the execution directory), call entry B with
-*   the command line in (Y), and unlink it again.  An error exits
-*   through our trap, which unlinks it and goes on to the
-*   previous trap.
+*   the command line in (Y), and unlink it again.  The command's
+*   carry comes back (set: "What?").  An error exits through our
+*   trap, which unlinks it and goes on to the previous trap.
 
 L2OVLY pshs B,Y
  leax L2OVNM,PCR
@@ -1911,9 +1802,9 @@ L2OVL1 ldb ,S+ entry number
  std SP.ERR remove our trap
  leas 6,S
  puls U
+ pshs CC the command's carry
  OS9 F$UnLink
- clrb carry clear: the command was found
- rts
+ puls CC,PC
 L2OVL8 leas 4,S error: the command line and entry go
  puls U
  OS9 F$UnLink

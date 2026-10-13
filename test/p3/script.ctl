@@ -31,6 +31,33 @@ send save* p3sv
 expect %ASK Rewrite?
 send y
 expect %READY
+* DIR, RENAME and MEM run from the overlay too
+send dir p3dir
+expect %READY
+send rename p3calc,p3sum
+expect %READY
+* errors: multiply defined (44) and unknown (43) procedure
+send rename p3sum,p3main
+expect %READY
+send rename nosuch,x
+expect %READY
+send dir
+expect free
+expect %READY
+send rename p3sum,p3calc
+expect %READY
+send mem
+expect %READY
+* grow the workspace (F$Mem, with the overlay mapped in)
+send mem 16000
+expect %READY
+* below the minimum: carry set, "What?"
+send mem 1
+expect %READY
+* an empty line lists the procedures too
+send
+expect free
+expect %READY
 * PACK runs from the overlay module l2b09ovl (in /dd/CMDS): an error
 * in the runtime unlinks it on the way out, and it loads again
 send pack nosuch

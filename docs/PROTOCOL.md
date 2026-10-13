@@ -56,7 +56,7 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 
 Send one command per line, ending with CR.
 
-- **After `%READY`:** Basic09 commands such as `load <file>`, `run [<proc>[(<params>)]]`, `list [<proc>]`, `kill <proc>`, `save* <file>`, `pack* <file>`, `dir`, `mem [<n>]`, `chd`, `chx`, `$<shell command>` and `bye`. The line editor (`edit`/`e`) is not in `l2b09run`. `pack` runs from the overlay module `l2b09ovl`, which must be in memory or in the execution directory (`/dd/CMDS`); without it `pack` fails with error 216. Also (not in stock Basic09):
+- **After `%READY`:** Basic09 commands such as `load <file>`, `run [<proc>[(<params>)]]`, `list [<proc>]`, `kill <proc>`, `save* <file>`, `pack* <file>`, `dir`, `mem [<n>]`, `chd`, `chx`, `$<shell command>` and `bye`. The line editor (`edit`/`e`) is not in `l2b09run`. `pack`, `dir`, `rename` and `mem` (and an empty line, which lists the procedures like `dir`) run from the overlay module `l2b09ovl`, which must be in memory or in the execution directory (`/dd/CMDS`); without it they fail with error 216. Also (not in stock Basic09):
   - **`step [<proc>[(<params>)]]`** is `run`, but the program stops in the debugger (`%DEBUG`) before its first statement.
   - **`bp`** and **`bc`**, as in the debugger (below).
 - **After `%DEBUG`:** debugger commands such as `cont`, `step [n]`, `list`, `print <expr>`, `let <var>:=<expr>`, `state`, `tron`, `troff`, `break <proc>`, `q` (quit to command mode) and `$<shell command>`. `print` output comes back on the channel, before the next `%DEBUG`.
