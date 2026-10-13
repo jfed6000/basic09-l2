@@ -115,7 +115,7 @@ Both drivers send a character. The modifier and arrow state comes from `SS.KySns
 
 ## Screen
 
-The screen uses the CoCo/Wildbits VTIO control codes: `$02` cursor XY, `$0C` clear, `$1F $20/$21` reverse video, `$05 $20/$21` cursor off/on. The size comes from `SS.ScSiz` (80×30 on Wildbits), and the default is 80×30.
+The screen uses the CoCo/Wildbits VTIO control codes: `$02` cursor XY, `$0C` clear, `$1F $20/$21` reverse video (only with colours off), `$05 $20/$21` cursor off/on. The size comes from `SS.ScSiz` (80×30 on Wildbits), and the default is 80×30.
 
     row 0        File  Edit  Search  Run  Compile  Debug  Options  Help     menu bar (reverse)
     row 1        ╔══════════════════ name.b09 ══════════════════╗          title: the file name
@@ -149,7 +149,7 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 
 - **Per line:** Basic09 has nothing that spans lines, so `v_line` colours each line as it draws it, from the line's start (`hl.asm`). There is no state between lines and no extra pass over the text.
 - **Keywords** come from the compiler's own table (`KEYTAB` in `src/comand.asm`). `tools/mkkw.py` turns it into `os9/basic09-l2/kwtab.asm` (115 words, by first letter), so the two agree. Statements, reserved words and operator words are keywords, and the rest are functions. Case is ignored, as in the compiler.
-- **Colours:** the editor uses its own, as Turbo C did: yellow text (7) on blue (6), with keywords white (1), functions pale cyan (3), strings green (5), comments light grey (15) and numbers orange (8), in the Wildbits text palette. Window frames (the text, message and watch windows, with their titles and the line:column) are white (1). The menu bar, the drop-down menus and the hint line are black on light grey (15), with the open menu's title and the selected item on green (5); with colours off they are in reverse video as before. The terminal's own colours are read with `SS.FBRgs` at start and put back on exit, and also when colours are turned off. A colour is sent only when it changes, and each row ends in the normal colour, so the frame, menus and dialogs never set one. `$0A` and `$0D` are not used as colour numbers.
+- **Colours:** the editor uses its own, as Turbo C did: yellow text (7) on blue (6), with keywords white (1), functions pale cyan (3), strings green (5), comments light grey (15) and numbers orange (8), in the Wildbits text palette. Window frames (the text, message and watch windows, with their titles and the line:column) are white (1). The menu bar, the drop-down menus and the hint line are black on light grey (15), with the open menu's title and the selected item on green (5); with colours off they are in reverse video as before. A highlight (the selection, the line the program stopped at) is a colour pair of its own, not VTIO's reverse video: that swaps the colours in force, so a syntax colour sent inside a reversed run changed the background, and the swap back left the wrong pair for the rows after it. The terminal's own colours are read with `SS.FBRgs` at start and put back on exit, and also when colours are turned off. A colour is sent only when it changes, and each row ends in the normal colour, so the frame, menus and dialogs never set one. `$0A` and `$0D` are not used as colour numbers.
 - **Cost:** `make p5itest` pages through a 5,000-line file 150 times: 81 s with colours and 67 s without (+21%). Options ▸ Syntax colours turns them off.
 
 ## Pretty print
@@ -181,7 +181,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 
 ## Selection and clipboard
 
-- **Selection:** it runs between an anchor (a tracked position, with its line and display column) and the cursor, and is drawn in reverse video. A selected line end shows as one reversed space. Any edit ends the selection first, so the anchor's line and column stay valid while it is active. A plain move, a go-to or Esc ends it.
+- **Selection:** it runs between an anchor (a tracked position, with its line and display column) and the cursor, and is drawn black on pale cyan (3), or in reverse video with colours off. A selected line end shows as one highlighted space. Any edit ends the selection first, so the anchor's line and column stay valid while it is active. A plain move, a go-to or Esc ends it.
 - **Deleting a selection** (`ed_delto`) works a page at a time. The first and last pages are cut with one move each, and whole pages in between are dropped without being read from the swap file.
 - **The clipboard** is a page chain of its own in the swap file (1,536 bytes per page), so it can hold any amount.
 - **Paste:**
@@ -233,7 +233,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 ## The debugger
 
 - **Stops:** a program stops in the debugger at a breakpoint, a `PAUSE` statement, a BREAK, a runtime error, or (with Until return) on its way back to a procedure. `l2b09run` then sends `%DEBUG <proc> <line>`, and the editor stays in the debugger until the program ends or is reset:
-  - the line it stopped at is drawn in reverse video across the window, and the cursor goes there (the window moves only if that line is not in it);
+  - the line it stopped at is drawn white on red (1 on 2) across the window, or in reverse video with colours off, and the cursor goes there (the window moves only if that line is not in it);
   - the hint line lists the debugger keys;
   - a stop in a procedure that is not in the text says `Stopped in <proc> line <n>`.
 - **Step (F7, Debug ▸ Trace into):** `step`. A step on a `RUN` line stops at the called procedure's first statement, and stepping through its END stops back in the caller. The first stop at a `PAUSE` is on the `PAUSE` line itself, so the first step only moves on. If the program is not running, F7 (and F8) Make, then start it with `step <first procedure>`, which stops before its first statement.
@@ -275,4 +275,5 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make: the program is stopped at the error, so Make asks, and Y resets it before the `kill` and the load. The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, ^P resets it, a second Run sends nothing new and stops again, and quitting sends `q` before `bye`.
 - **`make p5ktest` (P5.7):** `test/p5k`, the mouse from a key script. A press on the left border sets a breakpoint that Run then stops at. A click and typing place text, a drag selects for a cut, and a right press extends a selection. A press outside the ^G dialog cancels it, File ▸ Save as is chosen by the mouse, a double click on a Make error goes to its line, and ^Q is answered by a press on the `Y`. Two saved files and the log are checked. A second session with `-h` drags past the bottom of the window (it scrolls two lines) and sets and clears breakpoints by the mouse; the snapshot shows the marks.
 - **`make p5ltest` (P5.7):** `test/p5l`, the real keyboard and mouse on `/term`, driven by the MAME script `test/p5l/lua`. It types after clicks on two lines, sets a breakpoint on the left border, and runs the program from the Run menu by pressing on its title, dragging down and releasing on Run. The snapshot must show the edits and the stop on the breakpoint's line.
+- **`make p5mtest` (P5.7):** `test/p5m`, the highlights in colour, which the text snapshot cannot show: the MAME script reads the pixels of a cell's blank top row. A Shift+arrow selection, Esc ending it, the ^F dialog opening and closing on Enter with the match selected, and Run ▸ Go to cursor stopping on its line in white on red.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

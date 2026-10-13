@@ -108,7 +108,8 @@ vd00                equ       *
                     tst       <selon
                     beq       vd0
                     lbsr      sel_bounds
-vd0                 bita      #RD.ALL
+vd0                 lda       <redraw             (bp_lines and sel_bounds use A)
+                    bita      #RD.ALL
                     beq       vd1
                     lbsr      v_frame
                     lbsr      w_draw
@@ -141,7 +142,7 @@ vd1                 bita      #RD.BELOW+RD.LINE
                     lbsr      p_prevln            (U = wp)
 vd1b                bsr       v_rows
                     bra       vd3
-vd2                 bsr       v_line
+vd2                 lbsr      v_line
 vd3                 lbsr      v_stat
                     clr       <redraw
                     ldd       <curline
@@ -192,11 +193,18 @@ vp1                 lda       <vcnt
                     bra       vp1
 vp9                 puls      a,pc
 
-* v_colput: v_put, in colour B unless colours are off
-v_colput            tst       <nocolr
+* v_colput: v_put, in colour B unless colours are off or the character
+* is highlighted (the highlight has colours of its own)
+v_colput            bsr       v_synok
                     bne       v_put
                     lbsr      hl_col
                     bra       v_put
+
+* v_synok: Z if syntax colours apply here (colours on, no highlight)
+v_synok             tst       <nocolr
+                    bne       vsy9
+                    tst       <vrev
+vsy9                rts
 
 * v_put: A into the current window row, if it still has room
 v_put               pshs      a
@@ -263,7 +271,7 @@ vl1a                cmpa      #C$TAB
 vl2                 leax      1,x
                     bra       vl3
 vl_tab              lbsr      v_selat
-                    tst       <nocolr
+                    lbsr      v_synok
                     bne       vlt0
                     lbsr      hl_col
 vlt0                equ       *
@@ -299,27 +307,25 @@ vl_eof              bsr       v_endpad
                     orcc      #Carry
                     puls      d,x,y,u,pc
 
-* v_endpad: the rest of the row, reversed on the line the program
-* stopped at; the colour goes back to normal first
-v_endpad            lbsr      hl_norm
+* v_endpad: the rest of the row: highlighted on the line the program
+* stopped at, otherwise in the normal colours
+v_endpad            clra
                     tst       <vexec
                     beq       vep1
-                    tst       <vrev
+                    lda       #VH.EXEC
+vep1                bsr       v_hi
+                    lbsr      v_synok
                     bne       vep2
-                    inc       <vrev
-                    lbsr      t_rev
-                    bra       vep2
-vep1                bsr       v_selend
+                    lbsr      hl_norm
 vep2                lbsr      v_pad
                     bra       v_selend
 
-* v_selat: reverse video on or off for display column X of line vline,
-* by whether it is in the selection (the other way round on the line
-* the program stopped at)
+* v_selat: the highlight for display column X of line vline: the
+* selection's, the stopped line's, or none
 v_selat             pshs      d
                     clra
                     tst       <selon
-                    beq       vsa2
+                    beq       vsa_out
                     ldd       <vline              before the start?
                     cmpd      <sl
                     blo       vsa_out
@@ -332,26 +338,53 @@ vsa1                ldd       <vline              at or after the end?
                     bne       vsa_in
                     cmpx      <ec
                     bhs       vsa_out
-vsa_in              lda       #1
+vsa_in              lda       #VH.SEL
                     bra       vsa2
 vsa_out             clra
-vsa2                eora      <vexec
-                    cmpa      <vrev
-                    beq       vsa8
-                    sta       <vrev
-                    tsta
-                    beq       vsa3
-                    lbsr      t_rev
-                    bra       vsa8
-vsa3                lbsr      t_norm
-vsa8                puls      d,pc
+                    tst       <vexec
+                    beq       vsa2
+                    lda       #VH.EXEC
+vsa2                bsr       v_hi
+                    puls      d,pc
 
-* v_selend: reverse video off
-v_selend            tst       <vrev
-                    beq       vse9
-                    clr       <vrev
-                    lbra      t_norm
-vse9                rts
+* v_selend: the highlight off
+v_selend            clra
+
+* v_hi: highlight A (VH.*) from here on.  With colours it is a colour
+* pair; without them reverse video, the selection the other way round
+* on the stopped line.  Keeps all registers.
+VH.SEL              equ       1
+VH.EXEC             equ       2
+v_hi                cmpa      <vrev
+                    beq       vhi9
+                    sta       <vrev
+                    pshs      d,x
+                    tst       <nocolr
+                    bne       vhi4
+                    ldx       <base
+                    tsta
+                    bne       vhi1
+                    lda       hlnorm,x            none: the normal colours
+                    ldb       #CL.BG
+                    bra       vhi3
+vhi1                cmpa      #VH.SEL
+                    bne       vhi2
+                    ldd       #CL.SELFG*256+CL.SELBG
+                    bra       vhi3
+vhi2                ldd       #CL.EXFG*256+CL.EXBG
+vhi3                lbsr      hl_pair
+                    puls      d,x,pc
+vhi4                clrb                          reverse: (selected) xor (stopped line)
+                    cmpa      #VH.SEL
+                    bne       vhi5
+                    incb
+vhi5                eorb      <vexec
+                    beq       vhi6
+                    lbsr      t_rev
+                    puls      d,x,pc
+vhi6                lbsr      t_norm
+                    puls      d,x,pc
+vhi9                rts
 
 * v_stat: the bottom border (modified mark, line:column) and the hint line
 v_stat              ldb       <wtop               bottom border

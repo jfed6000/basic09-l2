@@ -1,0 +1,78 @@
+-- The highlights are colours, which the text snapshot does not show, so
+-- this script reads them off the screen: the top pixel row of a cell is
+-- its background (the font leaves it blank).  Cells are 8x16 pixels.
+-- Each check prints "p5m: <what> <ARGB>" for the expect file.
+local ports = manager.machine.ioport.ports
+local function key(name)
+    for _, p in pairs(ports) do if p.fields[name] then return p.fields[name] end end
+end
+local function field(tag) for _, f in pairs(ports[tag].fields) do return f end end
+local fx, fy = field(":MOUSEX"), field(":MOUSEY")
+local fb = ports[":MOUSE_BUTTONS"].fields["Left Button"]
+local shift, right, down = key("LShift"), key("Right"), key("Down")
+local ctrl, esc, kf = key("Ctrl"), key("Escape"), key("f  F")
+local scr = manager.machine.screens[":screen"]
+local steps = {}
+local cx, cy = 30000, 30000
+local function add(f) steps[#steps + 1] = f end
+local function wait(n) for _ = 1, n do add(function() end) end end
+local function hold(f, v) add(function() f:set_value(v) end); wait(6) end
+local function tap(f) hold(f, 1); hold(f, 0) end
+local function check(what, c, r)
+    add(function()
+        print(string.format("p5m: %s %08X", what, scr:pixel(c * 8 + 4, r * 16)))
+    end)
+end
+local function ink(what, c, r)  -- pixels unlike the cell's background
+    add(function()
+        local bg, n = scr:pixel(c * 8, r * 16), 0
+        for y = 0, 15 do for x = 0, 7 do
+            if scr:pixel(c * 8 + x, r * 16 + y) ~= bg then n = n + 1 end
+        end end
+        print(string.format("p5m: %s %s", what, n > 0 and "ink" or "blank"))
+    end)
+end
+local function moveto(px, py)   -- as in p5l
+    while cx ~= px or cy ~= py do
+        cx = cx + math.max(-100, math.min(100, px - cx))
+        cy = cy + math.max(-100, math.min(100, py - cy))
+        local nx, ny = cx, cy
+        add(function() fx:set_value(nx); fy:set_value(ny) end); wait(2)
+    end
+end
+local function over(c, r)
+    local hx, hy = cx - 1000, cy - 1000
+    moveto(hx, hy)
+    moveto(hx + c * 8 + 4, hy + r * 16 + 8)
+    wait(10)
+end
+local function button(v) add(function() fb:set_value(v) end); wait(10) end
+local function click(c, r) over(c, r); button(1); button(0); wait(10) end
+
+wait(60 * 50)                   -- the editor is up by then
+add(function() fx:set_value(cx); fy:set_value(cy) end); wait(5)
+check("text", 20, 4)            -- plain text background
+hold(shift, 1)                  -- Shift+Right x3, Shift+Down: PROCEDURE ml
+tap(right) tap(right) tap(right) tap(down)
+hold(shift, 0) wait(30)
+check("selected", 13, 2)        -- the selected end of line 1
+check("unselected", 13, 3)
+tap(esc) wait(30)
+check("deselected", 13, 2)
+hold(ctrl, 1) tap(kf) hold(ctrl, 0) wait(60)   -- ^F: the find dialog
+ink("dialog", 40, 13)            -- its top border
+add(function() manager.machine.natkeyboard:post("c=\r") end) wait(120)
+ink("closed", 40, 13)           -- the dialog is gone
+check("found", 1, 5)            -- and c= is selected
+tap(esc) wait(30)
+click(5, 5)                     -- the cursor on c=3, Run > Go to cursor
+over(23, 0) button(1) moveto(cx, cy + 48) wait(10) button(0)
+wait(60 * 20)
+check("stopped", 40, 5)         -- the line it stopped at
+check("after", 40, 6)
+local i = 0
+p5m_sub = emu.add_machine_frame_notifier(function()   -- global: kept alive
+    i = i + 1
+    if steps[i] then steps[i]() end
+    if i == #steps then print("p5m: input done at frame " .. i) end
+end)

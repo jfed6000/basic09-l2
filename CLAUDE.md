@@ -23,13 +23,13 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5ltest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
+| `make p1test` … `p4test`, `p5atest` … `p5mtest`, `p6test`, `p7test` | Headless emulator tests; each prints PASS/FAIL lines. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make main` (`k2main`, `jr2main`) | New-core images built in an export of the main repos: `build/main/l2_wildbits{k2,jr2}.dsk` (stock, for tests) and `l2_basic09-l2{k2,jr2}.dsk` (for hardware). |
 | `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the same as `l2_basic09-l2{k2,jr2}.dsk` from `make main`, made by patching the stock image's OS9Boot instead of the recipe. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.
-- A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files, a `gen` script whose output is copied in unchanged (binary), and a `lua` MAME autoboot script for live keyboard and mouse input (`test/p5l`).
+- A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files, a `gen` script whose output is copied in unchanged (binary), and a `lua` MAME autoboot script for live keyboard and mouse input (`test/p5l`); it can read colours from the screen's pixels (`test/p5m`).
 - `expect` lines are `<file> <text>`, or `same <fileA> <fileB>`.
 - Output lands in `build/emu/<test>/`, and `mame.log` ends with a text-screen snapshot.
 

@@ -22,6 +22,10 @@ CL.FRAME            equ       1                   window frames: white
 CL.MBFG             equ       0                   menu bar: black
 CL.MBBG             equ       15                  on light grey,
 CL.MSBG             equ       5                   the open menu's title on green
+CL.SELFG            equ       0                   the selection: black
+CL.SELBG            equ       3                   on pale cyan
+CL.EXFG             equ       1                   the line the program stopped at:
+CL.EXBG             equ       2                   white on red
 KC.KW               equ       CL.KW               kwtab.asm classes
 KC.FN               equ       CL.FN
 

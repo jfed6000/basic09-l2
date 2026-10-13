@@ -380,6 +380,9 @@ getargs             ldb       #NCDEF
                     clr       inbuf,x
                     clr       tname,x
                     clr       bopt,x
+                    clr       fstr,x              the find, replace and evaluate
+                    clr       rstr,x              dialogs start empty
+                    clr       estr,x
                     ldx       <argp
 ga1                 lda       ,x+
                     cmpa      #C$SPAC
