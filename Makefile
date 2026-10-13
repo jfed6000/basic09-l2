@@ -37,7 +37,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p6test p7test loadtime clean k2main jr2main
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p6test p7test loadtime clean k2main jr2main main mainsrc
 
 all: stock subs l2b09 tools
 
@@ -175,20 +175,32 @@ $(BUILD)/l2b09_%.dsk: $(PLATDIR)/l2_wildbits%.dsk $(TOOLS) $(L2B09) $(SUBS) $(BU
 	for f in examples/*; do os9 copy -l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done
 	mv $@.tmp $@
 
-# The same images for the new (Longview) core, built from the NitrOS-9
-# main tree by the recipe in recipes/wildbits/basic09-l2 (recipes/README.md)
-# and copied to build/main/l2_basic09-l2{k2,jr2}.dsk.
-# They are for real hardware: MAME does not run the new core yet.
-# NITROS9DIR is exported for the emulator tree, so the main tree is passed
-# explicitly: make k2main NITROS9MAIN=/other/nitros9
-RECIPEDIR   = recipes/wildbits/basic09-l2
-NITROS9MAIN ?= $(HOME)/projects/wild/main/nitros9
-k2main:
-	$(MAKE) -C $(RECIPEDIR) PLATFORM=k2 NITROS9DIR=$(NITROS9MAIN) LANGUAGES=$(NITROS9MAIN)/../nitros9-languages
-	cp $(RECIPEDIR)/l2_basic09-l2k2.dsk $(BUILD)/main/
-jr2main:
-	$(MAKE) -C $(RECIPEDIR) PLATFORM=jr2 NITROS9DIR=$(NITROS9MAIN) LANGUAGES=$(NITROS9MAIN)/../nitros9-languages
-	cp $(RECIPEDIR)/l2_basic09-l2jr2.dsk $(BUILD)/main/
+# Disk images for the new (Longview) core from the NitrOS-9 main repos
+# in $(MAINDIR) (recipes/README.md).  Those clones stay pristine:
+# recipes/export-main.sh copies each one's HEAD into build/main/src/
+# (again only when it changes), and everything is built in that copy.
+#   k2main, jr2main   build/main/l2_wildbits{k2,jr2}.dsk (the stock image,
+#                     for tests) and l2_basic09-l2{k2,jr2}.dsk (basic09-l2
+#                     added by the recipe in recipes/wildbits/basic09-l2)
+#   main              both
+# NITROS9DIR is exported for the emulator tree, so the copy is passed
+# explicitly.
+MAINDIR  ?= $(HOME)/projects/wild/main
+MAINSRC   = $(CURDIR)/$(BUILD)/main/src
+MAINRCP   = $(MAINSRC)/nitros9/recipes/wildbits
+MAINMAKE  = $(MAKE) NITROS9DIR=$(MAINSRC)/nitros9 LANGUAGES=$(MAINSRC)/nitros9-languages \
+            NITROS9_APPS_DIR=$(MAINSRC)/nitros9-apps B09L2DIR=$(CURDIR)
+.PHONY: main mainsrc
+main: k2main jr2main
+mainsrc:
+	recipes/export-main.sh $(MAINDIR) $(MAINSRC)
+	mkdir -p $(MAINRCP)/basic09-l2
+	cp -p recipes/wildbits/basic09-l2/makefile recipes/wildbits/basic09-l2/recipe.mak $(MAINRCP)/basic09-l2/
+k2main jr2main: %main: mainsrc
+	$(MAINMAKE) -C $(MAINRCP)/l2 PLATFORM=$*
+	cp $(MAINRCP)/l2/l2_wildbits$*.dsk $(BUILD)/main/
+	$(MAINMAKE) -C $(MAINRCP)/basic09-l2 PLATFORM=$*
+	cp $(MAINRCP)/basic09-l2/l2_basic09-l2$*.dsk $(BUILD)/main/
 
 # Byte-for-byte comparison against the prebuilt modules in the NitrOS-9 tree
 check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809

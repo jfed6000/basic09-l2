@@ -1,9 +1,11 @@
-# basic09-l2 Level 2 disk image for Wildbits, built from the NitrOS-9
-# tree's own l2 recipe plus recipe.mak.
+# basic09-l2 Level 2 disk image for Wildbits: the stock l2 recipe plus
+# recipe.mak.  This folder is copied into the exported NitrOS-9 tree
+# (build/main/src/nitros9/recipes/wildbits/basic09-l2, recipes/README.md)
+# and built there, beside the stock recipes; the top-level Makefile
+# passes NITROS9DIR (the copy) and B09L2DIR (this repository).
 #   make                  K2 image: l2_basic09-l2k2.dsk
 #   make PLATFORM=jr2     Jr2 image: l2_basic09-l2jr2.dsk
-include ../../nitros9.mak
-include $(NITROS9DIR)/recipes/wildbits/l2/makefile
+include ../l2/makefile
 
 # After the stock image is built: basic09-l2's modules go to CMDS (the
 # stock inkey and syscall are replaced) and examples/ to /dd/L2B09.

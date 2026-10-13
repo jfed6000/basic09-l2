@@ -38,8 +38,12 @@ img=$out/$name.dsk
 rm -rf "$out"
 mkdir -p "$out"
 cp "$BASEIMG" "$img"
-# The emulated SD card only accepts sizes it can express in its CSD; 8 MiB works.
-[ "$(stat -c %s "$img")" -lt $((8 * 1024 * 1024)) ] && truncate -s 8M "$img"
+# The emulated SD card only accepts sizes it can express in its CSD:
+# pad to a power of two, at least 8 MiB (the disk's own size is unchanged).
+size=$(stat -c %s "$img")
+card=$((8 * 1024 * 1024))
+while [ "$card" -lt "$size" ]; do card=$((card * 2)); done
+truncate -s "$card" "$img"
 
 os9 makdir "$img,L2B09"
 for f in "$tdir"/*; do

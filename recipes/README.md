@@ -1,56 +1,67 @@
-# Recipes: disk images from the NitrOS-9 main tree
+# Recipes: disk images from the NitrOS-9 main repos
 
 The Wildbits core changed with Longview (rc22 and later): the device pages
 moved from `$C0` to `$FC`-`$FF`, and NitrOS-9 was updated to match. The
-NitrOS-9 tree at `~/projects/wild/main/nitros9` tracks that work. These
-recipes build a basic09-l2 disk image from it **without copying it**.
+clones in `~/projects/wild/main` (`nitros9`, `nitros9-languages`,
+`nitros9-apps`, `nitros9-games`, from nitros9project) track that work and
+are kept **pristine**: nothing here builds in them or writes to them.
 
 ```sh
-make k2main                     # from the top: build/main/l2_basic09-l2k2.dsk
-make jr2main                    #               build/main/l2_basic09-l2jr2.dsk
-cd recipes/wildbits/basic09-l2 && make PLATFORM=jr2      # the same thing
-make k2main NITROS9MAIN=/other/nitros9   # nitros9-languages is taken from beside it
+make main                       # all four images below
+make k2main                     # build/main/l2_wildbitsk2.dsk, l2_basic09-l2k2.dsk
+make jr2main                    # build/main/l2_wildbitsjr2.dsk, l2_basic09-l2jr2.dsk
+make main MAINDIR=/other/main   # clones somewhere else
 ```
 
-The image is the tree's stock Wildbits Level 2 image plus:
+| Image | What it is | For |
+|---|---|---|
+| `l2_wildbits{k2,jr2}.dsk` | The stock Wildbits Level 2 image, from the tree's own `recipes/wildbits/l2` | Emulator tests: `make p3test BASEIMG=$PWD/build/main/l2_wildbitsjr2.dsk` |
+| `l2_basic09-l2{k2,jr2}.dsk` | The stock image plus basic09-l2 (below) | Real hardware |
+
+The basic09-l2 image adds:
 - the pipe modules (`pipeman piper pipe`) in OS9Boot;
 - `basic09-l2`, `l2b09run` and its overlay `l2b09ovl`, `farmem`, `syscall` and `inkey` in CMDS, built
-  with the main tree's defs into `build/main/`;
+  with the copy's defs into `build/main/`;
 - `examples/` in `/dd/L2B09`.
 
 ## How it works
 
-`recipes/wildbits/basic09-l2/` has the same depth as a recipe in the tree,
-so the tree's relative includes resolve to the forwarding files here:
+1. `export-main.sh` writes each clone's committed `HEAD` into
+   `build/main/src/<repo>` with `git archive`, which only reads the clone.
+   A copy is replaced only when that `HEAD` changes (the commit is kept in
+   `build/main/src/<repo>.head`), so later builds are incremental. If a
+   clone has uncommitted changes, it warns and exports `HEAD` anyway.
+2. `wildbits/basic09-l2/` (`makefile` and `recipe.mak`) is copied into the
+   copy's `recipes/wildbits/`, beside the stock recipes, so its relative
+   includes (`../l2/makefile`, `../wildbits.mak`, `../../rules.mak`) are
+   the tree's own.
+3. The stock `l2` recipe and `basic09-l2` are built there, with
+   `NITROS9DIR`, `LANGUAGES` and `NITROS9_APPS_DIR` pointing at the copy,
+   and the images are copied to `build/main/`.
 
-| File | Forwards to |
-|---|---|
-| `nitros9.mak` | sets and pins `NITROS9DIR` (default `~/projects/wild/main/nitros9`) and `LANGUAGES` |
-| `rules.mak`, `libs.mak` | `$(NITROS9DIR)/recipes/rules.mak`, `libs.mak` |
-| `wildbits/wildbits.mak` | `$(NITROS9DIR)/recipes/wildbits/wildbits.mak` |
-
-`wildbits/basic09-l2/makefile` includes the tree's own `l2/makefile`, so the
-image follows upstream changes to the stock recipe. `recipe.mak` is read by
-`wildbits.mak`'s `-include recipe.mak` hook and holds the additions. A new
-recipe for another project is a copy of `wildbits/basic09-l2/` (with these
-forwarding files beside it).
+`makefile` includes the stock `l2/makefile`, so the image follows upstream
+changes to the stock recipe. `recipe.mak` is read through `wildbits.mak`'s
+`-include recipe.mak` hook and holds the additions. A recipe for another
+project is a copy of `wildbits/basic09-l2/` plus the top-level Makefile's
+`mainsrc` and `%main` rules.
 
 Notes:
-- `nitros9-languages` (stock `basic09`, `runb`), `nitros9-apps` and
-  `nitros9-games` are taken from beside the tree.
-- From the top-level Makefile, set `NITROS9MAIN`, not `NITROS9DIR`: the
-  top level exports `NITROS9DIR` for the emulator (joust) tree.
-- The stock recipe writes the generated fonts and backgrounds into the
-  tree's `level1/wildbits/sys/`; that is upstream behaviour.
+- The upstream build writes generated files (fonts, backgrounds, the
+  `basic09_wildbits` it builds in `nitros9-languages`); here they all land
+  in the copy.
+- `make clean` removes `build/`, the copy included; the next `make main`
+  exports and builds everything again (about three minutes).
+- From the top-level Makefile, `NITROS9DIR` is the emulator (joust) tree;
+  the main build passes the copy explicitly.
 - The K2 OS9Boot with the pipes is 31,744 bytes; the tree's limit is 32,256.
+- The stock images are 262,134 blocks. The emulated SD card accepts only
+  sizes it can express, so `tools/emu-wildbits.sh` pads its copy to a power
+  of two.
 
-## Two images until MAME catches up
+## Emulator
 
-| | Emulator tests (`make p*test`, `k2img`, `jr2img`) | Hardware with the new core (`k2main`, `jr2main`) |
-|---|---|---|
-| NitrOS-9 tree | `~/projects/wild/joust/nitros9_complete/nitros9` | `~/projects/wild/main/nitros9` |
-| Build output | `build/` | `build/main/`, images included |
-
-basic09-l2 uses only the defs and OS-9 system calls (no hardware
-addresses), so the same source builds for both. When the Wildbits MAME in
-`~/projects/wild/mame` runs the new core, the tests can move to the main tree.
+Since 2026-10-12 the Wildbits MAME (`~/projects/wild/mame`) emulates the
+Longview core. The tests still default to the old-core joust image
+(`~/projects/wild/joust/nitros9_complete/nitros9`), on which the screen
+tests (p5g, p5h, p5i) now see a blank screen; pass
+`BASEIMG=$PWD/build/main/l2_wildbitsjr2.dsk` to run them on the new core.
