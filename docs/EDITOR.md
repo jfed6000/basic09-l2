@@ -28,7 +28,7 @@ It is written in 6809 assembly (`os9/basic09-l2/`, built as `build/basic09-l2`).
 | P5.4 | Debugger UI: current line, step, continue, evaluate, watches | done |
 | P5.5 | Line breakpoints, run to cursor, step over (`l2b09run` and the editor) | done |
 | P5.6 | Syntax colours and pretty print | done |
-| — | Mouse (click, drag select, menus, dialogs, message window, breakpoint border) | parked on branch `mouse-wip`: waits for `mousedrv_ps2` to store the buttons through `D.KbdSta` (the live terminal); today they reach only `/term`'s statics |
+| P5.7 | Mouse: click, drag select, right-click extend, menus, dialogs, message window, breakpoint border | done |
 
 ## Keys
 
@@ -75,6 +75,21 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Options ▸ Syntax colours | Syntax colours on or off (on by default) | P5.6 |
 | Options ▸ Keyword case | Pretty print writes keywords in lower case (the default) or in capitals | P5.6 |
 | Compile ▸ Pretty print, All: pretty print (Ctrl+Space) | Pretty print the procedure at the cursor, or every procedure | P5.6 |
+
+## Mouse
+
+The pointer is the hardware one that `mousedrv_ps2` moves. The editor reads it with `SS.Mouse` on its own terminal, which since nitros9 `8562e60d` gives the buttons only to the terminal on the screen. There are no mouse events, so while it waits for a key the editor polls: `SS.Ready` on the key path, then `SS.Mouse`, then a one-tick sleep (`mouse.asm`). A change of the buttons, or a move to another cell with the left button held, comes back from `getkey` as `EK.MOUSE`. Pixels become cells by the cell size worked out from the screen size (8 or 16 pixels). On a CoCo 3 build `SS.Mouse` is a different call, so the mouse is left out there.
+
+| Where | Left button | Right button |
+|---|---|---|
+| Text | Press: the cursor there (ends a selection). Drag: select to the pointer; above or below the window it scrolls a line, and again every 4 ticks while held there. | Press: extend the selection to the pointer (Shift+click cannot be seen: `SS.KySns` is buffered with the keys) |
+| Left border | Press: breakpoint on that line, on or off (^T) | — |
+| Menu bar | Press: open that menu | — |
+| Open menu | Press or drag over a title: that menu; a press on its own title closes it. Over an item: select it; release on it: run it. A press anywhere else closes the menu. | — |
+| Message window | Press: select that message and move into the window (F6); a double click (within 30 ticks) goes to its line. In the window, a press elsewhere goes back to the text. | — |
+| Dialog | A press outside it is Esc. In a Y/N question, a press on the `Y` or the `N` answers it. A message or help box closes on a press. | — |
+
+The hint line has no buttons, and there is no double-click word select.
 
 The base bindings follow the user's `te` editor (`~/projects/f256/jfed/te`), and the Turbo roles sit on F1–F8.
 
@@ -244,7 +259,8 @@ The text is paged, so a file can be far larger than the editor's 64K.
 
 ## Testing
 
-- **Scripted keys:** `tools/keys.py` compiles a readable key script (`"text"`, `up`, `^g`, `pgdn*3`, …) into the bytes the editor reads. When path 0 is not a terminal, `SS.KySns` fails, so keys that need modifier bits are sent as `$FF <kysns> <char>`.
+- **Scripted keys:** `tools/keys.py` compiles a readable key script (`"text"`, `up`, `^g`, `pgdn*3`, …) into the bytes the editor reads. When path 0 is not a terminal, `SS.KySns` fails, so keys that need modifier bits are sent as `$FF <kysns> <char>`. The mouse is sent as `$FE <buttons> <column> <row>` (`click:C,R`, `press:`, `drag:`, `release:`, `rclick:`, `mouse:B,C,R`); the script's clock does not run, so a second press on the same cell is a double click.
+- **Live input:** a test directory's `lua` file is a MAME autoboot script. It can type with `natkeyboard:post` and move the mouse and press its buttons through the `MOUSEX`, `MOUSEY` and `MOUSE_BUTTONS` ports. The pointer moves by PS/2 deltas, so the script sends it home to 0,0 before each move, and keeps the axis values positive (MAME clamps them at 0).
 - **Test data:** a test directory's `gen` script writes generated files, which are copied into the image unchanged (see `tools/emu-wildbits.sh`).
 - **`make p5atest` (P5.1):** `test/p5a/gen` builds a 3,000-line, 129 KB file and a key script. It also runs the same operations through a Python model of the editor's commands to produce the expected file. The editor runs with `-c=3` (so it swaps constantly), with keys from the script and the screen on `/vt3`. It saves, and the result must match the model byte for byte.
   - **Covered:** go to line, typing, Enter with indent, Backspace joining lines, Delete, delete line (200 in a row: page joins and removals), 40 inserted lines (page splits), vertical moves keeping the column, word moves, start/end of the line, top/bottom, page down, save and quit.
@@ -257,4 +273,6 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5htest` (P5.5):** `test/p5h`. F7 starts the program (`step`), F8 steps over, a breakpoint in a called procedure stops a Continue and then an F8 over its `RUN`, ^T clears it at the stop, F4 runs to the cursor from a program that is not running and again from a stop, and a line inserted above a breakpoint moves it (it is sent again with the new line after Make). The whole protocol log must match `log.exp`, and the saved file must match. A second session with `-h` sets two breakpoints and checks their marks in the snapshot.
 - **`make p5gtest` (P5.4):** `test/p5g`. A session steps from a `PAUSE` into a called procedure and back, with three watches (one of them invalid in the callee), sets a variable with ^E and evaluates an invalid one, deletes a watch, continues into a subscript error (55), resets, runs again, and uses Until return. The whole protocol log must match `log.exp`, and the program's output must show the value that was set. A second session with `-h` leaves the screen up, and the checks read the watch window and the hint line from the snapshot in `mame.log`.
 - **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make: the program is stopped at the error, so Make asks, and Y resets it before the `kill` and the load. The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, ^P resets it, a second Run sends nothing new and stops again, and quitting sends `q` before `bye`.
+- **`make p5ktest` (P5.7):** `test/p5k`, the mouse from a key script. A press on the left border sets a breakpoint that Run then stops at. A click and typing place text, a drag selects for a cut, and a right press extends a selection. A press outside the ^G dialog cancels it, File ▸ Save as is chosen by the mouse, a double click on a Make error goes to its line, and ^Q is answered by a press on the `Y`. Two saved files and the log are checked. A second session with `-h` drags past the bottom of the window (it scrolls two lines) and sets and clears breakpoints by the mouse; the snapshot shows the marks.
+- **`make p5ltest` (P5.7):** `test/p5l`, the real keyboard and mouse on `/term`, driven by the MAME script `test/p5l/lua`. It types after clicks on two lines, sets a breakpoint on the left border, and runs the program from the Run menu by pressing on its title, dragging down and releasing on Run. The snapshot must show the edits and the stop on the breakpoint's line.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

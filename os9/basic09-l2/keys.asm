@@ -38,6 +38,7 @@ EK.DEL              equ       $91                 Shift+Backspace
 EK.ESC              equ       $92                 Esc (PS/2), BREAK (K2)
 EK.HOME             equ       $93                 Home (K2)
 EK.CSPC             equ       $94                 Ctrl+Space
+EK.MOUSE            equ       $95                 a mouse event (mouse.asm)
 EK.F1               equ       $A1                 F1-F8 are $A1-$A8
 EK.F2               equ       $A2
 EK.SF1              equ       $A9                 Shift+F1 (PS/2)
@@ -47,9 +48,24 @@ EK.EOF              equ       $FF                 end of the key input
 
 * getkey: A = the next key (EK.EOF at the end of the input)
 getkey              pshs      b,x,y
+gk0                 lbsr      mu_wait
+                    bcs       gk_mouse
                     bsr       k_byte
                     bcs       gk_eof
-                    cmpa      #$FF                script prefix: $FF <kysns> <char>
+                    cmpa      #$FE                script mouse: $FE <buttons> <col> <row>
+                    bne       gk0a
+                    leas      -3,s
+                    leax      ,s
+                    ldy       #3
+                    lda       <kbpath
+                    os9       I$Read
+                    puls      a,x                 A = buttons, X = the cell
+                    bcs       gk_eof
+                    lbsr      mu_new
+                    bcc       gk0                 no event: the next key
+gk_mouse            lda       #EK.MOUSE
+                    bra       gk3
+gk0a                cmpa      #$FF                script prefix: $FF <kysns> <char>
                     bne       gk1
                     bsr       k_byte
                     bcs       gk_eof
@@ -66,7 +82,7 @@ gk1                 pshs      a
 gk1a                sta       <ksns
                     puls      a
 gk2                 bsr       k_norm
-                    sta       <key
+gk3                 sta       <key
                     puls      b,x,y,pc
 gk_eof              tst       <hold               -h: keep the screen for a snapshot
                     beq       gk_eof1

@@ -222,6 +222,8 @@ cmw1                lbsr      w_draw
                     lbsr      t_curoff
                     lbsr      t_flush
                     lbsr      getkey
+                    cmpa      #EK.MOUSE
+                    lbeq      cmw_mouse
                     cmpa      #EK.UP
                     bne       cmw2
                     ldb       <msgsel

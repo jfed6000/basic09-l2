@@ -17,10 +17,14 @@ comment):
     k2^space      Ctrl+Space as the K2 driver sends it ($20)
     alt-a ...     Alt+letter
     name*N        repeat a key N times
+    mouse:B,C,R   the mouse: buttons B (1 left, 2 right) over cell C,R
+    press:C,R  drag:C,R  release:C,R   the left button: down, moved
+                  with it held, up
+    click:C,R  rclick:C,R              press and release (left, right)
 
 When the editor's key input is not a terminal it cannot ask for the key
 sense bits (SS.KySns), so keys that need them are sent as
-$FF <kysns> <char>.
+$FF <kysns> <char>, and the mouse as $FE <buttons> <column> <row>.
 
 usage: keys.py <script> <out.bin>   (or import compile_keys)
 """
@@ -53,8 +57,24 @@ for n in range(1, 9):
 TOKEN = re.compile(r'"((?:[^"\\]|\\.)*)"(?:\*(\d+))?|(\S+)')
 
 
+def mouse(b, c, r):
+    return bytes([0xFE, b, c, r])
+
+
+MOUSE = {'mouse': None, 'press': (1,), 'drag': (1,), 'release': (0,),
+         'click': (1, 0), 'rclick': (2, 0)}
+
+
 def key(name):
     name = name.lower()
+    if ':' in name:
+        what, arg = name.split(':')
+        nums = [int(v) for v in arg.split(',')]
+        if what not in MOUSE:
+            raise ValueError('unknown key: ' + name)
+        if MOUSE[what] is None:
+            return mouse(*nums)
+        return b''.join(mouse(b, *nums) for b in MOUSE[what])
     if name in NAMED:
         return NAMED[name]
     if len(name) == 2 and name[0] == '^' and name[1].isalpha():

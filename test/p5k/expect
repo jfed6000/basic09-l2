@@ -1,0 +1,8 @@
+same mk1.b09 mk1.exp
+same mk2.b09 mk2.exp
+ed.log    > bp mk 2
+ed.log    < %DEBUG mk 2
+mame.log  02: ||b=2
+mame.log  03: |*c=3
+mame.log  05: ||PRINT a
+mame.log  07: |*REM 7

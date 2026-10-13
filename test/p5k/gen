@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""P5.7 test data: the mouse, sent in the key script as
+$FE <buttons> <column> <row> (tools/keys.py).
+
+The screen is 80x30: the menu bar is row 0, the text window starts at
+row 2 and column 1 (column 0 is the left border), so file line N is on
+row N+2 while the window is at the top.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+prog = '''PROCEDURE mk
+a=1
+b=2
+c=3
+d=4
+PRINT a
+END
+'''
+mk1 = prog.replace('b=2', 'b=X2').replace('c=3', '3').replace('d=4', 'YQ=4')
+mk2 = mk1.replace('END', 'Ze=)\nEND').replace('YQ=4', 'YQ=4W')
+mk3 = prog.replace('END', ''.join('REM %d\n' % n for n in range(6, 36)) + 'END')
+saveas = 'alt-f down down down enter'
+keys = '''
+click:0,4                   # the left border of b=2: a breakpoint
+^r ^r                       # Make, run: it stops there; continue to the end
+click:3,4 "X"               # b=X2
+press:1,5 drag:2,5 drag:3,5 release:3,5 ^x   # select c= and cut it
+click:1,6 rclick:2,6 "Y"    # right extends the selection: d becomes Y
+^g click:0,28 "Q"           # a press outside the dialog: Esc (Q is typed)
+click:3,0 click:3,5         # File > Save as... by the mouse
+"mk1.b09" enter
+click:1,8 "e=)" enter       # a bad line before END
+^b                          # Make: the error goes to the message window
+click:5,2                   # the cursor away, to the top
+click:5,23 click:5,23       # a double click on the message: to its line
+"Z"
+%(sa)s "mk2.b09" enter
+click:6,6 "W"               # changed again
+^q click:30,14              # Save the changes (Y/N)?  the Y
+''' % {'sa': saveas}
+# A second session keeps its screen for the snapshot (-h): a drag past
+# the bottom of the window scrolls it two lines, then breakpoint marks
+# are set and cleared by the mouse
+keys2 = '''
+press:1,27 drag:1,28 drag:2,28 release:2,28
+click:0,3 click:0,5 click:0,7 click:0,5
+'''
+for name, text in (('mk.b09', prog), ('mk3.b09', mk3), ('mk1.exp', mk1), ('mk2.exp', mk2)):
+    with open(os.path.join(out, name), 'w', newline='') as f:
+        f.write(text.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
+with open(os.path.join(out, 'keys2.bin'), 'wb') as f:
+    f.write(compile_keys(keys2))

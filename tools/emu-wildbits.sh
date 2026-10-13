@@ -13,6 +13,7 @@
 #            or "same <fileA> <fileB>": the two fetched files must be identical
 #   gen      optional executable, run as "gen <dir>"; every file it writes to
 #            <dir> is copied into /dd/l2b09 as it is (binary)
+#   lua      optional MAME autoboot script (keyboard and mouse input)
 #   *        every other file is copied into /dd/l2b09 as text (LF -> CR)
 #
 # The base image is copied, never modified. Results land in build/emu/<test>/:
@@ -49,7 +50,7 @@ truncate -s "$card" "$img"
 os9 makdir "$img,L2B09"
 for f in "$tdir"/*; do
     case $(basename "$f") in
-        modules|fetch|bootmods|expect|gen) ;;
+        modules|fetch|bootmods|expect|gen|lua) ;;
         *) os9 copy -l -r "$f" "$img,L2B09/$(basename "$f")" ;;
     esac
 done
@@ -79,9 +80,11 @@ fi
 printf 'shell /dd/l2b09/run >/dd/l2b09/run.out >>/dd/l2b09/run.err\n' > "$out/startup"
 os9 copy -l -r "$out/startup" "$img,startup"
 
+lua=()
+[ -f "$tdir/lua" ] && lua=(-autoboot_script "$tdir/lua")
 start=$(date +%s.%N)
 "$MAME" wbjr2 -video none -sound none -nothrottle -skip_gameinfo \
-    -seconds_to_run "$EMU_SECONDS" -hard "$img" > "$out/mame.log" 2>&1 || true
+    -seconds_to_run "$EMU_SECONDS" -hard "$img" "${lua[@]}" > "$out/mame.log" 2>&1 || true
 end=$(date +%s.%N)
 
 for f in run.out run.err $( [ -f "$tdir/fetch" ] && cat "$tdir/fetch" ); do

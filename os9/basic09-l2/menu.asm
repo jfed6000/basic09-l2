@@ -188,6 +188,8 @@ mo_draw             lbsr      m_drawbox
                     lbsr      t_curoff
                     lbsr      t_flush
                     lbsr      getkey
+                    cmpa      #EK.MOUSE
+                    lbeq      mo_mouse
                     cmpa      #EK.ESC
                     beq       mo_close
                     cmpa      #EK.EOF
@@ -568,7 +570,11 @@ din1                lda       #3
                     lbsr      t_curon
                     lbsr      t_flush
                     lbsr      getkey
-                    ldx       <base
+                    cmpa      #EK.MOUSE           a press outside the box: Esc
+                    bne       din1a
+                    lbsr      mu_out
+                    bcs       din1
+din1a               ldx       <base
                     leax      inbuf,x
                     tst       <dfirst             the first key typed replaces the text
                     beq       din2
@@ -610,7 +616,7 @@ din3                cmpa      #C$SPAC
                     subd      <base
                     cmpd      ,s++
                     puls      a
-                    bhs       din1
+                    lbhs      din1
                     sta       ,x+
                     clr       ,x
                     lbra      din1
@@ -641,7 +647,19 @@ dak1                lda       #3
                     lbsr      t_str
                     lbsr      t_flush
                     lbsr      getkey
-                    cmpa      #EK.ESC
+                    cmpa      #EK.MOUSE
+                    bne       dak2
+                    lbsr      mu_out              a press outside the box: Esc
+                    bcc       dak2
+                    ldx       ,s                  on the Y or N of the question
+                    lbsr      mu_ch
+                    bcs       dak1
+                    cmpa      #'Y
+                    beq       dak_ok
+                    cmpa      #'N
+                    beq       dak_ok
+                    bra       dak1
+dak2                cmpa      #EK.ESC
                     beq       dak_esc
                     cmpa      #EK.EOF
                     beq       dak_esc
@@ -674,8 +692,8 @@ dlg_msgt            pshs      x
                     lbsr      t_str
                     lbsr      t_curoff
                     lbsr      t_flush
-                    lbsr      getkey
-                    bsr       dlg_done
+                    lbsr      getkd
+                    lbsr      dlg_done
                     puls      x,pc
 
 asktl               fcn       "Confirm"
@@ -714,7 +732,7 @@ chl2                tst       ,x+
                     bhi       chl1
 chl9                lbsr      t_curoff
                     lbsr      t_flush
-                    lbsr      getkey
+                    lbsr      getkd
                     lbra      dlg_done
 
 helptl              fcn       "Keys"

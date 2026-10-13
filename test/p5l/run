@@ -1,0 +1,7 @@
+* l2basic09 P5.7: basic09-l2 with the real keyboard and mouse (/term),
+* driven by the MAME script in lua
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -t=/dd/l2b09/term.out -l=ed.log ml.b09 </term >/term

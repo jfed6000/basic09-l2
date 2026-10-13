@@ -19,7 +19,8 @@
 *
 * Keys are read from path 0 and the screen is written to path 1.  When
 * path 0 is not a terminal (a test script), SS.KySns fails and the key
-* sense bits come from a prefix: $FF <kysns> <char>.
+* sense bits come from a prefix: $FF <kysns> <char>, and the mouse from
+* $FE <buttons> <column> <row> (mouse.asm).
 
                     nam       basic09-l2
                     ttl       l2basic09 editor
@@ -266,6 +267,21 @@ xpos                rmb       4                   scratch
 bppos               rmb       MAXBP*4             breakpoints: the end of their lines
 NPOS                equ       (.-posarr)/4
 bpline              rmb       MAXBP*2             their lines (bp_lines)
+muon                rmb       1                   the mouse is polled (mouse.asm)
+musx                rmb       1                   pixels per cell, as shifts: across
+musy                rmb       1                   and down
+mubtn               rmb       1                   buttons at the last poll
+mux                 rmb       1                   the pointer's cell (column, row)
+muy                 rmb       1
+muev                rmb       1                   the event (MV.*)
+mudbl               rmb       1                   MV.DOWN: a double click
+mutick              rmb       2                   ticks slept while polling
+mult                rmb       2                   the last MV.DOWN: its tick
+mulc                rmb       2                   and its cell ($FFxx = none)
+murep               rmb       1                   repeat MV.DRAG while held (scrolling)
+murept              rmb       1                   ticks to the next repeat
+mudrag              rmb       1                   a drag in the text is selecting
+mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing
 fname               rmb       64                  file name
@@ -318,7 +334,7 @@ swpnm               fcc       "basic09-l2.swp"
 start               tfr       u,d
                     tfr       a,dp
                     pshs      x                   parameters (they stay above our stack)
-                    leay      bpline,u            clear the direct page variables
+                    leay      mu_end,u            clear the direct page variables (and the mouse's)
                     leax      ,u
 st1                 clr       ,x+
                     pshs      y
@@ -344,6 +360,7 @@ st1                 clr       ,x+
                     lbsr      getmem              room for the cache buffers
                     lbsr      pg_init
                     lbsr      t_init              raw keys, screen size
+                    lbsr      mu_init
                     lbsr      rt_init             signals, log, the program's terminal
                     lbsr      sw_open
                     lbsr      f_load
@@ -513,6 +530,7 @@ quit                lbsr      rt_done
                     use       dbg.asm
                     use       hl.asm
                     use       pp.asm
+                    use       mouse.asm
 
                     emod
 eom                 equ       *

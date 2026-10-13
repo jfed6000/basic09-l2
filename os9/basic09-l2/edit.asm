@@ -141,6 +141,8 @@ cmdtab              fcb       C$CR
                     fdb       c_swright-cmdtab
                     fcb       EK.ESC
                     fdb       c_esc-cmdtab
+                    fcb       EK.MOUSE
+                    fdb       c_mouse-cmdtab
                     fcb       0
 
 * Redraw requests
