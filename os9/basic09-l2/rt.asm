@@ -454,7 +454,11 @@ rwt2                lda       ,y+
 rwt_hit             leas      2,s
                     lbsr      getnum
                     stb       <lderr
-                    inc       <nerrl
+                    cmpb      #B9.MEMF            memory full, at any point
+                    bne       rwt3
+                    ldx       <base
+                    inc       memful,x
+rwt3                inc       <nerrl
                     lbra      rw1
 
 errtx               fcn       "ERROR #"
@@ -686,11 +690,11 @@ cm1                 lbsr      ms_clear
                     stx       <msgp
                     rts
 cm2                 lbsr      mk_dbg              stopped in the debugger?
-                    bcs       cm_gone
+                    lbcs      cm_gone
                     tstb
-                    bne       cm_keep
+                    lbne      cm_keep
                     lbsr      mk_sweep            kill what is gone
-                    bcs       cm_gone
+                    lbcs      cm_gone
                     lbsr      mk_write            the temp file
                     bcc       cm3
                     stb       <msgerr
@@ -701,13 +705,23 @@ cm3                 tst       <nsend
                     beq       cm5
                     clr       <nerr
                     clr       <nerrl
+                    clr       <lderr
+                    ldx       <base
+                    clr       memful,x
                     lbsr      mk_bpgone
                     leax      ldcmd,pcr
                     lbsr      rt_send
                     bcs       cm_gone
                     lbsr      rt_wait
                     bcs       cm_gone
-                    ldb       <nerrl              an error without an event: the
+                    ldx       <base               memory full: a bigger workspace,
+                    tst       memful,x            and Make again (what was sent is
+                    beq       cm4                 sent again)
+                    lbsr      mk_lderr
+                    lbsr      ws_grow
+                    lbcc      c_make
+                    bra       cm5
+cm4                 ldb       <nerrl              an error without an event: the
                     cmpb      <nerr               load failed as a whole
                     bls       cm5
                     lbsr      mk_lderr
@@ -746,6 +760,141 @@ cm_keep             leax      keptms,pcr
                     stx       <msgp
                     andcc     #^Carry
                     rts
+
+* ws_kb: B = l2b09run's workspace in kilobytes (rtmem is in pages)
+ws_kb               ldb       <rtmem
+                    lsrb
+                    lsrb
+                    rts
+
+* ws_grow: 8K more workspace; carry if it cannot be had
+ws_grow             bsr       ws_kb
+                    addb      #8
+                    cmpb      #WSMAX
+                    bhi       wsg_no
+                    bsr       rt_mem
+                    bcs       wsg_no
+                    lbra      ws_msg
+wsg_no              orcc      #Carry
+                    rts
+
+* rt_mem: l2b09run's workspace to B kilobytes, with its mem command
+* (the cold-command overlay); rtmem becomes what it got.  Carry if that
+* is less than asked for, or the runtime has gone.
+rt_mem              pshs      b
+                    ldx       <base               "mem <bytes>"
+                    leax      mbuf,x
+                    leay      memcmd,pcr
+                    lbsr      s_str
+                    lda       ,s
+                    lsla
+                    lsla
+                    clrb
+                    subd      #1                  (G.WSPS: the size less one)
+                    lbsr      n_dec
+                    lda       #C$CR
+                    sta       ,x
+                    ldx       <base
+                    leax      mbuf,x
+                    lbsr      rt_send
+                    bcs       rtm_no
+                    lbsr      rt_wait
+                    bcs       rtm_no
+                    ldx       <base               it prints the size it has
+                    leax      lastout,x
+rtm1                lda       ,x+
+                    cmpa      #C$SPAC
+                    beq       rtm1
+                    leax      -1,x
+                    lbsr      getnum
+                    tstb                          pages, rounded up
+                    beq       rtm2
+                    inca
+rtm2                sta       <rtmem
+                    lsra
+                    lsra
+                    cmpa      ,s+
+                    blo       rtm_no1
+                    andcc     #^Carry
+                    rts
+rtm_no              leas      1,s
+rtm_no1             orcc      #Carry
+                    rts
+
+* ws_msg: "Workspace: <n>K" on the hint line
+ws_msg              ldx       <base
+                    leax      mbuf,x
+                    stx       <msgp
+                    leay      wsms,pcr
+                    lbsr      s_str
+                    bsr       ws_kb
+                    clra
+                    lbsr      n_dec
+                    lda       #'K
+                    sta       ,x+
+                    clr       ,x
+                    andcc     #^Carry
+                    rts
+
+* c_memory: Options > Memory...: the workspace size in kilobytes.  Now
+* with mem if l2b09run is running, else for its next start.  Not while
+* a program is stopped: mem moves the workspace's top.
+c_memory            tst       <dbgon
+                    beq       cmm1
+                    leax      wsdbg,pcr
+                    stx       <msgp
+                    rts
+cmm1                lbsr      ws_kb               the size now, to edit
+                    ldx       <base
+                    leax      inbuf,x
+                    clra
+                    lbsr      n_dec
+                    clr       ,x
+                    leax      wstl,pcr
+                    lbsr      dlg_inp
+                    bcs       cmm9
+                    ldx       <base
+                    leax      inbuf,x
+                    lbsr      getnum
+                    tsta
+                    bne       cmm_hi
+                    cmpb      #WSMAX
+                    bls       cmm2
+cmm_hi              ldb       #WSMAX
+cmm2                cmpb      #8
+                    bhs       cmm3
+                    ldb       #8
+cmm3                tst       <child
+                    bne       cmm4
+                    lslb                          not running: for its start
+                    lslb
+                    stb       <rtmem
+                    bra       ws_msg
+cmm4                lbsr      rt_mem
+                    bcc       ws_msg
+                    bsr       ws_msg              less than asked for: say what
+                    leax      wsfail,pcr          it has
+                    stx       <msgp
+                    ldx       <base
+                    leax      mbuf,x
+                    ldy       <msgp
+cmm5                tst       ,x+
+                    bne       cmm5
+                    leax      -1,x
+                    lbsr      s_str
+                    clr       ,x
+                    ldx       <base
+                    leax      mbuf,x
+                    stx       <msgp
+cmm9                rts
+
+B9.MEMF             equ       32                  Basic09's "memory full"
+WSMAX               equ       56                  kilobytes (the mem command takes 16 bits)
+memcmd              fcn       "mem "
+wsms                fcn       "Workspace: "
+wsfail              fcn       " (that is all it could get)"
+wsdbg               fcn       "Not while the program is stopped (^P resets it)"
+wstl                fcn       "Workspace (K)"
 
 makems              fcn       "Making..."
 manyms              fcn       "Too many procedures"

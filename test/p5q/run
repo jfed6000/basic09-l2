@@ -1,0 +1,7 @@
+* l2basic09 P5.7: the workspace size (Make grows it, Options > Memory)
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -m=8 -t=/dd/l2b09/term.out -l=ed.log big.b09 <keys.bin >/vt3 >>ed.err
+echo == done

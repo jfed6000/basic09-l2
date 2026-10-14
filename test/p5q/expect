@@ -1,0 +1,5 @@
+ed.log > mem 16383
+ed.log < 16383
+ed.log > mem 24575
+ed.log < 24575
+run.out == done

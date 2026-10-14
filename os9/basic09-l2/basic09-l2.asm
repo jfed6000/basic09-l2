@@ -212,7 +212,7 @@ upath               rmb       1                   path to the program's terminal
 uterm               rmb       1                   that is a terminal we can show
 lgpath              rmb       1                   protocol log (0 = none)
 running             rmb       1                   a program runs: signals go on to l2b09run
-rtmem               rmb       1                   -m: its data size in pages (0 = default)
+rtmem               rmb       1                   -m: its data size in pages (16K unless -m)
 nproc               rmb       1                   procedures in ptab
 nsend               rmb       1                   Make: procedures sent
 nerr                rmb       1                   errors with an event in a load
@@ -291,6 +291,7 @@ rdlim               rmb       1                   v_draw: redraw only this many 
 mbox                rmb       1                   a menu's drop-down is on the screen
 otype               rmb       1                   the screen type at start (DWSet: 1-4)
 stype               rmb       1                   the screen type now
+memful              rmb       1                   Make's load ran out of memory (rt_wait)
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing
@@ -384,6 +385,8 @@ st2                 lbsr      buf_top
 * [<file>] -> ncache, tname, bopt, rtmem, inbuf (the log), hold, fname
 getargs             ldb       #NCDEF
                     stb       <ncache
+                    ldb       #16*4               l2b09run's workspace: 16K
+                    stb       <rtmem
                     ldx       <base               the data area is not cleared
                     clr       fname,x
                     clr       kwup,x              keywords in lower case

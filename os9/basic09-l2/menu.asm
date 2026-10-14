@@ -162,6 +162,9 @@ mopt                fdb       c_indent-cmdtab
                     fdb       c_scrtog-cmdtab
                     fcn       "80x60 screen"
                     fcn       ""
+                    fdb       c_memory-cmdtab
+                    fcn       "Memory..."
+                    fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
                     fcn       "Keys"

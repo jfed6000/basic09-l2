@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+"""P5.7 test data: the workspace size.  One procedure too big for an 8K
+workspace: Make's load fails with 32 (memory full), the editor grows
+the workspace by 8K with mem and loads again.  Then Options > Memory...
+sets 24K.  The protocol log must show both mem commands and what they
+got, and the load succeeding the second time.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+body = ''.join('%d x=x+%d \\ y=y*2+x \\ PRINT x;y;"line %d"\n' % (n * 10, n, n) for n in range(1, 301))
+text = 'PROCEDURE big\nDIM x,y:REAL\nx=0 \\ y=0\n' + body + 'GOTO 10\nEND\n'
+keys = '''
+^b                              # Make: 32, mem 16383, load again
+alt-o down*6 enter bs bs "24" enter   # Options > Memory...: 24K
+^q
+'''
+with open(os.path.join(out, 'big.b09'), 'w', newline='') as f:
+    f.write(text.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
