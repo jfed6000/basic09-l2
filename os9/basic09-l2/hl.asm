@@ -11,8 +11,8 @@
 * The editor's own colours, as Turbo C had its own (the Wildbits text
 * palette; the CoCo 3's has the same slots).  With colours off the
 * terminal's own are used.  $0A and $0D are avoided as colour numbers.
-CL.BG               equ       6                   background: blue (#000080 on Wildbits: hl_pal)
-CL.NORM             equ       7                   text: yellow (#FFEE88)
+CL.BG               equ       6                   background: blue (#000050 on Wildbits: hl_pal)
+CL.NORM             equ       7                   text: yellow (#E6D67A)
 CL.KW               equ       1                   keywords: white
 CL.FN               equ       3                   functions: pale cyan
 CL.STR              equ       5                   strings: green
@@ -63,7 +63,7 @@ hl_init             ldx       <base
                     stb       hlsbg,x
                     inc       hlok,x
                     ifeq      coco3
-                    leax      pal_ed,pcr          a darker blue, a softer yellow
+                    leax      pal_ed,pcr          a dark blue, a softer yellow
                     lbsr      hl_pal
                     endc
 * hl_set: the colours to draw with: ours, or the terminal's with colours
@@ -172,8 +172,8 @@ hpl1                lda       ,x+
                     decb
                     bne       hpl1
                     rts
-pal_ed              fcb       $1B,$61,CL.BG,$00,$00,$80,$00     background #000080
-                    fcb       $1B,$60,CL.NORM,$FF,$EE,$88,$00   text #FFEE88
+pal_ed              fcb       $1B,$61,CL.BG,$00,$00,$50,$00     background #000050
+                    fcb       $1B,$60,CL.NORM,$E6,$D6,$7A,$00   text #E6D67A
 pal_def             fcb       $1B,$61,CL.BG,$00,$00,$AA,$00     the defaults
                     fcb       $1B,$60,CL.NORM,$DD,$DD,$77,$00
                     endc
