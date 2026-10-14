@@ -1,0 +1,11 @@
+mame.log  02: |+=================================== ds.b09 ===================================+|
+mame.log  03: ||                                                                              ||
+mame.log  04: ||PROCEDURE ds                                                                  ^|
+mame.log  05: ||                                                                              :|
+mame.log  06: ||a1=1                                                                          #|
+mame.log  07: ||                                                                              #|
+mame.log  10: ||a3X=3                                                                         :|
+mame.log  13: ||                                                                              :|
+mame.log  24: ||a10=10                                                                        v|
+mame.log  25: ||                                                                              ||
+mame.log  26: |+*= 4:4 

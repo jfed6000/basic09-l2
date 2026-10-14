@@ -40,6 +40,8 @@ EK.HOME             equ       $93                 Home (K2)
 EK.CSPC             equ       $94                 Ctrl+Space
 EK.MOUSE            equ       $95                 a mouse event (mouse.asm)
 EK.FPREV            equ       $96                 Ctrl+Shift+L find previous
+EK.SP1              equ       $97                 Ctrl+1 single spacing
+EK.SP2              equ       $98                 Ctrl+2 double spacing
 EK.F1               equ       $A1                 F1-F8 are $A1-$A8
 EK.F2               equ       $A2
 EK.SF1              equ       $A9                 Shift+F1 (PS/2)
@@ -164,7 +166,18 @@ kn6                 bitb      #KB.CTRL            Ctrl+Space: $20 (K2) or
                     bne       kn6c
 kn6a                lda       #EK.CSPC
                     rts
-kn6c                bitb      #KB.SHF             Ctrl+Shift+L: $0C (K2) or
+kn6c                cmpa      #'1                 Ctrl+1, Ctrl+2: the digit (K2) or
+                    beq       kn6e                the digit-$60 (PS/2)
+                    cmpa      #'2
+                    beq       kn6e
+                    cmpa      #'1-$60
+                    beq       kn6f
+                    cmpa      #'2-$60
+                    bne       kn6g
+kn6f                adda      #$60
+kn6e                adda      #EK.SP1-'1
+                    rts
+kn6g                bitb      #KB.SHF             Ctrl+Shift+L: $0C (K2) or
                     beq       kn6b                'L-$60 = $EC (PS/2)
                     cmpa      #$0C
                     beq       kn6d

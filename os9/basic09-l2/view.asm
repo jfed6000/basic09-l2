@@ -543,6 +543,7 @@ vfr2                clra
                     pshs      a
                     cmpb      ,s+
                     blo       vfr2
+                    lbsr      v_gaps
                     lbra      hl_norm
 
 * v_menubar: the menu titles on row 0; menu A (or none if $FF) is shown
@@ -585,8 +586,52 @@ vmb5                pshs      b
                     subb      ,s+
                     lda       #C$SPAC
                     lbsr      t_rep
-                    lbsr      mb_off
+                    tst       <dblsp              double spacing: the gap under it
+                    beq       vmb6                grey too
+                    clra
+                    clrb
+                    lbsr      t_xyg
+                    lda       #C$SPAC
+                    ldb       <scrw
+                    lbsr      t_rep
+vmb6                lbsr      mb_off
                     puls      a,pc
+
+* v_gaps: with double spacing, the gap rows from under the top border to
+* under the last text row: the side borders, and spaces between them if
+* a box was drawn over them (gapdty)
+v_gaps              tst       <dblsp
+                    beq       vgp9
+                    ldb       <wtop
+                    decb
+                    pshs      b
+vgp1                clra
+                    ldb       ,s
+                    lbsr      t_xyg
+                    lda       <glyphs+GL.V2
+                    lbsr      t_ch
+                    ldx       <base
+                    tst       gapdty,x
+                    beq       vgp2
+                    lda       #C$SPAC
+                    ldb       <wcols
+                    lbsr      t_rep
+                    bra       vgp3
+vgp2                lda       <scrw
+                    deca
+                    ldb       ,s
+                    lbsr      t_xyg
+vgp3                lda       <glyphs+GL.V2
+                    lbsr      t_ch
+                    inc       ,s
+                    ldb       <wtop
+                    addb      <wrows
+                    cmpb      ,s
+                    bhi       vgp1
+                    leas      1,s
+                    ldx       <base
+                    clr       gapdty,x
+vgp9                rts
 
 untitl              fcc       "(untitled)"
                     fcb       0

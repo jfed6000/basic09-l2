@@ -117,6 +117,10 @@ cmdtab              fcb       C$CR
                     fdb       c_fnext-cmdtab
                     fcb       EK.FPREV            Ctrl+Shift+L find previous
                     fdb       c_fprev-cmdtab
+                    fcb       EK.SP1              Ctrl+1 single spacing
+                    fdb       c_sp1-cmdtab
+                    fcb       EK.SP2              Ctrl+2 double spacing
+                    fdb       c_sp2-cmdtab
                     fcb       $1A                 ^Z undo
                     fdb       c_undo-cmdtab
                     fcb       $19                 ^Y redo

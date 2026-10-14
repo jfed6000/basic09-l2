@@ -91,7 +91,28 @@ sbu1                lda       <scrw
                     lda       #SB.THM
 sbu2                bsr       sb_gl
                     lbsr      t_ch
-                    inc       ,s
+                    tst       <dblsp              the gap under it: the track,
+                    beq       sbu3                the thumb under the thumb, the
+                    lda       <scrw               border under the down arrow
+                    deca
+                    ldb       ,s
+                    addb      <wtop
+                    lbsr      t_xyg
+                    ldb       ,s
+                    incb
+                    lda       <glyphs+GL.V2
+                    cmpb      <wrows
+                    beq       sbu2b
+                    lda       #SB.TRK
+                    decb
+                    decb
+                    ldx       <base
+                    cmpb      sbpos,x
+                    bne       sbu2a
+                    lda       #SB.THM
+sbu2a               bsr       sb_gl
+sbu2b               lbsr      t_ch
+sbu3                inc       ,s
                     lda       ,s
                     cmpa      <wrows
                     blo       sbu1

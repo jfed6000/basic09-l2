@@ -63,6 +63,8 @@ w_hide              tst       <msgon
                     bra       w_layout
 whd9                rts
 
+* w_fits0: carry if the text window would have fewer than 3 rows now
+w_fits0             ldb       <wwh
 * w_fits: carry if the text window would have fewer than 3 rows with B
 * more rows taken from it (and the message window's, if it is shown)
 w_fits              pshs      b

@@ -156,6 +156,9 @@ mopt                fdb       c_indent-cmdtab
                     fdb       c_kwcase-cmdtab
                     fcn       "Keyword case"
                     fcn       ""
+                    fdb       c_sptog-cmdtab
+                    fcn       "Double spacing"
+                    fcn       "^1/^2"
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
                     fcn       "Keys"
@@ -474,24 +477,26 @@ bx_draw             pshs      d,x,y
                     lbsr      t_rep
                     lda       1,x
                     lbsr      t_ch
-                    ldy       #1                  rows inside
-bxd1                tfr       y,d
-                    addb      #1
+                    ldy       #0                  rows inside (and with double
+bxd1                tst       <dblsp              spacing the gap under each row
+                    beq       bxd1a               but the last)
+                    ldu       <base
+                    inc       gapdty,u            (v_gaps clears them again)
+                    tfr       y,d
+                    addb      <bx.row
+                    lda       <bx.col
+                    lbsr      t_xyg
+                    bsr       bx_mid
+bxd1a               leay      1,y
+                    tfr       y,d
+                    incb
                     cmpb      <bx.h
                     bhs       bxd2
                     tfr       y,d
                     addb      <bx.row
                     lda       <bx.col
                     lbsr      t_xy
-                    lda       5,x
-                    lbsr      t_ch
-                    ldb       <bx.w
-                    subb      #2
-                    lda       #C$SPAC
-                    lbsr      t_rep
-                    lda       5,x
-                    lbsr      t_ch
-                    leay      1,y
+                    bsr       bx_mid
                     bra       bxd1
 bxd2                ldb       <bx.row
                     addb      <bx.h
@@ -507,6 +512,16 @@ bxd2                ldb       <bx.row
                     lda       3,x
                     lbsr      t_ch
                     puls      d,x,y,pc
+
+* bx_mid: a row inside the box: the sides and spaces
+bx_mid              lda       5,x
+                    lbsr      t_ch
+                    ldb       <bx.w
+                    subb      #2
+                    lda       #C$SPAC
+                    lbsr      t_rep
+                    lda       5,x
+                    lbra      t_ch
 
 * bx_title: string X, centered in the top border of the box
 bx_title            pshs      d,x,y
@@ -763,6 +778,7 @@ helptx              fcn       "Arrows                    move"
                     fcn       "^Space                    pretty print every procedure"
                     fcn       "^R, ^P when stopped       continue, reset the program"
                     fcn       "^E, ^W                    evaluate (or x:=value), add a watch"
+                    fcn       "^1, ^2                    single, double line spacing"
                     fcn       "F1                        this help"
                     fcn       "Press any key."
                     fcb       0

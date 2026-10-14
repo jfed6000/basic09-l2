@@ -56,6 +56,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | ^Z / ^Y | Undo / redo (50 steps) | P5.2d |
 | ^F / ^L | Find / find next (the match is selected) | P5.2c |
 | Ctrl+Shift+L | Find previous (Search ▸ Find previous) | P5.7 |
+| Ctrl+1 / Ctrl+2 | Single / double line spacing (Options ▸ Double spacing toggles) | P5.7 |
 | Search ▸ Replace | Replace, asking Y / N / A (all) / Esc at each match | P5.2c |
 | Options ▸ Match case | Searches match case (off by default) | P5.2c |
 | Esc | Cancel (menu, dialog, selection) | P5.2a/b |
@@ -146,6 +147,14 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 - **Syntax colours:** keywords, functions, strings, comments (`REM` to the end of the line, `(* ... *)`) and numbers (with `$hex` and a leading line number) each have a colour, set with VTIO's `$1B $32 <n>`. See "Syntax colours" below.
 - **Breakpoints:** a line with a breakpoint has a mark (a dot on the frame, or `*`) in the left border.
 - **Frame glyphs:** fonts differ, so the editor installs its own 15 glyphs (double frame, single frame, ├ ┤, the breakpoint mark) over characters `$F1`–`$FF` of font set 0 with `SS.FntChar`, and puts the originals back on exit. te uses `$F2`–`$FF`. `SS.FntChar` takes the font set from the caller's A register, which for `I$SetStt` is the path number, so the calls go through path 0. When the keys come from a file, or the call fails (no `SS.FntChar`, e.g. a CoCo 3), the frames are ASCII (`+ - = |`).
+
+## Line spacing
+
+- **Why:** the 8×8 font has no space between its rows. As in `te`, Ctrl+2 draws the text on every other screen row, and Ctrl+1 goes back. The screen's size never changes: on 80×30 double spacing gives 15 rows (11 lines of text), and on 80×60 it gives 30 rows of normal-height characters with a blank row under each.
+- **How:** the editor lays itself out for half the screen's rows (`scrh`; `phrows` keeps the screen's own), and `t_xy` doubles the row. Everything (text, frames, menus, dialogs, the message and watch windows, the mouse) keeps working in those logical rows. The mouse's row shift comes from `scrh` too (`mu_rows`), so a pixel lands on the right logical row.
+- **The gap rows:** only what crosses them is drawn there: the side borders and the scroll bar (`v_gaps`, `sb_upd`), the menu bar's grey, and the inside of a box (`bx_draw`). A box sets `gapdty`, and the next full redraw clears the gaps in the text window again.
+- **Room:** switching to double spacing hides the message window if the text window would have fewer than 3 rows, and refuses if it still would.
+- **Keys:** the K2 driver sends Ctrl+1 / Ctrl+2 as the digit with the Ctrl bit, the PS/2 driver as the digit minus `$60` (`$D1`, `$D2`).
 
 ## Syntax colours
 
@@ -277,6 +286,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5ftest` (P5.3):** `l2b09run` with `-t=` a file and `-l=` a log. A three-procedure program with two compile errors: Make, fix the first at the cursor, ^N to the second and fix it, Make again (only those two are sent), Run, add a call that fails with error 45, Run (only `main` is sent; the cursor goes to the failing line), then rename a procedure and Make: the program is stopped at the error, so Make asks, and Y resets it before the `kill` and the load. The saved file and the whole protocol log must match. A second session uses the `/vt` factory and a program that sends BREAK (`S$Intrpt`) to its parent, the editor, which passes it on; the program stops, ^P resets it, a second Run sends nothing new and stops again, and quitting sends `q` before `bye`.
 - **`make p5ktest` (P5.7):** `test/p5k`, the mouse from a key script. A press on the left border sets a breakpoint that Run then stops at. A click and typing place text, a drag selects for a cut, and a right press extends a selection. A press outside the ^G dialog cancels it, File ▸ Save as is chosen by the mouse, a double click on a Make error goes to its line, and ^Q is answered by a press on the `Y`. Two saved files and the log are checked. A second session with `-h` drags past the bottom of the window (it scrolls two lines) and sets and clears breakpoints by the mouse; the snapshot shows the marks.
 - **`make p5ltest` (P5.7):** `test/p5l`, the real keyboard and mouse on `/term`, driven by the MAME script `test/p5l/lua`. It types after clicks on two lines, sets a breakpoint on the left border, and runs the program from the Run menu by pressing on its title, dragging down and releasing on Run. The snapshot must show the edits and the stop on the breakpoint's line.
+- **`make p5otest` (P5.7):** `test/p5o`, double spacing from a key script on the 80×30 screen. The snapshot must show the text on the even rows, the borders and the scroll bar's track on the gap rows, the gap rows clean after a dialog, and a press on logical row 5 typing on line 4.
 - **`make p5ntest` (P5.7):** `test/p5n`, the scroll bar from a key script (drawn in ASCII: `^` `v` arrows, `:` track, `#` thumb). Two clicks on ▼, a click on the track, the thumb dragged to the bottom and a click on ▲, each followed by a letter typed; the saved file shows where the cursor went, and the snapshot the window and thumb.
 - **`make p5mtest` (P5.7):** `test/p5m`, the highlights in colour, which the text snapshot cannot show: the MAME script reads the pixels of a cell's blank top row. A Shift+arrow selection, Esc ending it, the ^F dialog opening and closing on Enter with the match selected, and Run ▸ Go to cursor stopping on its line in white on red.
 - **`make p5btest` (P5.2a):** File commands through keys, menus and dialogs. It covers Save with no name (Save as), Open, File ▸ Save by its letter, New, Options ▸ Auto indent, Quit answered with Esc and then Y, and File ▸ Save as chosen with the arrows. Three saved files must match.

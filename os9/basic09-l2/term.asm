@@ -64,6 +64,8 @@ ti4                 stb       <scrw
                     stb       <wcols
                     tfr       y,d
                     stb       <scrh
+                    ldx       <base
+                    stb       phrows,x
                     subb      #4                  menu bar, two borders, hint line
                     stb       <wrows
                     lda       #2
@@ -122,16 +124,28 @@ ts1                 lda       ,x+
                     bra       ts1
 ts9                 puls      a,x,pc
 
-* t_xy: move the cursor to column A, row B
+* t_xy: move the cursor to column A, row B (row 2B with double
+* spacing); t_xyg: to the gap row under row B (only with dblsp)
+t_xyg               pshs      d
+                    lda       #1
+                    bra       txy0
 t_xy                pshs      d
+                    clra
+txy0                pshs      a                   ,s = 1 for the gap row
                     lda       #$02
-                    bsr       t_ch
-                    lda       ,s
-                    adda      #$20
                     bsr       t_ch
                     lda       1,s
                     adda      #$20
                     bsr       t_ch
+                    ldb       2,s
+                    tst       <dblsp
+                    beq       txy1
+                    lslb
+                    addb      ,s
+txy1                tfr       b,a
+                    adda      #$20
+                    bsr       t_ch
+                    leas      1,s
                     puls      d,pc
 
 * t_rev, t_norm: reverse video on and off
@@ -157,15 +171,15 @@ t_curoff            pshs      a
                     puls      a,pc
 t_curon             pshs      a
                     lda       #$05
-                    bsr       t_ch
+                    lbsr      t_ch
                     lda       #$21
-                    bsr       t_ch
+                    lbsr      t_ch
                     puls      a,pc
 
 * t_cls: clear the screen
 t_cls               pshs      a
                     lda       #$0C
-                    bsr       t_ch
+                    lbsr      t_ch
                     puls      a,pc
 
 * n_dec: D in decimal to X (no leading zeros); X past it

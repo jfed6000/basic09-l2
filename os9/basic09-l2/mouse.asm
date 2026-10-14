@@ -39,12 +39,15 @@ mu_init             ldu       <base
                     ldb       <scrw
                     bsr       mu_shift
                     sta       musx,u
-                    ldx       #480
-                    ldb       <scrh
-                    bsr       mu_shift
-                    sta       musy,u
                     inc       muon,u
                     endc
+
+* mu_rows: the shift down for scrh rows (a double-spaced row is two)
+mu_rows             ldx       #480
+                    ldb       <scrh
+                    bsr       mu_shift
+                    ldu       <base
+                    sta       musy,u
 mui9                rts
 
 * mu_shift: A = log2(X pixels / B cells), rounded down (8 or 16 pixels

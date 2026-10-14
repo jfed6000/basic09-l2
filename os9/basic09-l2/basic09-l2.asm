@@ -250,6 +250,7 @@ hlrun               rmb       1                   characters left in the current
 hlcur               rmb       1                   and their colour
 ulink               rmb       1                   u_new: 1 = link the records after the next
 ugrp                rmb       1                   c_undo/c_redo: a linked group
+dblsp               rmb       1                   double spacing: row r is drawn on row 2r
 dpend               equ       .
                     ifgt      dpend-(256-16)
                     error     "direct page overflow"
@@ -284,6 +285,8 @@ murept              rmb       1                   ticks to the next repeat
 mudrag              rmb       1                   a drag in the text is selecting
 musb                rmb       1                   a press on the scroll bar (MS.*)
 sbpos               rmb       1                   the scroll bar's thumb as drawn ($FF = redraw)
+phrows              rmb       1                   the screen's own rows (scrh is half with dblsp)
+gapdty              rmb       1                   a box was drawn over the gap rows (v_gaps)
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing
@@ -538,6 +541,7 @@ quit                lbsr      rt_done
                     use       pp.asm
                     use       mouse.asm
                     use       sbar.asm
+                    use       lspace.asm
 
                     emod
 eom                 equ       *
