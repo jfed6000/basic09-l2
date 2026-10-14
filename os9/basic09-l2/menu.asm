@@ -182,11 +182,10 @@ m_open1             tfr       b,a
 
 * m_open: run menu A until an item is chosen or it is closed
 m_open              sta       <mcur
+                    ldx       <base               the screen is up to date: no
+                    clr       mbox,x              drop-down to clear yet
 mo_new              clr       <msel
-mo_redo             lda       #RD.ALL             clear away the last drop-down
-                    ora       <redraw
-                    sta       <redraw
-                    lbsr      v_draw
+                    lbsr      m_unbox             clear away the last drop-down
                     lbsr      m_layout
                     lda       <mcur
                     lbsr      v_menubar
@@ -202,11 +201,11 @@ mo_draw             lbsr      m_drawbox
                     beq       mo_close
                     cmpa      #EK.UP
                     bne       mo1
-                    bsr       m_prev
+                    lbsr      m_prev
                     bra       mo_draw
 mo1                 cmpa      #EK.DOWN
                     bne       mo2
-                    bsr       m_next
+                    lbsr      m_next
                     bra       mo_draw
 mo2                 cmpa      #EK.LEFT
                     bne       mo3
@@ -251,10 +250,34 @@ mo_run              ldb       <msel
                     puls      d
                     leax      cmdtab,pcr
                     jmp       d,x
-mo_close            lda       #RD.ALL
+mo_close            bsr       m_unbox
+                    lda       #$FF                the titles back to normal
+                    lbra      v_menubar
+
+* m_unbox: redraw what the drop-down covered (if one is shown): only
+* the window rows under it, unless it reaches below the text window
+m_unbox             ldx       <base
+                    tst       mbox,x
+                    beq       mub9
+                    clr       mbox,x
+                    clr       rdlim,x             (0: everything)
+                    lda       <mcnt               its bottom row is mcnt+2
+                    adda      #2
+                    ldb       <wtop
+                    addb      <wrows
+                    pshs      b
+                    cmpa      ,s+
+                    bhs       mub1
+                    suba      <wtop
+                    inca
+                    sta       rdlim,x
+mub1                lda       #RD.ALL
                     ora       <redraw
                     sta       <redraw
-                    rts
+                    lbsr      v_draw
+                    ldx       <base
+                    clr       rdlim,x
+mub9                rts
 
 * m_next, m_prev: move the selection, skipping separators
 m_next              lda       <msel
@@ -389,7 +412,9 @@ sl1                 tst       ,y+
 sl9                 rts
 
 * m_drawbox: the drop-down of menu mcur, item msel selected
-m_drawbox           lda       <mcol
+m_drawbox           ldx       <base
+                    inc       mbox,x
+                    lda       <mcol
                     sta       <bx.col
                     lda       #1
                     sta       <bx.row

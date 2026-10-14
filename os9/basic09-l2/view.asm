@@ -112,7 +112,11 @@ vd0                 lda       <redraw             (bp_lines and sel_bounds use A
                     bita      #RD.ALL
                     beq       vd1
                     lbsr      v_frame
+                    ldx       <base               (a partial redraw is above them)
+                    tst       rdlim,x
+                    bne       vd0a
                     lbsr      w_draw
+vd0a                equ       *
                     ldd       <tpos
                     std       <wp
                     ldd       <tpos+2
@@ -159,21 +163,34 @@ vd3                 lbsr      sb_upd
                     lbsr      t_curon
                     lbra      t_flush
 
-* v_rows: draw window rows B to the bottom, starting with the line at wp
+* v_rows: draw window rows B to the bottom (or to rdlim), starting with
+* the line at wp
 v_rows              pshs      b
-vr1                 ldb       ,s
-                    cmpb      <wrows
+                    bsr       v_lim
+                    pshs      a                   ,s = the row to stop at
+vr1                 ldb       1,s
+                    cmpb      ,s
                     bhs       vr9
                     bsr       v_line
-                    inc       ,s
+                    inc       1,s
                     bcc       vr1
-vr2                 ldb       ,s                  the text ended: blank rows
-                    cmpb      <wrows
+vr2                 ldb       1,s                 the text ended: blank rows
+                    cmpb      ,s
                     bhs       vr9
                     bsr       v_blank
-                    inc       ,s
+                    inc       1,s
                     bra       vr2
-vr9                 puls      b,pc
+vr9                 leas      1,s
+                    puls      b,pc
+
+* v_lim: A = the window rows to redraw: rdlim, or all of them
+v_lim               ldx       <base
+                    lda       rdlim,x
+                    beq       vlm1
+                    cmpa      <wrows
+                    bls       vlm9
+vlm1                lda       <wrows
+vlm9                rts
 
 * v_blank: clear window row B
 v_blank             pshs      d
@@ -624,8 +641,9 @@ vgp2                lda       <scrw
 vgp3                lda       <glyphs+GL.V2
                     lbsr      t_ch
                     inc       ,s
-                    ldb       <wtop
-                    addb      <wrows
+                    lbsr      v_lim
+                    tfr       a,b
+                    addb      <wtop
                     cmpb      ,s
                     bhi       vgp1
                     leas      1,s

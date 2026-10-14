@@ -287,6 +287,8 @@ musb                rmb       1                   a press on the scroll bar (MS.
 sbpos               rmb       1                   the scroll bar's thumb as drawn ($FF = redraw)
 phrows              rmb       1                   the screen's own rows (scrh is half with dblsp)
 gapdty              rmb       1                   a box was drawn over the gap rows (v_gaps)
+rdlim               rmb       1                   v_draw: redraw only this many window rows (0 = all)
+mbox                rmb       1                   a menu's drop-down is on the screen
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing
