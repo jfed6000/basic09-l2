@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""P5.7 test data: the scroll bar on the text window's right border
+(column 79; rows 2-27 with the arrows on rows 2 and 27).  Keys from a
+file draw it in ASCII: ^ v for the arrows, : the track, # the thumb.
+
+A 300-line file: the highest top line is 300 - 26 = 274 (0-based), and
+the thumb's place (0-23) is top * 23 / 274.  A letter typed after each
+step marks where the cursor went, and the saved file must match.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+lines = ['REM %03d' % n for n in range(1, 301)]
+text = '\n'.join(lines) + '\n'
+exp = list(lines)
+keys = '''
+click:79,27 click:79,27 "a"   # down a line, twice: the cursor too (line 3)
+click:79,20 "b"               # the track below the thumb: a page (line 28)
+press:79,5 drag:79,12 drag:79,26 release:79,26 "c"   # drag the thumb to
+                              # the bottom: top line 275, the cursor on it
+click:79,2 "d"                # up a line (line 275, column 2)
+^s
+'''
+exp[2] = 'a' + exp[2]
+exp[27] = exp[27][:1] + 'b' + exp[27][1:]
+exp[275] = 'c' + exp[275]
+exp[274] = exp[274][:1] + 'd' + exp[274][1:]
+for name, t in (('sb.b09', text), ('sb.exp', '\n'.join(exp) + '\n')):
+    with open(os.path.join(out, name), 'w', newline='') as f:
+        f.write(t.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))

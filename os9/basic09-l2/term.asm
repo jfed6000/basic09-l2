@@ -217,7 +217,7 @@ tr9                 rts
 t_glyph             ldx       <base
                     leax      glyphs,x
                     leay      gl_asc,pcr
-                    ldb       #NGLYPH
+                    ldb       #NGL1
 tg0                 lda       ,y+
                     sta       ,x+
                     decb
@@ -249,7 +249,7 @@ tg2                 clra
                     ldx       <base
                     leax      glyphs,x
                     lda       #GLYPH0
-                    ldb       #NGLYPH
+                    ldb       #NGL1
 tg3                 sta       ,x+
                     inca
                     decb
@@ -273,7 +273,7 @@ tu1                 clra
 tu9                 rts
 
 * The glyphs, in GL.* order: double frame, single frame, single tees,
-* the breakpoint mark
+* the breakpoint mark, then the scroll bar's (SB.* order)
 gl_asc              fcc       "++++=|++++-|++*"
 gl_bits             fcb       $00,$00,$3F,$20,$2F,$28,$28,$28      double top left
                     fcb       $00,$00,$F8,$08,$E8,$28,$28,$28      top right
@@ -290,3 +290,7 @@ gl_bits             fcb       $00,$00,$3F,$20,$2F,$28,$28,$28      double top le
                     fcb       $10,$10,$10,$1F,$10,$10,$10,$10      left tee
                     fcb       $10,$10,$10,$F0,$10,$10,$10,$10      right tee
                     fcb       $28,$38,$7C,$7C,$7C,$38,$28,$28      breakpoint: a dot on the border
+                    fcb       $00,$10,$38,$7C,$FE,$00,$00,$00      scroll bar: up arrow
+                    fcb       $00,$00,$00,$FE,$7C,$38,$10,$00      down arrow
+                    fcb       $22,$88,$22,$88,$22,$88,$22,$88      track
+                    fcb       $00,$7C,$7C,$7C,$7C,$7C,$7C,$00      thumb

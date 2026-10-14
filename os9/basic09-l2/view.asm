@@ -143,7 +143,8 @@ vd1                 bita      #RD.BELOW+RD.LINE
 vd1b                bsr       v_rows
                     bra       vd3
 vd2                 lbsr      v_line
-vd3                 lbsr      v_stat
+vd3                 lbsr      sb_upd
+                    lbsr      v_stat
                     clr       <redraw
                     ldd       <curline
                     subd      <topline
@@ -482,6 +483,8 @@ ss9                 rts
 
 * v_frame: menu bar, the top border with the file name, the side borders
 v_frame             lda       #$FF
+                    ldx       <base               the scroll bar too
+                    sta       sbpos,x
                     lbsr      v_menubar
                     lbsr      fr_on               frames in white
                     clra                          top border

@@ -50,7 +50,7 @@ OUTSZ               equ       256                 screen output buffer
 STKSZ               equ       768
 C$TAB               equ       $09
 SS.FntChar          equ       $C2                 Wildbits grfdrv256: get/set a font character
-GLYPH0              equ       $F1                 frame glyphs go here (te uses $F2-$FF)
+GLYPH0              equ       $ED                 frame glyphs go here (te uses $F2-$FF)
 
 * Frame glyphs (see term.asm)
 GL.TL2              equ       0                   double frame
@@ -68,7 +68,8 @@ GL.V1               equ       11
 GL.LT1              equ       12                  single tees
 GL.RT1              equ       13
 GL.BP               equ       14                  breakpoint mark (on the left border)
-NGLYPH              equ       15
+NGL1                equ       15                  those have codes in glyphs; the scroll
+NGLYPH              equ       19                  bar's four follow (sbar.asm, sb_gl)
 
 * Page descriptor
                     org       0
@@ -190,7 +191,7 @@ ulen                rmb       3                   how much
 chead               rmb       2                   chain_copy: first page
 pchain              rmb       2                   chain_paste: the chain
 argp                rmb       2                   parameters
-glyphs              rmb       NGLYPH              character for each GL.* glyph
+glyphs              rmb       NGL1                character for each GL.* glyph
 glyok               rmb       1                   our glyphs are in the font
 noindt              rmb       1                   Enter does not indent
 hold                rmb       1                   -h: sleep at the end of the key input
@@ -281,6 +282,8 @@ mulc                rmb       2                   and its cell ($FFxx = none)
 murep               rmb       1                   repeat MV.DRAG while held (scrolling)
 murept              rmb       1                   ticks to the next repeat
 mudrag              rmb       1                   a drag in the text is selecting
+musb                rmb       1                   a press on the scroll bar (MS.*)
+sbpos               rmb       1                   the scroll bar's thumb as drawn ($FF = redraw)
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing
@@ -534,6 +537,7 @@ quit                lbsr      rt_done
                     use       hl.asm
                     use       pp.asm
                     use       mouse.asm
+                    use       sbar.asm
 
                     emod
 eom                 equ       *

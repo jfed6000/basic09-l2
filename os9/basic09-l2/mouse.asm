@@ -326,7 +326,8 @@ much_no             orcc      #Carry
 * c_mouse: a mouse event in the main loop.  A press in the text moves
 * the cursor there and a drag selects (past the top or bottom it
 * scrolls); a right press extends the selection.  A press on the left
-* border sets or clears a breakpoint, one on a menu title opens the
+* border sets or clears a breakpoint, one on the right border is the
+* scroll bar's (sbar.asm), one on a menu title opens the
 * menu, and one on a message selects it in the message window.
 c_mouse             ldx       <base
                     lda       muev,x
@@ -336,8 +337,10 @@ c_mouse             ldx       <base
                     cmpa      #MV.UP
                     bne       cmu1
                     clr       mudrag,x
+                    clr       musb,x
                     rts
 cmu1                clr       mudrag,x            a press
+                    clr       musb,x
                     ldd       mux,x
                     tstb
                     bne       cmu2
@@ -353,6 +356,11 @@ cmu2                subb      <wtop
                     bcs       cmu9                the top border
                     cmpb      <wrows
                     bhs       cmu5                B = the row in the window
+                    lda       <wleft
+                    adda      <wcols
+                    cmpa      mux,x
+                    lbls      cmu_sb              the right border: the scroll bar
+                    lda       mux,x
                     pshs      d
                     lda       muev,x
                     ldb       ,s
@@ -390,7 +398,9 @@ cmu5                ldb       muy,x               the message window
 * cmu_drag: the pointer moved with the button held after a press in the
 * text: select to it.  Above or below the window, scroll a line at a
 * time, and again while the button is held there.
-cmu_drag            tst       mudrag,x
+cmu_drag            tst       musb,x
+                    lbne      cmu_sbdrag
+                    tst       mudrag,x
                     beq       cmu9
                     clr       murep,x
                     ldd       mux,x
