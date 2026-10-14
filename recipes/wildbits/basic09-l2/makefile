@@ -22,6 +22,8 @@ b09l2: libs $(DSKIMAGE) b09l2-mods
 	for f in $(B09L2DIR)/examples/*; do \
 	    case $$f in *.b09) l=-l ;; *) l= ;; esac; \
 	    os9 copy $$l -r $$f $(DSKIMAGE),L2B09/$$(basename $$f) || exit 1; done
+	for f in $(B09L2DIR)/examples/*.bin; do [ -f $$f ] || continue; \
+	    os9 copy -r $$f $(DSKIMAGE),SYS/BACKGROUNDS/$$(basename $$f) || exit 1; done
 	for m in $(B09L2MODS); do \
 	    os9 dir $(DSKIMAGE),CMDS | tr -s ' ' '\n' | grep -qx $$m || \
 	    { echo "$(DSKIMAGE): CMDS/$$m is missing" >&2; exit 1; }; done
