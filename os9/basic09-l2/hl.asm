@@ -11,8 +11,8 @@
 * The editor's own colours, as Turbo C had its own (the Wildbits text
 * palette; the CoCo 3's has the same slots).  With colours off the
 * terminal's own are used.  $0A and $0D are avoided as colour numbers.
-CL.BG               equ       6                   background: blue
-CL.NORM             equ       7                   text: yellow
+CL.BG               equ       6                   background: blue (#000080 on Wildbits: hl_pal)
+CL.NORM             equ       7                   text: yellow (#FFEE88)
 CL.KW               equ       1                   keywords: white
 CL.FN               equ       3                   functions: pale cyan
 CL.STR              equ       5                   strings: green
@@ -62,6 +62,10 @@ hl_init             ldx       <base
                     sta       hlsfg,x
                     stb       hlsbg,x
                     inc       hlok,x
+                    ifeq      coco3
+                    leax      pal_ed,pcr          a darker blue, a softer yellow
+                    lbsr      hl_pal
+                    endc
 * hl_set: the colours to draw with: ours, or the terminal's with colours
 * off (then nothing changes if they are not known)
 hl_set              ldx       <base
@@ -147,10 +151,32 @@ mi_end              tst       <nocolr
 hl_done             ldx       <base
                     tst       hlok,x
                     beq       hld9
+                    ifeq      coco3
+                    leax      pal_def,pcr         the palette's own entries back
+                    bsr       hl_pal
+                    ldx       <base
+                    endc
                     lda       hlsfg,x
                     ldb       hlsbg,x
                     lbra      hl_pair
 hld9                rts
+
+                    ifeq      coco3
+* hl_pal: send the two palette changes at X (VTIO $1B $61 / $1B $60
+* <slot> <red> <green> <blue> <alpha>).  The text palette is the
+* screen's, not the terminal's, and cannot be read back, so hl_done
+* puts back the defaults (the palette module's), not what was there.
+hl_pal              ldb       #14
+hpl1                lda       ,x+
+                    lbsr      t_ch
+                    decb
+                    bne       hpl1
+                    rts
+pal_ed              fcb       $1B,$61,CL.BG,$00,$00,$80,$00     background #000080
+                    fcb       $1B,$60,CL.NORM,$FF,$EE,$88,$00   text #FFEE88
+pal_def             fcb       $1B,$61,CL.BG,$00,$00,$AA,$00     the defaults
+                    fcb       $1B,$60,CL.NORM,$DD,$DD,$77,$00
+                    endc
 
 * hl_norm: back to the normal colour
 hl_norm             pshs      b,x
