@@ -22,7 +22,7 @@ The basic09-l2 image adds:
 - the pipe modules (`pipeman piper pipe`) in OS9Boot;
 - `basic09-l2`, `l2b09run` and its overlay `l2b09ovl`, `farmem`, `syscall` and `inkey` in CMDS, built
   with the copy's defs into `build/main/`;
-- `examples/` in `/dd/L2B09`.
+- `examples/` in `/dd/L2B09` (`.b09` files as text, with LF turned into CR; anything else byte for byte).
 
 ## How it works
 

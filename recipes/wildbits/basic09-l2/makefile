@@ -20,7 +20,8 @@ b09l2: libs $(DSKIMAGE) b09l2-mods
 	    os9 attr -q -e -pe -r -pr $(DSKIMAGE),CMDS/$$m || exit 1; done
 	os9 dir $(DSKIMAGE),L2B09 >/dev/null 2>&1 || os9 makdir $(DSKIMAGE),L2B09
 	for f in $(B09L2DIR)/examples/*; do \
-	    os9 copy -l -r $$f $(DSKIMAGE),L2B09/$$(basename $$f) || exit 1; done
+	    case $$f in *.b09) l=-l ;; *) l= ;; esac; \
+	    os9 copy $$l -r $$f $(DSKIMAGE),L2B09/$$(basename $$f) || exit 1; done
 	for m in $(B09L2MODS); do \
 	    os9 dir $(DSKIMAGE),CMDS | tr -s ' ' '\n' | grep -qx $$m || \
 	    { echo "$(DSKIMAGE): CMDS/$$m is missing" >&2; exit 1; }; done

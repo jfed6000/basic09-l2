@@ -212,7 +212,8 @@ $(BUILD)/l2b09_%.dsk: $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk $(TOOLS) $(L2B09)
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
 	os9 makdir $@.tmp,L2B09
-	for f in examples/*; do os9 copy -l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done
+	for f in examples/*; do case $$f in *.b09) l=-l ;; *) l= ;; esac; \
+	    os9 copy $$l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done
 	mv $@.tmp $@
 
 # Disk images for the new (Longview) core, built in the copy of the main
