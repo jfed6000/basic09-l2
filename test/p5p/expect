@@ -1,0 +1,7 @@
+mame.log p5p: 80x30 32
+mame.log p5p: 80x60 16
+mame.log p5p: 80x60 double 24
+mame.log p5p: 80x30 double 48
+mame.log p5p: 80x30 single 32
+mame.log p5p: shell text from y=16
+run.out back in the shell

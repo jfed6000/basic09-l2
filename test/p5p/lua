@@ -1,0 +1,82 @@
+-- The screen switch: the text snapshot has 30 rows whatever the mode,
+-- so this script reads the screen.  The grey rows down column x=600
+-- (the menu bar, its gap row with double spacing, and the hint line)
+-- give the mode: 32 on 80x30, 48 on 80x30 double spaced, 16 on 80x60
+-- and 24 on 80x60 double spaced.  Each check prints "p5p: ...".
+local ports = manager.machine.ioport.ports
+local function key(name)
+    for _, p in pairs(ports) do if p.fields[name] then return p.fields[name] end end
+end
+local function field(tag) for _, f in pairs(ports[tag].fields) do return f end end
+local fx, fy = field(":MOUSEX"), field(":MOUSEY")
+local fb = ports[":MOUSE_BUTTONS"].fields["Left Button"]
+local shift, right, down = key("LShift"), key("Right"), key("Down")
+local ctrl, esc, kf = key("Ctrl"), key("Escape"), key("f  F")
+local scr = manager.machine.screens[":screen"]
+local steps = {}
+local cx, cy = 30000, 30000
+local function add(f) steps[#steps + 1] = f end
+local function wait(n) for _ = 1, n do add(function() end) end end
+local function hold(f, v) add(function() f:set_value(v) end); wait(6) end
+local function tap(f) hold(f, 1); hold(f, 0) end
+local function check(what, c, r)
+    add(function()
+        print(string.format("p5m: %s %08X", what, scr:pixel(c * 8 + 4, r * 16)))
+    end)
+end
+local function ink(what, c, r)  -- pixels unlike the cell's background
+    add(function()
+        local bg, n = scr:pixel(c * 8, r * 16), 0
+        for y = 0, 15 do for x = 0, 7 do
+            if scr:pixel(c * 8 + x, r * 16 + y) ~= bg then n = n + 1 end
+        end end
+        print(string.format("p5m: %s %s", what, n > 0 and "ink" or "blank"))
+    end)
+end
+local function moveto(px, py)   -- as in p5l
+    while cx ~= px or cy ~= py do
+        cx = cx + math.max(-100, math.min(100, px - cx))
+        cy = cy + math.max(-100, math.min(100, py - cy))
+        local nx, ny = cx, cy
+        add(function() fx:set_value(nx); fy:set_value(ny) end); wait(2)
+    end
+end
+local function over(c, r)
+    local hx, hy = cx - 1000, cy - 1000
+    moveto(hx, hy)
+    moveto(hx + c * 8 + 4, hy + r * 16 + 8)
+    wait(10)
+end
+local function button(v) add(function() fb:set_value(v) end); wait(10) end
+local function click(c, r) over(c, r); button(1); button(0); wait(10) end
+
+local k1, k2 = key("1  !"), key("2  @")
+local kq, ko, alt = key("q  Q"), key("o  O"), key("Alt")
+local function grey(what)
+    add(function()
+        local n = 0
+        for y = 0, 479 do if scr:pixel(600, y) == 0xFFBBBBBB then n = n + 1 end end
+        print(string.format("p5p: %s %d", what, n))
+    end)
+end
+local function screen() hold(alt, 1) tap(ko) hold(alt, 0) wait(30)
+    add(function() manager.machine.natkeyboard:post("8") end) wait(90) end
+wait(60 * 50)
+grey("80x30")
+screen() grey("80x60")
+hold(ctrl, 1) tap(k2) hold(ctrl, 0) wait(60) grey("80x60 double")
+screen() grey("80x30 double")
+hold(ctrl, 1) tap(k1) hold(ctrl, 0) wait(60) grey("80x30 single")
+screen() hold(ctrl, 1) tap(kq) hold(ctrl, 0) wait(120)   -- quit on 80x60
+add(function()                  -- the shell's first line: row 1 of 80x30
+    local bg = scr:pixel(600, 200)
+    for y = 0, 479 do
+        if scr:pixel(8, y) ~= bg then print(string.format("p5p: shell text from y=%d", y)) return end
+    end
+end)
+local i = 0
+p5p_sub = emu.add_machine_frame_notifier(function()   -- global: kept alive
+    i = i + 1
+    if steps[i] then steps[i]() end
+    if i == #steps then print("p5p: input done at frame " .. i) end
+end)

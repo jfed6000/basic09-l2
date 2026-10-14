@@ -159,6 +159,9 @@ mopt                fdb       c_indent-cmdtab
                     fdb       c_sptog-cmdtab
                     fcn       "Double spacing"
                     fcn       "^1/^2"
+                    fdb       c_scrtog-cmdtab
+                    fcn       "80x60 screen"
+                    fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
                     fcn       "Keys"

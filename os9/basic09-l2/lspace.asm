@@ -56,3 +56,64 @@ sps9                rts
 spon1               fcn       "Single spacing"
 spon2               fcn       "Double spacing"
 spsmall             fcn       "The screen is too small for double spacing"
+
+********************************************************************
+* The screen size: Options > 80x60 screen switches between 80x30 and
+* 80x60 (VTIO DWSet, so the terminal's own size changes with it);
+* t_done puts back the type the editor started with.  Only on a
+* terminal whose colours are known (hlok), since DWSet sets them.
+
+c_scrtog            ldx       <base
+                    tst       hlok,x
+                    beq       cst_no
+                    lda       #4                  80x30 -> 80x60, else 80x30
+                    ldb       <scrw
+                    cmpb      #80
+                    bne       cst1
+                    ldb       phrows,x
+                    cmpb      #30
+                    beq       cst2
+cst1                lda       #2
+cst2                lbsr      t_dwset
+                    lbsr      t_size              the new size, from the terminal
+                    ifeq      coco3
+                    ldu       <base               the mouse's columns (80 now)
+                    tst       muon,u
+                    beq       cst1a
+                    ldx       #640
+                    ldb       <scrw
+                    lbsr      mu_shift
+                    ldu       <base
+                    sta       musx,u
+cst1a               equ       *
+                    endc
+                    lda       <dblsp
+                    lbsr      sp_set              (halved with double spacing)
+                    lbsr      w_fits0
+                    bcc       cst3
+                    lbsr      w_hide
+                    lbsr      w_fits0
+                    bcc       cst3
+                    clra                          too small even so: single spacing
+                    lbsr      sp_set
+cst3                lbsr      hl_set              DWSet changed the colours and
+                    lbsr      t_cls               cleared in the terminal's
+                    lbsr      w_layout
+                    ldx       <base
+                    leax      scrm30,pcr
+                    lda       <scrh
+                    tst       <dblsp
+                    beq       cst4
+                    lsla
+cst4                cmpa      #60
+                    bne       cst5
+                    leax      scrm60,pcr
+cst5                stx       <msgp
+                    rts
+cst_no              leax      scrmno,pcr
+                    stx       <msgp
+                    rts
+
+scrm30              fcn       "80x30 screen"
+scrm60              fcn       "80x60 screen"
+scrmno              fcn       "The screen size cannot be changed here"

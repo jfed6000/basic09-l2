@@ -289,6 +289,8 @@ phrows              rmb       1                   the screen's own rows (scrh is
 gapdty              rmb       1                   a box was drawn over the gap rows (v_gaps)
 rdlim               rmb       1                   v_draw: redraw only this many window rows (0 = all)
 mbox                rmb       1                   a menu's drop-down is on the screen
+otype               rmb       1                   the screen type at start (DWSet: 1-4)
+stype               rmb       1                   the screen type now
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

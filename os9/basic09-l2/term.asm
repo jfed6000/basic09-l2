@@ -40,7 +40,24 @@ ti1                 lda       ,x+
                     clrb
                     os9       I$SetStt
                     inc       <kbterm
-ti2                 ldx       <base               screen size, from a terminal only
+ti2                 bsr       t_size
+                    ldx       <base               the screen type to put back on exit:
+                    lda       <scrh               1 40x30, 2 80x30, 3 40x60, 4 80x60
+                    ldb       #1
+                    cmpa      #60
+                    blo       ti2b
+                    ldb       #3
+ti2b                lda       <scrw
+                    cmpa      #80
+                    blo       ti2c
+                    incb
+ti2c                stb       otype,x
+                    stb       stype,x
+                    lbsr      t_glyph
+                    lbra      hl_init
+
+* t_size: the screen's size (SS.ScSiz) and the text window in it
+t_size              ldx       <base               screen size, from a terminal only
                     leax      rline,x             (a file answers SS.ScSiz without an
                     lda       <scpath             error)
                     clrb                          SS.Opt
@@ -72,14 +89,19 @@ ti4                 stb       <scrw
                     sta       <wtop
                     lda       #1
                     sta       <wleft
-                    lbsr      t_glyph
-                    lbra      hl_init
+                    rts
 
 * t_done: put the terminal back
 t_done              lbsr      t_flush
                     lbsr      t_unglyph
                     tst       <kbterm
                     beq       td1
+                    ldx       <base               the screen type it had
+                    lda       otype,x
+                    cmpa      stype,x
+                    beq       td0
+                    lbsr      t_dwset
+td0                 equ       *
                     ldx       <base
                     leax      optsav,x
                     clra
@@ -93,6 +115,32 @@ t_done              lbsr      t_flush
                     bsr       t_ch
                     lbsr      t_flush
 td1                 rts
+
+* t_dwset: make the screen type A (VTIO $1B $20 DWSet: type, origin,
+* size, colours, border), in the terminal's own colours; it clears the
+* screen
+t_dwset             ldx       <base
+                    sta       stype,x
+                    pshs      a
+                    lda       #$1B
+                    bsr       t_ch
+                    lda       #$20
+                    bsr       t_ch
+                    puls      a
+                    bsr       t_ch
+                    ldb       #4                  origin and size: DWSet uses the type's
+t_dw1               clra
+                    bsr       t_ch
+                    decb
+                    bne       t_dw1
+                    ldx       <base
+                    lda       hlsfg,x
+                    bsr       t_ch
+                    lda       hlsbg,x
+                    bsr       t_ch
+                    clra                          border
+                    bsr       t_ch
+                    lbra      t_flush
 
 * t_ch: A to the output buffer
 t_ch                pshs      x

@@ -1,0 +1,9 @@
+* l2basic09 P5.7: basic09-l2's screen switch (Options > 80x60 screen)
+* with and without double spacing, and the 80x30 screen back on exit,
+* driven and checked by the MAME script in lua
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -t=/dd/l2b09/term.out ml.b09 </term >/term
+echo back in the shell
