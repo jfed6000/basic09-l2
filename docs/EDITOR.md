@@ -55,6 +55,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | ^A ^C ^X ^V | Select all, copy, cut, paste | P5.2b |
 | ^Z / ^Y | Undo / redo (50 steps) | P5.2d |
 | ^F / ^L | Find / find next (the match is selected) | P5.2c |
+| Ctrl+Shift+L | Find previous (Search ▸ Find previous) | P5.7 |
 | Search ▸ Replace | Replace, asking Y / N / A (all) / Esc at each match | P5.2c |
 | Options ▸ Match case | Searches match case (off by default) | P5.2c |
 | Esc | Cancel (menu, dialog, selection) | P5.2a/b |
@@ -194,7 +195,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 
 - **Direction:** searches run forward from the cursor and do not wrap.
 - **Case:** letters match either case unless Options ▸ Match case is on.
-- **Result:** a match becomes the selection, with the cursor at its end, so typing replaces it and ^L finds the next one.
+- **Result:** a match becomes the selection, with the cursor at its end, so typing replaces it and ^L finds the next one. Ctrl+Shift+L finds the previous one: it searches back from the selection's start (or the cursor), counting the carriage returns it passes to keep the line number, and goes from page to page by `DS.PREV`. The K2 driver sends Ctrl+Shift+L as `$0C`, the PS/2 driver as `$EC` (`'L'-$60`); both come with the Ctrl and Shift bits.
 - **Dialogs:** they start with the last search (or replacement) text, and typing a character first replaces it.
 - **Replace:** asks on the hint line at each match (Y, N, A = all the rest, Esc), then reports how many it replaced.
 - **Speed:** the search scans page buffers directly for the first character (counting line ends on the way) and compares only candidates a character at a time, so matches can span pages.

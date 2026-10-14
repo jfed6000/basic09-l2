@@ -39,6 +39,7 @@ EK.ESC              equ       $92                 Esc (PS/2), BREAK (K2)
 EK.HOME             equ       $93                 Home (K2)
 EK.CSPC             equ       $94                 Ctrl+Space
 EK.MOUSE            equ       $95                 a mouse event (mouse.asm)
+EK.FPREV            equ       $96                 Ctrl+Shift+L find previous
 EK.F1               equ       $A1                 F1-F8 are $A1-$A8
 EK.F2               equ       $A2
 EK.SF1              equ       $A9                 Shift+F1 (PS/2)
@@ -160,8 +161,16 @@ kn6                 bitb      #KB.CTRL            Ctrl+Space: $20 (K2) or
                     cmpa      #C$SPAC
                     beq       kn6a
                     cmpa      #$C0
-                    bne       kn6b
+                    bne       kn6c
 kn6a                lda       #EK.CSPC
+                    rts
+kn6c                bitb      #KB.SHF             Ctrl+Shift+L: $0C (K2) or
+                    beq       kn6b                'L-$60 = $EC (PS/2)
+                    cmpa      #$0C
+                    beq       kn6d
+                    cmpa      #$EC
+                    bne       kn6b
+kn6d                lda       #EK.FPREV
                     rts
 kn6b                cmpa      #$08                Backspace (no LEFT bit)
                     bne       kn7

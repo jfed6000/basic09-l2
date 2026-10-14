@@ -258,6 +258,19 @@ class Model:
         self.c = k + len(p)
         return True
 
+    def findprev(self):
+        """Find fstr before the cursor, or before the selection's start."""
+        if not self.fstr:
+            return False
+        t, p = (self.t, self.fstr) if self.fcase else (self.t.upper(), self.fstr.upper())
+        lim = self.c if self.sel is None else min(self.sel, self.c)
+        k = t.rfind(p, 0, lim + len(p) - 1)
+        if k < 0:
+            return False
+        self.sel = k
+        self.c = k + len(p)
+        return True
+
     def replace(self, answers):
         """Replace fstr with rstr from the cursor on; answers are 'y', 'n',
         'a' (all) or 'esc' for each match asked about."""
@@ -348,6 +361,11 @@ class Session:
         self.m.find()
         self._after(False)
         self.keys.append('^l')
+
+    def fprev(self):
+        self.m.findprev()
+        self._after(False)
+        self.keys.append('s^l')
 
     def replace(self, find, repl, answers):
         """Search > Replace; repl must not be empty (an empty answer

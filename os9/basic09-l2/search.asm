@@ -25,15 +25,8 @@ scp1                lda       ,x+
 
 * find_fwd: find fstr from the cursor on.  The match becomes the
 * selection, with the cursor at its end.  Carry if there is none.
-find_fwd            ldy       <base
-                    leay      fstr,y
-                    lbsr      strlen
-                    stb       <flen
+find_fwd            lbsr      ff_init
                     lbeq      ff_no
-                    ldx       <base
-                    lda       fstr,x
-                    bsr       fold
-                    sta       <fch
                     ldd       <cpos
                     std       <wp
                     ldd       <cpos+2
@@ -64,7 +57,7 @@ ff_s2               bsr       fold
                     subd      <fbuf
                     subd      #1
                     std       <wp+2
-                    bsr       ff_match
+                    lbsr      ff_match
                     bcc       ff_found
                     ldd       <wp+2               no: scan on after it
                     addd      #1
@@ -103,6 +96,79 @@ ff_found            ldd       <wp                 anchor at the start, cursor at
                     andcc     #^Carry
                     rts
 ff_no               orcc      #Carry
+                    rts
+
+* ff_init: flen and fch for fstr; Z if it is empty
+ff_init             ldy       <base
+                    leay      fstr,y
+                    lbsr      strlen
+                    stb       <flen
+                    beq       fi9
+                    ldx       <base
+                    lda       fstr,x
+                    lbsr      fold
+                    sta       <fch
+                    andcc     #^Zero
+fi9                 rts
+
+* find_bwd: find fstr before the cursor, or before the selection's start
+* (so a match found last time is passed over), going back.  As
+* find_fwd, the match becomes the selection.  Carry if there is none.
+find_bwd            bsr       ff_init
+                    lbeq      ff_no
+                    ldd       <cpos               from the cursor,
+                    std       <wp
+                    ldd       <cpos+2
+                    std       <wp+2
+                    ldd       <curline
+                    tst       <selon
+                    beq       fb0
+                    lbsr      sel_order
+                    bcc       fb0
+                    ldd       <apos               or the anchor if it comes first
+                    std       <wp
+                    ldd       <apos+2
+                    std       <wp+2
+                    ldd       <aline
+fb0                 pshs      d                   the line it starts in
+                    ldd       #0
+                    std       <tmpc               carriage returns passed
+fb_page             ldx       <wp
+                    lbsr      pg_map
+                    sty       <fbuf
+fb_s1               ldd       <wp+2               the character before wp
+                    beq       fb_prev
+                    subd      #1
+                    std       <wp+2
+                    ldu       <fbuf
+                    lda       d,u
+                    cmpa      #C$CR
+                    bne       fb_s2
+                    ldd       <tmpc
+                    addd      #1
+                    std       <tmpc
+                    bra       fb_s1
+fb_s2               lbsr      fold
+                    cmpa      <fch
+                    bne       fb_s1
+                    bsr       ff_match
+                    bcc       fb_found
+                    bra       fb_page             (ff_match may have mapped others)
+fb_prev             ldx       <wp
+                    ldx       DS.PREV,x
+                    beq       fb_no
+                    stx       <wp
+                    ldd       DS.USED,x
+                    std       <wp+2
+                    bra       fb_page
+fb_found            puls      d
+                    subd      <tmpc
+                    std       <curline
+                    ldd       #0
+                    std       <tmpc
+                    lbra      ff_found
+fb_no               leas      2,s
+                    orcc      #Carry
                     rts
 
 * ff_match: does fstr match at wp?  fpos = the end of the match.
@@ -158,6 +224,16 @@ cfn1                lbsr      find_fwd
                     leax      nfmsg,pcr
                     stx       <msgp
 cfd9                rts
+
+* c_fprev: find the same text again, going back
+c_fprev             ldx       <base
+                    tst       fstr,x
+                    beq       c_find
+                    lbsr      find_bwd
+                    bcc       cfp9
+                    leax      nfmsg,pcr
+                    stx       <msgp
+cfp9                rts
 
 * c_repl: find and replace, asking at each match (Y, N, A = all, Esc)
 c_repl              ldx       <base

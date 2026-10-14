@@ -13,6 +13,8 @@ comment):
     home bs del esc enter tab
     f1 ... f8
     ^a ... ^z     Ctrl+letter
+    s^a ... s^z   Ctrl+Shift+letter (s^l find previous; the K2 driver's
+                  code, the letter minus $40)
     ^space        Ctrl+Space as the PS/2 driver sends it ($C0)
     k2^space      Ctrl+Space as the K2 driver sends it ($20)
     alt-a ...     Alt+letter
@@ -49,6 +51,7 @@ NAMED = {
     'swleft': pfx(LEFT | CTRL | SHF, 0x08), 'swright': pfx(RIGHT | CTRL | SHF, 0x09),
     'home': b'\x01', 'bs': b'\x08', 'del': pfx(SHF, 0x18), 'esc': b'\x05',
     'enter': b'\x0d', 'tab': b'\x09',
+    'ps2s^l': pfx(CTRL | SHF, 0xEC),   # Ctrl+Shift+L as the PS/2 driver sends it
     '^space': pfx(CTRL, 0xC0), 'k2^space': pfx(CTRL, 0x20),
 }
 for n in range(1, 9):
@@ -79,6 +82,8 @@ def key(name):
         return NAMED[name]
     if len(name) == 2 and name[0] == '^' and name[1].isalpha():
         return pfx(CTRL, ord(name[1]) - 0x60)
+    if len(name) == 3 and name[:2] == 's^' and name[2].isalpha():
+        return pfx(CTRL | SHF, ord(name[2]) - 0x60)
     if name.startswith('alt-') and len(name) == 5 and name[4].isalpha():
         return pfx(ALT, ord(name[4]))
     raise ValueError('unknown key: ' + name)

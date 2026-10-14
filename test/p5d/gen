@@ -41,6 +41,26 @@ def main():
     s.key('^k')
     s.type('<')
     s.replace('REM x', 'rem.q', ['n', 'y', 'a'])   # all the rest
+    s.key('bottom')                              # find previous: from the end,
+    s.fprev()                                    # the last REM x left
+    s.type('#')
+    s.fprev()                                    # and the one before (the
+    s.fprev()                                    # selection is passed over)
+    s.m.findprev()                               # as the PS/2 driver sends it
+    s._after(False)
+    s.keys.append('ps2s^l')
+    s.type('%')
+    s.key('top')
+    b = PGFILL * 9                               # back across a page boundary
+    while CR in text[b - 6:b + 6]:
+        b += 1
+    s.find(text[b - 6:b + 6])
+    s.key('bottom')
+    s.fprev()
+    s.type('@')
+    s.key('top')
+    s.fprev()                                    # nothing before the top
+    s.type('&')
     s.find('zzz')                                # not found: nothing moves
     s.type('^')
     s.raw('^s ^q')

@@ -115,6 +115,8 @@ cmdtab              fcb       C$CR
                     fdb       c_find-cmdtab
                     fcb       $0C                 ^L find next
                     fdb       c_fnext-cmdtab
+                    fcb       EK.FPREV            Ctrl+Shift+L find previous
+                    fdb       c_fprev-cmdtab
                     fcb       $1A                 ^Z undo
                     fdb       c_undo-cmdtab
                     fcb       $19                 ^Y redo
