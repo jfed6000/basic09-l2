@@ -12,10 +12,11 @@ Help for the basic09-l2 editor and the Basic09 language.
   {Errors}         what the error numbers mean
   {Index}          every topic
 
+Type a name anywhere to search.
 Left/Right selects a link, Enter follows the link.
 Up/Down scrolls a long page.
 Backspace returns to the prior page.
-F1 for this page.  F2 for the searchable {Index} (type a name to search).
+F1 for this page.  F2 for the {Index}.
 Esc or Run/Stop returns to the editor.
 
 F1 with the cursor on a keyword in the editor displays that keyword's
