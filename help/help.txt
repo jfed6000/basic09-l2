@@ -1,17 +1,22 @@
-# The start page and the help on help
+# The start page and the help on help.  In the table, the link syntax
+# takes no room on the screen: line up what is shown, not the source.
 @category Help
 
 == Help | basic09-l2 help
 Help for the basic09-l2 editor and the Basic09 language.
 
-  {Editor keys|Keys}         moving, editing, files, Make and Run
-  {Menus}                    every menu command
-  {Statements}               PRINT, FOR, DIM, TYPE, RUN ...
-  {Functions}                LEFT$, SIZE, ADDR, SIN ...
-  {Errors}                   what the error numbers mean
-  {Index}                    every topic
+  {Editor keys|Keys}    moving, editing, files, Make and Run
+  {Menus}          every menu command
+  {Statements}     PRINT, FOR, DIM, TYPE, RUN ...
+  {Functions}      LEFT$, SIZE, ADDR, SIN ...
+  {Errors}         what the error numbers mean
+  {Index}          every topic
 
-F1 in the editor opens the page for the word at the cursor.
-In here: Up/Down scroll, Left/Right pick a link, Enter follows it,
-Backspace goes back, F1 comes here, F2 opens the {Index}, and typing
-a name searches for it.  Esc goes back to the editor.
+Left/Right selects a link, Enter follows the link.
+Up/Down scrolls a long page.
+Backspace returns to the prior page.
+F1 for this page.  F2 for the searchable {Index} (type a name to search).
+Esc or Run/Stop returns to the editor.
+
+F1 with the cursor on a keyword in the editor displays that keyword's
+help.

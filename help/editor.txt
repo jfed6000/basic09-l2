@@ -80,7 +80,7 @@ Menus and help ({Menus})
   Alt+F E S R C D O H      File Edit Search Run Compile Debug Options
                            Help
   in a menu                arrows, Enter or the first letter; Esc
-  F1                       help
+  F1                       help on the word at the cursor ({Help})
   Esc                      cancel a menu, a dialog or a selection
 
 Keyboards: the K2 has a Home key for the start of the line. The PS/2
@@ -93,53 +93,55 @@ move, Left and Right go to the next menu, and Enter or an item's first
 letter runs it. Esc closes the menu. You can also use the {Mouse}.
 
 File
-  New                  start an empty text ({Files})
-  Open...      ^O      open a file ({Files})
-  Save         ^S      save the file ({Files})
-  Save as...           save under a new name ({Files})
-  Quit         ^Q      leave the editor ({Files})
+  New                       start an empty text ({Files})
+  Open...           ^O      open a file ({Files})
+  Save              ^S      save the file ({Files})
+  Save as...                save under a new name ({Files})
+  Quit              ^Q      leave the editor ({Files})
 Edit
-  Undo, Redo   ^Z ^Y   take an edit back, or do it again ({Undo})
-  Cut, Copy, Paste     ^X ^C ^V ({Clipboard})
-  Select all   ^A      select the whole text ({Selection})
-  Delete line  ^D      delete the cursor line
+  Undo, Redo        ^Z ^Y   take an edit back, or do it again ({Undo})
+  Cut, Copy, Paste          ^X ^C ^V ({Clipboard})
+  Select all        ^A      select the whole text ({Selection})
+  Delete line       ^D      delete the cursor line
 Search
-  Find...      ^F      find a text ({Find})
-  Find next    ^L      find it again ({Find})
-  Find previous        Ctrl+Shift+L: find it backwards ({Find})
-  Replace...           replace, asking at each match ({Replace})
-  Go to line...  ^G    move to a line number
+  Find...           ^F      find a text ({Find})
+  Find next         ^L      find it again ({Find})
+  Find previous             Ctrl+Shift+L: find it backwards ({Find})
+  Replace...                replace, asking at each match ({Replace})
+  Go to line...     ^G      move to a line number
 Run
-  Run          ^R      Make and run, or continue ({Running})
-  Go to cursor  F4     run to the cursor line ({Debugger})
-  Program reset  ^P    end the stopped program ({Debugger})
-  User screen  F5      show the program's screen ({Running})
+  Run               ^R      Make and run, or continue ({Running})
+  Go to cursor      F4      run to the cursor line ({Debugger})
+  Program reset     ^P      end the stopped program ({Debugger})
+  User screen       F5      show the program's screen ({Running})
 Compile
-  Make         ^B      load the changed procedures ({Make})
-  Next error   ^N      go to the next message ({Message window})
-  Messages     F6      into the message window ({Message window})
-  Pretty print         tidy the procedure at the cursor ({Pretty print})
-  All: pretty print    ^Space: tidy every procedure
+  Make              ^B      load the changed procedures ({Make})
+  Next error        ^N      go to the next message ({Message window})
+  Messages          F6      into the message window ({Message window})
+  Pretty print              tidy the procedure at the cursor ({Pretty print})
+  All: pretty print ^Space  tidy every procedure ({Pretty print})
 Debug
-  Trace into   F7      step, into called procedures ({Debugger})
-  Step over    F8      step, running calls whole ({Debugger})
-  Until return...      stop on the way back to a procedure
-  Evaluate...  ^E      show or set a value ({Evaluate})
-  Add watch... ^W      add a watch ({Watches})
-  Delete watch...      remove a watch or all of them ({Watches})
-  Breakpoint   ^T      on or off on this line ({Breakpoints})
-  Clear breakpoints    remove them all ({Breakpoints})
+  Trace into        F7      step, into called procedures ({Debugger})
+  Step over         F8      step, running calls whole ({Debugger})
+  Until return...           stop on the way back to a procedure
+  Evaluate...       ^E      show or set a value ({Evaluate})
+  Add watch...      ^W      add a watch ({Watches})
+  Delete watch...           remove a watch or all of them ({Watches})
+  Breakpoint        ^T      on or off on this line ({Breakpoints})
+  Clear breakpoints         remove them all ({Breakpoints})
 Options
-  Auto indent          Enter indents like the line above, on or off
-  Match case           searches match case, on or off ({Find})
-  Syntax colours       colours on or off ({Syntax colours})
-  Keyword case         lower case or capitals ({Pretty print})
-  Double spacing  ^1/^2  text on every other row ({Line spacing})
-  80x60 screen         switch 80x30 and 80x60 ({Screen size})
-  Memory...            l2b09run's workspace ({Memory})
+  Auto indent               Enter indents like the line above, on or off
+  Match case                searches match case, on or off ({Find})
+  Syntax colours            colours on or off ({Syntax colours})
+  Keyword case              lower case or capitals ({Pretty print})
+  Double spacing    ^1/^2   text on every other row ({Line spacing})
+  80x60 screen              switch 80x30 and 80x60 ({Screen size})
+  Memory...                 l2b09run's workspace ({Memory})
 Help
-  Keys         F1      help ({Keys})
-  About                the editor's name and edition ({About})
+  Topic at cursor   F1      the help page for the word at the cursor
+  Contents                  the first help page ({Help})
+  Keys                      the editor's keys ({Keys})
+  About                     the editor's name and edition ({About})
 
 == Files | Open, save and quit
 The File menu opens, saves and closes the text.
