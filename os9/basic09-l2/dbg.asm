@@ -45,8 +45,7 @@ dat3                lda       #1
 
 * dbg_quit: leave the debugger (q), which ends the program; carry if
 * the runtime has gone
-dbg_quit            ldx       <base
-                    leax      rline,x
+dbg_quit            lbsr      a_rline
                     ldd       #$710D              "q", CR
                     std       ,x
                     lbsr      rt_cmd
@@ -103,8 +102,7 @@ dbg_stop            tst       <dbgon
 dst1                ldd       <dbfl
                     cmpd      #$FFFF
                     bne       dbg_show
-                    ldx       <base               not in the text: say where
-                    leax      mbuf,x
+                    lbsr      a_mbuf              not in the text: say where
                     stx       <msgp
                     leay      stopms,pcr
                     lbsr      s_str
@@ -178,7 +176,6 @@ c_reset             tst       <dbgon
                     stx       <msgp
                     lbra      rd_all
 crs9                rts
-rstms               fcn       "Program reset"
 
 * dbg_ask: send command X and the string at Y (both ending in 0), and
 * wait for the stop that follows.  The answer (the last line of text,
@@ -213,8 +210,7 @@ dbq2                lda       ,y+
                     rts
 dbq3                lbsr      getnum
                     stb       <evcode
-                    ldx       <base
-                    leax      mbuf,x
+                    lbsr      a_mbuf
                     leay      errtx2,pcr
                     lbsr      s_str
                     clra
@@ -253,18 +249,14 @@ ok2                 clr       ,y
 * there is none
 word_at             ldu       <base
                     leau      wp,u
-                    ldd       <cpos
-                    std       ,u
-                    ldd       <cpos+2
-                    std       2,u
+                    lbsr      cp_u
 wa1                 lbsr      p_prev              back to its start
                     bcs       wa2
                     lbsr      p_char
                     lbsr      is_word
                     bcs       wa1
                     lbsr      p_next
-wa2                 ldx       <base
-                    leax      inbuf,x
+wa2                 lbsr      a_inbx
                     ldb       #WTEXMAX-1
 wa3                 lbsr      p_char
                     bcs       wa4
@@ -292,8 +284,7 @@ c_eval              tst       <dbgon
 cev1                leax      evaltl,pcr
                     lbsr      dlg_inp
                     lbcs      cev9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     tst       ,x
                     lbeq      cev9
                     ldy       <base               keep it for next time
@@ -305,8 +296,7 @@ cev2                lda       ,x+
                     decb
                     bne       cev2
                     clr       ,y
-cev3                ldx       <base               an assignment?
-                    leax      inbuf,x
+cev3                lbsr      a_inbx              an assignment?
 cev4                lda       ,x+
                     beq       cev_prt
                     cmpa      #':
@@ -317,8 +307,7 @@ cev4                lda       ,x+
                     leax      -1,x
                     pshs      x
                     leax      letcm,pcr
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     lbsr      dbg_ask
                     puls      x
                     bcs       cev9
@@ -329,8 +318,7 @@ cev4                lda       ,x+
                     lbsr      wt_fetch
                     bcs       cev9
 cev_prt             leax      printcm,pcr
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     lbsr      dbg_ask
                     bcs       cev9
                     leay      eqtx,pcr
@@ -345,10 +333,8 @@ cev5                pshs      y                   "<expr> = <value>" in sbuf
                     bls       cev6
                     lda       #56
 cev6                leau      a,u
-                    ldx       <base
-                    leax      sbuf,x
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_sbuf
+                    lbsr      a_inby
                     bsr       s_lim
                     puls      y
                     bsr       s_lim
@@ -356,8 +342,7 @@ cev6                leau      a,u
                     leay      lastout,y
                     bsr       s_lim
                     clr       ,x
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     leay      evaltl,pcr
                     lbra      dlg_msgt
 cev9                rts
@@ -382,8 +367,7 @@ c_retbrk            tst       <dbgon
                     leax      rettl,pcr
                     lbsr      dlg_in
                     bcs       crb9
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     tst       ,y
                     beq       crb9
                     leax      breakcm,pcr
@@ -467,12 +451,11 @@ c_watch             ldb       <nwatch
                     leax      watchtl,pcr
                     lbsr      dlg_inp
                     bcs       cwa9
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     tst       ,y
                     beq       cwa9
                     ldb       <nwatch
-                    lbsr      wt_at
+                    bsr       wt_at
                     clr       WT.VAL,x
                     ldb       #WTEXMAX-1
 cwa1                lda       ,y+
@@ -496,8 +479,7 @@ c_wdel              tst       <nwatch
                     leax      wdeltl,pcr
                     lbsr      dlg_in
                     bcs       cwd9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     tst       ,x
                     beq       cwd9
                     lbsr      getnum
@@ -564,8 +546,7 @@ wwd1                cmpb      <nwatch
                     ldb       <scrw
                     subb      #4
                     leau      b,u
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     lda       ,s
                     adda      #'1
                     sta       ,x+
@@ -585,15 +566,14 @@ wwd1                cmpb      <nwatch
                     leay      WT.VAL,y
                     lbsr      s_lim
                     clr       ,x
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     lbsr      t_str
                     puls      b
                     incb
                     bra       wwd1
 wwd9                puls      d,x,y,u,pc
 wttl                fcn       "Watch"
-wsep                fcn       ": "
+wsep                equ       coltx
 
 ********************************************************************
 * Breakpoints
@@ -653,7 +633,7 @@ pln4                leas      2,s
 * bp_keep: note the breakpoints' lines (in bpsave), for an edit that
 * keeps the line count but replaces whole lines (pretty print)
 bp_keep             pshs      d,x,u
-                    lbsr      bp_lines
+                    bsr       bp_lines
                     ldx       <base
                     leau      bpline,x
                     leax      bpsave,x
@@ -677,10 +657,7 @@ bpb1                pshs      b,x,u
                     beq       bpb2
                     lbsr      goto_line
                     ldu       3,s
-                    ldd       <cpos
-                    std       ,u
-                    ldd       <cpos+2
-                    std       2,u
+                    lbsr      cp_u
                     lbsr      p_eol
 bpb2                puls      b,x,u
                     leax      2,x
@@ -768,18 +745,12 @@ tgl2                ldx       ,u
                     leax      nobpms,pcr
                     stx       <msgp
                     rts
-tgl3                ldd       <cpos               at the end of the cursor line
-                    std       ,u
-                    ldd       <cpos+2
-                    std       2,u
+tgl3                lbsr      cp_u                at the end of the cursor line
                     lbsr      p_eol
                     inc       <bpdirty
                     leax      bpsetms,pcr
 tgl8                stx       <msgp
-                    lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
-                    rts
+                    lbra      rd_all
 bpsetms             fcn       "Breakpoint set"
 bpclms              fcn       "Breakpoint cleared"
 nobpms              fcn       "No room for another breakpoint"
@@ -832,8 +803,7 @@ bp_cmd              pshs      d,y,u
                     lda       PR.FLAG,y
                     bita      #PF.SEND+PF.ERR
                     bne       bpm_no              changed since it was loaded
-                    ldx       <base
-                    leax      rline,x
+                    lbsr      a_rline
                     pshs      y
                     ldy       6,s
                     lbsr      s_str
@@ -880,8 +850,7 @@ bp_sync             tst       <bpdirty
                     lbsr      mk_keep
                     tst       <bprt
                     beq       bps1
-                    ldx       <base
-                    leax      rline,x
+                    lbsr      a_rline
                     ldd       #$6263              "bc"
                     std       ,x
                     lda       #C$CR
@@ -927,7 +896,7 @@ btc9                andcc     #^Carry
 * breakpoint there for this run only, then run or continue
 c_tocur             lbsr      c_make
                     bcs       ctc9
-                    lbsr      bp_sync
+                    bsr       bp_sync
                     bcs       ctc9
                     lbsr      bp_lines
                     ldd       <curline

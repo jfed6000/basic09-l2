@@ -146,14 +146,14 @@ c_selall            ldd       <first
 
 c_copy              tst       <selon
                     beq       ccp9
-                    lbsr      clip_copy
+                    bsr       clip_copy
                     bcc       ccp9
                     lbra      c_full
 ccp9                rts
 
 c_cut               tst       <selon
                     beq       cct9
-                    lbsr      clip_copy
+                    bsr       clip_copy
                     bcc       cct1
                     lbra      c_full
 cct1                lbra      sel_del
@@ -189,10 +189,7 @@ clip_copy           bsr       clip_free
                     ldd       <cpos+2
                     std       <cend+2
                     bra       cpy2
-cpy1                ldd       <cpos               from the cursor to the anchor
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+cpy1                lbsr      cp_wp               from the cursor to the anchor
                     ldd       <apos
                     std       <cend
                     ldd       <apos+2
@@ -298,8 +295,7 @@ c_paste             ldx       <cfirst
 * chain_paste: insert a copy of page chain X at the cursor, leaving the
 * cursor after it (recorded for undo)
 chain_paste         stx       <pchain
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      pos2abs
                     lda       <ua
                     sta       <uoff
@@ -341,7 +337,7 @@ cps4                ldd       #0
 cps5                ldx       <ctail
                     lbeq      cps8
                     ldd       DS.USED,x
-                    lbeq      cps7
+                    beq       cps7
                     lbsr      d_alloc             a copy of this clipboard page
                     lbcs      cps_full
                     stx       <sn

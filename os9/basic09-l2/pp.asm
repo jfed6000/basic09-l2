@@ -98,8 +98,7 @@ pg7                 lbsr      bp_back
                     std       <topline
                     ldd       ppcl,x              the cursor
                     lbsr      goto_line
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     ldx       <base
                     ldd       ppcc,x
                     lbsr      p_tocol
@@ -107,10 +106,7 @@ pg7                 lbsr      bp_back
                     std       <curcol
                     std       <wantcol
                     clr       <setwant
-                    lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
-                    rts
+                    lbra      rd_all
 ppdbms              fcn       "The program is stopped: reset it first (^P)"
 ppnoms              fcn       "The cursor is not in a procedure"
 
@@ -122,8 +118,7 @@ pp_one              lda       PR.FLAG,y
                     leax      pperms,pcr
                     lbra      po_msg
 po1                 pshs      y
-                    ldx       <base               "list <name>"
-                    leax      rline,x
+                    lbsr      a_rline             "list <name>"
                     leay      listcm,pcr
                     lbsr      s_str
                     ldy       ,s
@@ -189,8 +184,7 @@ listcm              fcn       "list "
 * pp_clean: turn the LIST line in rline (Y bytes) into source and add it
 * to the new text; carry if the pages ran out
 pp_clean            tfr       y,d
-                    ldx       <base
-                    leax      rline,x
+                    lbsr      a_rline
                     leau      d,x                 U = the end of what was read
                     pshs      u
                     leay      ,x                  Y = where the source goes
@@ -284,12 +278,11 @@ ppc9                ldu       <base               no CR: the line goes on in the
                     lda       #1
                     sta       ppcont,u
 ppc10               leas      2,s
-                    ldx       <base               add it to the chain
-                    leax      rline,x
+                    lbsr      a_rline             add it to the chain
                     ldu       <base               (keywords in lower case first)
                     tst       kwup,u
                     bne       ppc10a
-                    lbsr      pp_lower
+                    bsr       pp_lower
 ppc10a              pshs      y
 ppc11               cmpx      ,s
                     bhs       ppc12
@@ -452,8 +445,7 @@ ppt3                puls      d
                     bne       ppt4
                     ldd       <nlines             no next one: the end of the text
                     lbsr      goto_line
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_eol
                     bra       ppt5
 ppt4                lbsr      goto_line
@@ -478,10 +470,7 @@ pp_none             andcc     #^Carry
 
 * pp_same: carry clear if the new text is the text from cpos to xpos
 pp_same             pshs      d,x,y,u
-                    ldd       <cpos
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+                    lbsr      cp_wp
                     ldx       <base
                     ldx       pprec+UR.CH,x       X = a page of the new text,
                     ldd       #0

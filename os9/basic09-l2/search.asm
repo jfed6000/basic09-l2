@@ -27,10 +27,7 @@ scp1                lda       ,x+
 * selection, with the cursor at its end.  Carry if there is none.
 find_fwd            lbsr      ff_init
                     lbeq      ff_no
-                    ldd       <cpos
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+                    lbsr      cp_wp
                     ldd       #0
                     std       <tmpc               carriage returns passed
 ff_page             ldx       <wp
@@ -80,8 +77,7 @@ ff_found            ldd       <wp                 anchor at the start, cursor at
                     addd      <tmpc
                     std       <curline
                     std       <aline
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_col
                     std       <acol
                     lda       #1
@@ -115,11 +111,8 @@ fi9                 rts
 * (so a match found last time is passed over), going back.  As
 * find_fwd, the match becomes the selection.  Carry if there is none.
 find_bwd            bsr       ff_init
-                    lbeq      ff_no
-                    ldd       <cpos               from the cursor,
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+                    beq       ff_no
+                    lbsr      cp_wp               from the cursor,
                     ldd       <curline
                     tst       <selon
                     beq       fb0
@@ -200,14 +193,12 @@ fm_no               orcc      #Carry
 * c_find: ask for the text, then find it
 c_find              ldx       <base
                     leax      fstr,x
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     lbsr      strcpy
                     leax      findtl,pcr
                     lbsr      dlg_inp
                     bcs       cfd9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     ldy       <base
                     leay      fstr,y
                     lbsr      strcpy
@@ -238,14 +229,12 @@ cfp9                rts
 * c_repl: find and replace, asking at each match (Y, N, A = all, Esc)
 c_repl              ldx       <base
                     leax      fstr,x
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     lbsr      strcpy
                     leax      repltl,pcr
                     lbsr      dlg_inp
                     lbcs      crp9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     ldy       <base
                     leay      fstr,y
                     lbsr      strcpy
@@ -253,14 +242,12 @@ c_repl              ldx       <base
                     lbeq      crp9
                     ldx       <base
                     leax      rstr,x
-                    ldy       <base
-                    leay      inbuf,y
+                    lbsr      a_inby
                     lbsr      strcpy
                     leax      withtl,pcr
                     lbsr      dlg_inp
                     lbcs      crp9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     ldy       <base
                     leay      rstr,y
                     lbsr      strcpy
@@ -303,8 +290,7 @@ crp4                ldd       <frep
                     addd      #1
                     std       <frep
                     bra       crp1
-crp_done            ldx       <base               "<n> replaced"
-                    leax      mbuf,x
+crp_done            lbsr      a_mbuf              "<n> replaced"
                     stx       <msgp
                     ldd       <frep
                     lbsr      n_dec

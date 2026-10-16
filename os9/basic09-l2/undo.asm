@@ -209,8 +209,7 @@ ue9                 rts
 u_ins1              tst       <noundo
                     bne       ui9
                     pshs      d,x,y,u
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      pos2abs
                     bsr       u_last
                     bcs       ui1
@@ -232,10 +231,9 @@ u_del1              tst       <noundo
                     lbne      ud9
                     pshs      d,x,y,u
                     inc       <ubusy
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      pos2abs
-                    lbsr      u_last
+                    bsr       u_last
                     bcs       ud3
                     ldb       UR.FL,x
                     cmpb      #UF.DEL+UF.OUT      a deletion, out of the buffer
@@ -296,7 +294,7 @@ ud9                 rts
 
 * u_delto: the text from the cursor to xpos is about to be deleted
 u_delto             tst       <noundo
-                    lbne      udt9
+                    bne       udt9
                     pshs      d,x,y,u
                     inc       <ubusy
                     ldd       <cpos               nothing at all?
@@ -305,10 +303,7 @@ u_delto             tst       <noundo
                     ldd       <cpos+2
                     cmpd      <xpos+2
                     beq       udt8
-udt1                ldd       <cpos
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+udt1                lbsr      cp_wp
                     ldd       <xpos
                     std       <cend
                     ldd       <xpos+2
@@ -326,8 +321,7 @@ udt2                pshs      x
                     sta       <ub
                     ldd       <ua+1
                     std       <ub+1
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      pos2abs
                     lbsr      u_new
                     lbsr      u_setoff
@@ -513,8 +507,7 @@ u_toggle            pshs      x
                     sta       <ua
                     ldd       UR.OFF+1,x
                     std       <ua+1
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      abs2pos
                     std       <curline
                     ldx       ,s
@@ -530,10 +523,7 @@ u_toggle            pshs      x
                     ldu       <base
                     leau      xpos,u
                     lbsr      abs2pos
-                    ldd       <cpos
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+                    lbsr      cp_wp
                     ldd       <xpos
                     std       <cend
                     ldd       <xpos+2

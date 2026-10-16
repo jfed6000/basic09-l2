@@ -57,8 +57,7 @@ ti2c                stb       otype,x
                     lbra      hl_init
 
 * t_size: the screen's size (SS.ScSiz) and the text window in it
-t_size              ldx       <base               screen size, from a terminal only
-                    leax      rline,x             (a file answers SS.ScSiz without an
+t_size              lbsr      a_rline             (a file answers SS.ScSiz without an
                     lda       <scpath             error)
                     clrb                          SS.Opt
                     os9       I$GetStt
@@ -100,7 +99,7 @@ t_done              lbsr      t_flush
                     lda       otype,x
                     cmpa      stype,x
                     beq       td0
-                    lbsr      t_dwset
+                    bsr       t_dwset
 td0                 equ       *
                     ldx       <base
                     leax      optsav,x
@@ -113,7 +112,7 @@ td0                 equ       *
                     lbsr      hl_done             its own colours back
                     lda       #$0C                clear the screen
                     bsr       t_ch
-                    lbsr      t_flush
+                    bsr       t_flush
 td1                 rts
 
 * t_dwset: make the screen type A (VTIO $1B $20 DWSet: type, origin,
@@ -140,7 +139,7 @@ t_dw1               clra
                     bsr       t_ch
                     clra                          border
                     bsr       t_ch
-                    lbra      t_flush
+                    bra       t_flush
 
 * t_ch: A to the output buffer
 t_ch                pshs      x

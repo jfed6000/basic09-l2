@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""The F1 help box, from a key script: each line's keys at column 3 and
+what they do at column 29, from row 2 down.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+with open(os.path.join(out, 'hp.b09'), 'w', newline='') as f:
+    f.write('PROCEDURE hp\rEND\r')
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys('f1'))

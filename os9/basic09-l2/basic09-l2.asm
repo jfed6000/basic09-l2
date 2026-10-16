@@ -139,7 +139,6 @@ outb                rmb       2                   output buffer
 oute                rmb       2                   end of the output buffer
 msgp                rmb       2                   status line message (0 = none)
 msgerr              rmb       1                   error number for the status line
-errno               rmb       1                   error from a page operation
 vcnt                rmb       1                   columns written in a text row
 delch               rmb       1                   character just deleted
 sd                  rmb       2                   page operations: first page
@@ -174,7 +173,6 @@ dfirst              rmb       1                   dlg_inp: no key typed yet
 fcase               rmb       1                   searches match case
 flen                rmb       1                   length of the search text
 fch                 rmb       1                   its first character (folded)
-fptr                rmb       2                   find_fwd: scan pointer
 fend                rmb       2                   end of the page data
 fbuf                rmb       2                   start of the page data
 fpos                rmb       4                   end of a match
@@ -354,7 +352,7 @@ st1                 clr       ,x+
                     puls      x
                     stx       <argp
                     stu       <base
-                    lbsr      getargs             file name and options
+                    bsr       getargs             file name and options
                     ldu       <base
                     leas      stktop,u            our own stack, below the cache buffers
                     leax      desctab,u
@@ -431,7 +429,7 @@ ga1c                cmpa      #'L
                     bra       ga_tok
 ga1d                cmpa      #'M
                     bne       ga1e
-                    lbsr      getnum              kilobytes to pages
+                    bsr       getnum              kilobytes to pages
                     cmpd      #64
                     blo       ga1f
                     ldd       #63
@@ -441,7 +439,7 @@ ga1f                lslb
                     bra       ga1
 ga1e                cmpa      #'C
                     bne       ga4
-                    lbsr      getnum
+                    bsr       getnum
                     cmpb      #NCMIN
                     bhs       ga2
                     ldb       #NCMIN
@@ -514,7 +512,7 @@ gm1                 lda       #PGSZ/256
                     cmpb      #NCMIN
                     bhs       gm1
                     ldb       #E$MemFul
-                    lbra      fatal
+                    bra       fatal
 gm9                 rts
 
 * fatal: B = error.  Put the terminal back and exit.
@@ -531,6 +529,38 @@ quit                lbsr      rt_done
                     lbsr      sw_close
                     clrb
                     os9       F$Exit
+
+* Addresses in the data area
+a_cpos              ldu       <base               U = cpos (posarr)
+                    leau      cpos,u
+                    rts
+a_inby              ldy       <base               Y = inbuf
+                    leay      inbuf,y
+                    rts
+a_inbx              ldx       <base               X = inbuf
+                    leax      inbuf,x
+                    rts
+a_sbuf              ldx       <base               X = sbuf
+                    leax      sbuf,x
+                    rts
+a_mbuf              ldx       <base               X = mbuf
+                    leax      mbuf,x
+                    rts
+a_rline             ldx       <base               X = rline
+                    leax      rline,x
+                    rts
+
+* Copies of the cursor position
+cp_wp               ldd       <cpos               to wp
+                    std       <wp
+                    ldd       <cpos+2
+                    std       <wp+2
+                    rts
+cp_u                ldd       <cpos               to ,u
+                    std       ,u
+                    ldd       <cpos+2
+                    std       2,u
+                    rts
 
                     use       term.asm
                     use       keys.asm

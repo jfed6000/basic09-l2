@@ -54,7 +54,6 @@ sps1                stb       <scrh
 sps9                rts
 
 spon1               fcn       "Single spacing"
-spon2               fcn       "Double spacing"
 spsmall             fcn       "The screen is too small for double spacing"
 
 ********************************************************************
@@ -115,5 +114,4 @@ cst_no              leax      scrmno,pcr
                     rts
 
 scrm30              fcn       "80x30 screen"
-scrm60              fcn       "80x60 screen"
 scrmno              fcn       "The screen size cannot be changed here"

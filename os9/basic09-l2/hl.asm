@@ -249,7 +249,7 @@ hc4                 cmpa      #'$                 a number: $hex, digits, .digit
                     beq       hc_num
                     cmpa      #'.
                     bne       hc5
-                    lbsr      hl_peek
+                    bsr       hl_peek
                     cmpa      #'0
                     blo       hc_norm
                     cmpa      #'9
@@ -388,8 +388,8 @@ hlw10               puls      a,x,y,u,pc
 
 * kw_find: B = the class (colour) of the word in hlbuf of length B, or
 * 0 if it is not a keyword
-kw_find             pshs      x,y,u
-                    pshs      b                   ,s: the length
+kw_find             lda       #KC.KW              the keywords come first
+                    pshs      d,x,y               ,s: the class; 1,s: the length
                     cmpb      #2
                     blo       kwf_no
                     cmpb      #12
@@ -398,17 +398,23 @@ kw_find             pshs      x,y,u
                     leax      hlbuf,x
                     lda       ,x+
                     suba      #'A
-                    cmpa      #25
+                    cmpa      #KWLAST-'A
                     bhi       kwf_no
                     lsla
                     leay      kwidx,pcr
                     ldd       a,y
                     leay      kwtab,pcr
                     leay      d,y
-kwf1                leau      ,y                  U = the entry: its class, then the
-                    lda       ,y+                 rest of its name
-                    beq       kwf_no
-                    clra
+kwf1                tst       ,y                  the end of a list?
+                    bne       kwf1a
+                    leay      1,y
+                    lda       ,s
+                    cmpa      #KC.FN
+                    beq       kwf_no              ..of the functions
+                    lda       #KC.FN              the functions follow
+                    sta       ,s
+                    bra       kwf1
+kwf1a               clra                          Y = the rest of a name
 kwf2                ldb       ,y+
                     pshs      b
                     andb      #$7F
@@ -419,19 +425,19 @@ kwf2                ldb       ,y+
                     tstb
                     bpl       kwf2
                     inca                          the whole name matched: as long?
-                    cmpa      ,s
+                    cmpa      1,s
                     bne       kwf1
-                    ldb       ,u
-                    leas      1,s
-                    puls      x,y,u,pc
+                    ldb       ,s
+                    leas      2,s
+                    puls      x,y,pc
 kwf3                tstb                          skip the rest of this entry
                     bmi       kwf1
 kwf4                ldb       ,y+
                     bpl       kwf4
                     bra       kwf1
 kwf_no              clrb
-                    leas      1,s
-                    puls      x,y,u,pc
+                    leas      2,s
+                    puls      x,y,pc
 
 * c_kwcase: pretty print writes keywords in lower case (the default) or
 * in capitals (Options)
@@ -452,9 +458,7 @@ kwupm               fcn       "Pretty print: keywords in capitals"
 c_colour            com       <nocolr
                     lbsr      hl_set
                     lbsr      t_cls
-                    lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
+                    lbsr      rd_all
                     leax      colon,pcr
                     tst       <nocolr
                     beq       ccl1

@@ -95,7 +95,7 @@ mrun                fdb       c_run-cmdtab
                     fcn       "Go to cursor"
                     fcn       "F4"
                     fdb       c_reset-cmdtab
-                    fcn       "Program reset"
+rstms               fcn       "Program reset"     also dbg.asm's message
                     fcn       "^P"
                     fdb       c_user-cmdtab
                     fcn       "User screen"
@@ -157,17 +157,17 @@ mopt                fdb       c_indent-cmdtab
                     fcn       "Keyword case"
                     fcn       ""
                     fdb       c_sptog-cmdtab
-                    fcn       "Double spacing"
+spon2               fcn       "Double spacing"    also lspace.asm's message
                     fcn       "^1/^2"
                     fdb       c_scrtog-cmdtab
-                    fcn       "80x60 screen"
+scrm60              fcn       "80x60 screen"      also lspace.asm's message
                     fcn       ""
                     fdb       c_memory-cmdtab
                     fcn       "Memory..."
                     fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
-                    fcn       "Keys"
+helptl              fcn       "Keys"              also the help box's title
                     fcn       "F1"
                     fdb       c_about-cmdtab
                     fcn       "About"
@@ -246,7 +246,7 @@ mo4b                stb       <mcur
                     bra       mo_new
 mo5                 cmpa      #C$CR
                     beq       mo_run
-                    lbsr      m_letter            an item's first letter
+                    bsr       m_letter            an item's first letter
                     bcs       mo_draw
 mo_run              ldb       <msel
                     lbsr      m_item
@@ -277,9 +277,7 @@ m_unbox             ldx       <base
                     suba      <wtop
                     inca
                     sta       rdlim,x
-mub1                lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
+mub1                lbsr      rd_all
                     lbsr      v_draw
                     ldx       <base
                     clr       rdlim,x
@@ -292,7 +290,7 @@ mn1                 inca
                     blo       mn2
                     clra
 mn2                 tfr       a,b
-                    lbsr      m_item
+                    bsr       m_item
                     ldx       ,x
                     beq       mn1
                     sta       <msel
@@ -303,7 +301,7 @@ mp1                 deca
                     lda       <mcnt
                     deca
 mp2                 tfr       a,b
-                    lbsr      m_item
+                    bsr       m_item
                     ldx       ,x
                     beq       mp1
                     sta       <msel
@@ -318,7 +316,7 @@ m_letter            cmpa      #'a
 ml1                 clrb
 mlt2                cmpb      <mcnt
                     bhs       mlt9
-                    lbsr      m_item
+                    bsr       m_item
                     ldy       ,x
                     beq       mlt3
                     cmpa      2,x
@@ -374,9 +372,9 @@ mla1                ldd       ,x
                     cmpd      #0
                     beq       mla4
                     leay      2,x                 text + shortcut + 3 spaces + 2 borders
-                    lbsr      strlen
+                    bsr       strlen
                     pshs      b
-                    lbsr      strlen
+                    bsr       strlen
                     addb      ,s+
                     addb      #5
                     cmpb      <mwid
@@ -392,7 +390,7 @@ mla6                tst       ,s
                     beq       mla8
                     tfr       x,y
                     pshs      b
-                    lbsr      strlen
+                    bsr       strlen
                     addb      #2
                     addb      ,s+
                     tfr       y,x
@@ -432,7 +430,7 @@ m_drawbox           ldx       <base
                     lda       #GL.TL1
                     sta       <bx.st
                     lbsr      mi_on               grey, as in Turbo C
-                    lbsr      bx_draw
+                    bsr       bx_draw
                     lbsr      m_first
                     clrb                          item number
 mdb1                cmpb      <mcnt
@@ -464,10 +462,10 @@ mdb3                lda       #C$SPAC
                     leay      2,x                 text
                     tfr       y,x
                     lbsr      t_str
-                    lbsr      strlen              Y = the shortcut
+                    bsr       strlen              Y = the shortcut
                     pshs      b
                     tfr       y,x
-                    lbsr      strlen
+                    bsr       strlen
                     pshs      b
                     lda       <mwid               spaces between them
                     suba      #4
@@ -591,7 +589,7 @@ dbx1                sta       <bx.w
                     lda       #GL.TL2
                     sta       <bx.st
                     lbsr      bx_draw
-                    lbsr      bx_title
+                    bsr       bx_title
                     puls      d,pc
 
 * dlg_in: ask for a line of text in a dialog titled X.  The answer is in
@@ -613,8 +611,7 @@ din1                lda       #3
                     ldb       <bx.row
                     incb
                     lbsr      t_xy
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     lbsr      t_str
                     lbsr      t_curon
                     lbsr      t_flush
@@ -623,8 +620,7 @@ din1                lda       #3
                     bne       din1a
                     lbsr      mu_out
                     bcs       din1
-din1a               ldx       <base
-                    leax      inbuf,x
+din1a               lbsr      a_inbx
                     tst       <dfirst             the first key typed replaces the text
                     beq       din2
                     clr       <dfirst
@@ -676,9 +672,7 @@ din_esc             bsr       dlg_done
                     orcc      #Carry
                     puls      x,pc
 dlg_done            pshs      a                   (dlg_ask returns the answer in A)
-                    lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
+                    lbsr      rd_all
                     puls      a,pc
 
 * dlg_ask: ask question X; A = 'Y' or 'N', carry if Esc was pressed
@@ -765,13 +759,13 @@ c_help              lda       <scrw               a box over everything
                     lbsr      bx_title
                     leax      helptx,pcr
                     ldb       #2
-chl1                tst       ,x
-                    beq       chl9
-                    lda       #3
-                    lbsr      t_xy
-                    lbsr      t_str
-chl2                tst       ,x+
-                    bne       chl2
+chl1                lda       ,x
+                    inca
+                    beq       chl9                $FF ends the list
+                    lda       #3                  the keys
+                    bsr       chl5
+                    lda       #3+HLPKW            what they do
+                    bsr       chl5
                     incb
                     pshs      b                   stop above the bottom border
                     ldb       <bx.h
@@ -783,36 +777,69 @@ chl9                lbsr      t_curoff
                     lbsr      t_flush
                     lbsr      getkd
                     lbra      dlg_done
+chl5                lbsr      t_xy                print a string at column A, row B
+                    lbsr      t_str
+chl6                tst       ,x+                 and step over it
+                    bne       chl6
+                    rts
 
-helptl              fcn       "Keys"
-helptx              fcn       "Arrows                    move"
-                    fcn       "Ctrl+Left, Ctrl+Right     word left, right"
-                    fcn       "Ctrl+Up, Ctrl+Down        page up, down"
-                    fcn       "Ctrl+Shift+Up, +Down      top, end of the file"
-                    fcn       "^J, ^K (K2: Home)         start, end of the line"
-                    fcn       "Backspace                 delete the character before the cursor"
-                    fcn       "Shift+Backspace           delete the character at the cursor"
-                    fcn       "Enter                     new line (indented like this one)"
-                    fcn       "^D                        delete the line"
-                    fcn       "^G                        go to a line"
-                    fcn       "^S, F2 / ^O, F3           save / open a file"
-                    fcn       "^Q                        quit"
-                    fcn       "Alt+F E S R C D O H       menus: File Edit Search Run Compile"
-                    fcn       "                          Debug Options Help"
-                    fcn       "  in a menu:              arrows, Enter or the first letter; Esc"
-                    fcn       "^B                        make: load the changed procedures"
-                    fcn       "^R                        make, then run the first procedure"
-                    fcn       "^N, F6                    next message, message window"
-                    fcn       "F5                        the program's screen"
-                    fcn       "F7, F8, F4                step into, step over, run to the cursor"
-                    fcn       "^T                        breakpoint on this line (on or off)"
-                    fcn       "^Space                    pretty print every procedure"
-                    fcn       "^R, ^P when stopped       continue, reset the program"
-                    fcn       "^E, ^W                    evaluate (or x:=value), add a watch"
-                    fcn       "^1, ^2                    single, double line spacing"
-                    fcn       "F1                        this help"
+* each line is two strings: the keys and, at column 3+HLPKW, what they do
+HLPKW               equ       26
+helptx              fcn       "Arrows"
+                    fcn       "move"
+                    fcn       "Ctrl+Left, Ctrl+Right"
+                    fcn       "word left, right"
+                    fcn       "Ctrl+Up, Ctrl+Down"
+                    fcn       "page up, down"
+                    fcn       "Ctrl+Shift+Up, +Down"
+                    fcn       "top, end of the file"
+                    fcn       "^J, ^K (K2: Home)"
+                    fcn       "start, end of the line"
+                    fcn       "Backspace"
+                    fcn       "delete the character before the cursor"
+                    fcn       "Shift+Backspace"
+                    fcn       "delete the character at the cursor"
+                    fcn       "Enter"
+                    fcn       "new line (indented like this one)"
+                    fcn       "^D"
+                    fcn       "delete the line"
+                    fcn       "^G"
+                    fcn       "go to a line"
+                    fcn       "^S, F2 / ^O, F3"
+                    fcn       "save / open a file"
+                    fcn       "^Q"
+                    fcn       "quit"
+                    fcn       "Alt+F E S R C D O H"
+                    fcn       "menus: File Edit Search Run Compile"
+                    fcn       ""
+                    fcn       "Debug Options Help"
+                    fcn       "  in a menu:"
+                    fcn       "arrows, Enter or the first letter; Esc"
+                    fcn       "^B"
+                    fcn       "make: load the changed procedures"
+                    fcn       "^R"
+                    fcn       "make, then run the first procedure"
+                    fcn       "^N, F6"
+                    fcn       "next message, message window"
+                    fcn       "F5"
+                    fcn       "the program's screen"
+                    fcn       "F7, F8, F4"
+                    fcn       "step into, step over, run to the cursor"
+                    fcn       "^T"
+                    fcn       "breakpoint on this line (on or off)"
+                    fcn       "^Space"
+                    fcn       "pretty print every procedure"
+                    fcn       "^R, ^P when stopped"
+                    fcn       "continue, reset the program"
+                    fcn       "^E, ^W"
+                    fcn       "evaluate (or x:=value), add a watch"
+                    fcn       "^1, ^2"
+                    fcn       "single, double line spacing"
+                    fcn       "F1"
+                    fcn       "this help"
                     fcn       "Press any key."
-                    fcb       0
+                    fcn       ""
+                    fcb       $FF
 
 c_about             leax      aboutm,pcr
                     lbra      dlg_msg
@@ -839,7 +866,7 @@ ask_save            tst       <modif
                     bcs       as8
                     cmpa      #'N
                     beq       as9
-                    lbra      c_save
+                    bra       c_save
 as8                 rts
 as9                 andcc     #^Carry
                     rts
@@ -865,7 +892,7 @@ c_open              bsr       ask_save
                     ldx       <base
                     tst       inbuf,x
                     beq       co9
-                    lbsr      in2name
+                    bsr       in2name
                     bsr       buf_new
 co9                 rts
 opentl              fcn       "Open file"
@@ -916,8 +943,7 @@ csa9                orcc      #Carry
 savetl              fcn       "Save as"
 
 * in2name: the answer in inbuf becomes the file name
-in2name             ldx       <base
-                    leax      inbuf,x
+in2name             lbsr      a_inbx
                     ldy       <base
                     leay      fname,y
                     ldb       #63

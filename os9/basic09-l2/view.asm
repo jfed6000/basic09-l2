@@ -2,8 +2,7 @@
 * view - the text window and the status line
 
 * v_fix: work out the cursor column and scroll so the cursor shows
-v_fix               ldu       <base
-                    leau      cpos,u
+v_fix               lbsr      a_cpos
                     lbsr      p_col
                     std       <curcol
                     tst       <setwant
@@ -93,10 +92,7 @@ vc1                 ldx       <topline
                     stx       <topline
                     decb
                     bne       vc1
-vc9                 lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
-                    rts
+vc9                 lbra      rd_all
 
 * v_draw: redraw what the flags ask for, the status line and the cursor
 v_draw              lbsr      t_curoff
@@ -126,10 +122,7 @@ vd0a                equ       *
                     bra       vd3
 vd1                 bita      #RD.BELOW+RD.LINE
                     beq       vd3
-                    ldd       <cpos
-                    std       <wp
-                    ldd       <cpos+2
-                    std       <wp+2
+                    lbsr      cp_wp
                     ldu       <base
                     leau      wp,u
                     lbsr      p_bol
@@ -284,7 +277,7 @@ vl1a                cmpa      #C$TAB
                     beq       vl_tab
                     cmpx      <leftcol
                     blo       vl2
-                    lbsr      v_selat
+                    bsr       v_selat
                     lbsr      v_colput
 vl2                 leax      1,x
                     bra       vl3
@@ -312,7 +305,7 @@ vl3                 lbsr      p_next
                     bcs       vl_eof
 vl_eol              cmpx      <leftcol            a selected line end shows as a space
                     blo       vle1
-                    lbsr      v_selat
+                    bsr       v_selat
                     tst       <vrev
                     beq       vle1
                     lda       #C$SPAC
@@ -419,8 +412,7 @@ v_stat              ldb       <wtop               bottom border
 vs1                 lbsr      t_ch
                     lda       <glyphs+GL.H2
                     lbsr      t_ch
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     lda       #C$SPAC
                     sta       ,x+
                     ldd       <curline
@@ -439,8 +431,7 @@ vs1                 lbsr      t_ch
                     subd      #sbuf
                     addb      #4                  columns used so far, and the corner
                     pshs      b
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     lbsr      t_str
                     ldb       <scrw
                     subb      ,s+
@@ -450,8 +441,7 @@ vs1                 lbsr      t_ch
                     lbsr      t_ch
                     lbsr      hl_norm
 * v_hint: the last row: a message, an error, or the key hints
-v_hint              ldx       <base
-                    leax      sbuf,x
+v_hint              lbsr      a_sbuf
                     lda       #C$SPAC
                     sta       ,x+
                     ldy       <msgp
@@ -477,8 +467,7 @@ vs_out              clr       ,x
                     clra
                     lbsr      t_xy
                     lbsr      mb_on
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     ldb       <scrw               all but the last column (no scroll)
                     decb
 vs3                 lda       ,x
@@ -514,8 +503,7 @@ v_frame             lda       #$FF
                     tst       ,y
                     bne       vfr1
                     leay      untitl,pcr
-vfr1                ldx       <base
-                    leax      sbuf,x
+vfr1                lbsr      a_sbuf
                     lda       #C$SPAC
                     sta       ,x+
                     bsr       s_str
@@ -533,8 +521,7 @@ vfr1                ldx       <base
                     pshs      b
                     lda       <glyphs+GL.H2
                     lbsr      t_rep
-                    ldx       <base
-                    leax      sbuf,x
+                    lbsr      a_sbuf
                     lbsr      t_str
                     ldb       <scrw               the rest of the border
                     subb      #2
@@ -560,7 +547,7 @@ vfr2                clra
                     pshs      a
                     cmpb      ,s+
                     blo       vfr2
-                    lbsr      v_gaps
+                    bsr       v_gaps
                     lbra      hl_norm
 
 * v_menubar: the menu titles on row 0; menu A (or none if $FF) is shown

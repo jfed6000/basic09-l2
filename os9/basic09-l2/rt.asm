@@ -34,8 +34,7 @@ prognm              fcc       "l2b09run"
                     fcb       C$CR
 vtnm                fcc       "/vt"
                     fcb       C$CR
-tmpnm               fcc       "basic09-l2.tmp"
-                    fcb       C$CR
+tmpnm               equ       ldcmd+5             "basic09-l2.tmp", CR
 errnm               fcc       "/dd/sys/errmsg"
                     fcb       C$CR
 
@@ -44,8 +43,7 @@ errnm               fcc       "/dd/sys/errmsg"
 rt_init             leax      rt_icpt,pcr
                     ldu       <base
                     os9       F$Icpt
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     tst       ,x
                     beq       ri1
                     lbsr      f_new
@@ -80,8 +78,7 @@ ri3                 lda       #UPDAT.             -t: is it a terminal?
                     os9       I$Open
                     bcs       ri9
                     sta       <upath
-ri4                 ldx       <base
-                    leax      rline,x
+ri4                 lbsr      a_rline
                     lda       <upath
                     clrb                          SS.Opt
                     os9       I$GetStt
@@ -133,11 +130,11 @@ rd9                 rts
 * rt_stop: end the runtime: q if it is in the debugger, bye, then the
 * end of its input
 rt_stop             tst       <child
-                    lbeq      rp9
+                    beq       rp9
                     tst       <dbgon
                     beq       rp0
                     lbsr      dbg_quit
-                    lbcs      rp9
+                    bcs       rp9
 rp0                 leax      byecm,pcr
                     lbsr      rt_send
                     lda       <rpa
@@ -159,8 +156,7 @@ rg2                 os9       F$Wait              B = its exit status
                     clr       <dbgon
                     clr       <nproc              it held nothing
                     clr       <running
-                    ldx       <base               "l2b09run has ended [(error <n>)]"
-                    leax      mbuf,x
+                    lbsr      a_mbuf              "l2b09run has ended [(error <n>)]"
                     stx       <msgp
                     leay      gonems,pcr
                     lbsr      s_str
@@ -206,8 +202,7 @@ rs1                 leay      rline,x             its parameters: -t=<term> [-b=
                     lbsr      s_cpy
 rs2                 lda       #C$CR
                     sta       ,y+
-                    ldx       <base               to the log as "# <parameters>"
-                    leax      rline,x
+                    lbsr      a_rline             to the log as "# <parameters>"
                     lda       #'#
                     lbsr      lg_line
                     clr       <rpa
@@ -243,8 +238,7 @@ rs3                 pshs      a                   1,s = our 0, ,s = our 2
                     os9       I$Dup
                     bcs       rs_back
                     sta       <rpb
-                    ldx       <base               parameter length, the CR included
-                    leax      rline,x
+                    lbsr      a_rline             parameter length, the CR included
                     ldy       #0
 rs4                 leay      1,y
                     lda       ,x+
@@ -324,8 +318,7 @@ f_new               pshs      x
 
 * rt_cmd: send the command in rline (ending in CR); carry if the
 * runtime has gone
-rt_cmd              ldx       <base
-                    leax      rline,x
+rt_cmd              lbsr      a_rline
                     lda       #'>
                     bsr       lg_line
                     ldy       #256
@@ -336,8 +329,7 @@ rt_cmd              ldx       <base
 
 * rt_line: read a line from the runtime into rline; carry at its end
 rt_line             clr       <gotsig
-                    ldx       <base
-                    leax      rline,x
+                    lbsr      a_rline
                     ldy       #256
                     lda       <rpb
                     os9       I$ReadLn
@@ -376,8 +368,7 @@ rw_gone             lbsr      rt_gone
                     orcc      #Carry
                     rts
 rw1a
-                    ldx       <base
-                    leax      rline,x
+                    lbsr      a_rline
                     lda       ,x+
                     cmpa      #'%
                     lbne      rw_text
@@ -418,7 +409,7 @@ rw4                 leay      ev_dbg,pcr
                     lbra      dbg_at
 rw5                 leay      ev_ask,pcr
                     lbsr      ev_is
-                    lbne      rw1
+                    bne       rw1
                     pshs      x                   the question, as a 0-terminated string
 rw5a                lda       ,x+
                     cmpa      #C$CR
@@ -431,8 +422,7 @@ rw5a                lda       ,x+
                     cmpa      #'Y
                     bne       rw5b
                     ldb       #'y
-rw5b                ldx       <base
-                    leax      rline,x
+rw5b                lbsr      a_rline
                     lda       #C$CR
                     stb       ,x
                     sta       1,x
@@ -547,7 +537,7 @@ mse4                ldd       #$3A20              ": "
 mse9                rts
 
 linetx              fcn       "Line "
-errtx2              fcn       "Error "
+errtx2              equ       lderms+6            "Error "
 
 * er_text: " <text>" for error evcode, from the error message file, at
 * X but not past U; X at its end
@@ -560,8 +550,7 @@ er_text             pshs      y,u
                     bcs       et9
                     pshs      a                   ,s = the path, 3,s = the limit
 et1                 pshs      x
-                    ldx       <base
-                    leax      rline,x
+                    lbsr      a_rline
                     ldy       #200
                     lda       2,s
                     os9       I$ReadLn
@@ -718,8 +707,8 @@ cm3                 tst       <nsend
                     tst       memful,x            and Make again (what was sent is
                     beq       cm4                 sent again)
                     lbsr      mk_lderr
-                    lbsr      ws_grow
-                    lbcc      c_make
+                    bsr       ws_grow
+                    bcc       c_make
                     bra       cm5
 cm4                 ldb       <nerrl              an error without an event: the
                     cmpb      <nerr               load failed as a whole
@@ -727,8 +716,7 @@ cm4                 ldb       <nerrl              an error without an event: the
                     lbsr      mk_lderr
 cm5                 lda       #PF.SEND
                     lbsr      pt_flags
-                    ldx       <base               the result
-                    leax      mbuf,x
+                    lbsr      a_mbuf              the result
                     stx       <msgp
                     leay      makeds,pcr
                     lbsr      s_str
@@ -774,7 +762,7 @@ ws_grow             bsr       ws_kb
                     bhi       wsg_no
                     bsr       rt_mem
                     bcs       wsg_no
-                    lbra      ws_msg
+                    bra       ws_msg
 wsg_no              orcc      #Carry
                     rts
 
@@ -782,8 +770,7 @@ wsg_no              orcc      #Carry
 * (the cold-command overlay); rtmem becomes what it got.  Carry if that
 * is less than asked for, or the runtime has gone.
 rt_mem              pshs      b
-                    ldx       <base               "mem <bytes>"
-                    leax      mbuf,x
+                    lbsr      a_mbuf              "mem <bytes>"
                     leay      memcmd,pcr
                     lbsr      s_str
                     lda       ,s
@@ -794,8 +781,7 @@ rt_mem              pshs      b
                     lbsr      n_dec
                     lda       #C$CR
                     sta       ,x
-                    ldx       <base
-                    leax      mbuf,x
+                    lbsr      a_mbuf
                     lbsr      rt_send
                     bcs       rtm_no
                     lbsr      rt_wait
@@ -822,8 +808,7 @@ rtm_no1             orcc      #Carry
                     rts
 
 * ws_msg: "Workspace: <n>K" on the hint line
-ws_msg              ldx       <base
-                    leax      mbuf,x
+ws_msg              lbsr      a_mbuf
                     stx       <msgp
                     leay      wsms,pcr
                     lbsr      s_str
@@ -845,16 +830,14 @@ c_memory            tst       <dbgon
                     stx       <msgp
                     rts
 cmm1                lbsr      ws_kb               the size now, to edit
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     clra
                     lbsr      n_dec
                     clr       ,x
                     leax      wstl,pcr
                     lbsr      dlg_inp
                     bcs       cmm9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     lbsr      getnum
                     tsta
                     bne       cmm_hi
@@ -875,16 +858,14 @@ cmm4                lbsr      rt_mem
                     bsr       ws_msg              less than asked for: say what
                     leax      wsfail,pcr          it has
                     stx       <msgp
-                    ldx       <base
-                    leax      mbuf,x
+                    lbsr      a_mbuf
                     ldy       <msgp
 cmm5                tst       ,x+
                     bne       cmm5
                     leax      -1,x
                     lbsr      s_str
                     clr       ,x
-                    ldx       <base
-                    leax      mbuf,x
+                    lbsr      a_mbuf
                     stx       <msgp
 cmm9                rts
 
@@ -1375,8 +1356,7 @@ crn2                incb
                     bhs       crn2
                     tfr       x,y
                     bra       crn2
-crn3                ldx       <base               "run <name>"
-                    leax      rline,x
+crn3                lbsr      a_rline             "run <name>"
                     exg       x,y
                     pshs      x
                     ldx       2,s

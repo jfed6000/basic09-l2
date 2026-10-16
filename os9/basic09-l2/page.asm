@@ -77,7 +77,6 @@ da1
                     andcc     #^Carry
                     rts
 da9                 ldb       #E$MemFul
-                    stb       <errno
                     comb
                     rts
 
@@ -118,7 +117,7 @@ pm_hit              pshs      d
                     addd      #1
                     cmpd      #$F000
                     blo       pm1
-                    lbsr      ce_renorm
+                    bsr       ce_renorm
                     ldd       <clock
                     addd      #1
 pm1                 std       <clock
@@ -126,7 +125,7 @@ pm1                 std       <clock
                     ldy       CE.BUF,y
                     puls      d,pc
 pm_miss             pshs      d,x,u
-                    lbsr      ce_get              Y = a free cache entry
+                    bsr       ce_get              Y = a free cache entry
                     stx       CE.DESC,y
                     sty       DS.CE,x
                     clr       CE.DIRT,y
@@ -189,7 +188,7 @@ cg3                 leax      CE.SIZE,x
                     beq       cg5
                     ldd       DS.USED,x
                     beq       cg4
-                    lbsr      sw_seek
+                    bsr       sw_seek
                     pshs      x,y
                     ldx       CE.BUF,y
                     tfr       d,y
@@ -286,8 +285,7 @@ sc9                 rts
 
 * trk_ins: positions in page X past offset D move up by one
 trk_ins             pshs      d,y,u
-                    ldu       <base
-                    leau      posarr,u
+                    lbsr      a_cpos
                     ldy       #NPOS
 tin1                 cmpx      ,u
                     bne       tin2
@@ -303,8 +301,7 @@ tin2                 leau      4,u
 
 * trk_del: positions in page X past offset D move down by one
 trk_del             pshs      d,y,u
-                    ldu       <base
-                    leau      posarr,u
+                    lbsr      a_cpos
                     ldy       #NPOS
 tdl1                cmpx      ,u
                     bne       tdl2
@@ -321,8 +318,7 @@ tdl2                leau      4,u
 * trk_move: positions in page tf at offset tm or above go to page tt,
 * with tk added to the offset
 trk_move            pshs      d,x,y,u
-                    ldu       <base
-                    leau      posarr,u
+                    lbsr      a_cpos
                     ldy       #NPOS
 tm1                 ldx       ,u
                     cmpx      <tf
@@ -342,8 +338,7 @@ tm2                 leau      4,u
 * trk_canon: positions at the end of a page that has a next page move
 * to the start of that page
 trk_canon           pshs      d,x,y,u
-                    ldu       <base
-                    leau      posarr,u
+                    lbsr      a_cpos
                     ldy       #NPOS
 tc1                 ldx       ,u
                     beq       tc2
@@ -495,7 +490,7 @@ p_col               pshs      x,y,u
                     std       ,u
                     ldd       2,y
                     std       2,u
-                    lbsr      p_bol
+                    bsr       p_bol
                     ldx       #0
 pcl1                ldd       ,u
                     cmpd      ,y
@@ -514,7 +509,7 @@ pcl9                tfr       x,d
 ********************************************************************
 * Editing at the cursor
 
-* ed_ins: insert A at the cursor and move past it; carry (errno) if
+* ed_ins: insert A at the cursor and move past it; carry if
 * there is no page left for a split
 ed_ins              pshs      d,x,y,u
                     ldx       <cpos
@@ -570,10 +565,9 @@ ed_del              pshs      b,x,y,u
                     ldx       <cpos
                     ldd       <cpos+2
                     cmpd      DS.USED,x
-                    lbhs      edd_eof
+                    bhs       edd_eof
                     pshs      d                   (for undo)
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_char
                     lbsr      u_del1
                     puls      d
@@ -619,7 +613,7 @@ edd_eof             clra
                     puls      b,x,y,u,pc
 
 * pg_split: move the top half of full page X into a new page after it;
-* carry (errno) if there is no page left
+* carry if there is no page left
 pg_split            pshs      d
                     ldd       #PGHALF
                     bsr       pg_splitat
@@ -627,12 +621,12 @@ pg_split            pshs      d
 
 * pg_splitat: move the text of page X from offset D on (D below the
 * byte count) into a new page after it; tracked positions follow the
-* text.  Carry (errno) if there is no page left.
+* text.  Carry if there is no page left.
 pg_splitat          pshs      d,x,y,u
                     std       <soff
                     stx       <sd
                     lbsr      d_alloc
-                    lbcs      psp_err
+                    bcs       psp_err
                     stx       <sn
                     ldu       <sd
                     ldy       DS.NEXT,u           link the new page after X
@@ -744,8 +738,7 @@ pct4                ldd       DS.USED,x
 * trk_cut: positions in page X at offset D or above move down by tk,
 * but not below D
 trk_cut             pshs      d,y,u
-                    ldu       <base
-                    leau      posarr,u
+                    lbsr      a_cpos
                     ldy       #NPOS
 tct1                cmpx      ,u
                     bne       tct3
@@ -788,7 +781,7 @@ edt3                ldd       <cpos+2             a whole page?
                     std       DS.LINES,x
                     lda       #1
                     sta       <modif
-                    lbsr      pg_remove           positions go to the next page
+                    bsr       pg_remove           positions go to the next page
                     bra       edt1
 edt5                ldd       DS.USED,x           the end of this page
                     subd      <cpos+2
@@ -799,16 +792,16 @@ edt5                ldd       DS.USED,x           the end of this page
                     bra       edt1
 edt7                ldd       DS.USED,x
                     bne       edt7a
-                    lbsr      pg_remove
+                    bsr       pg_remove
                     bra       edt8
 edt7a               lbsr      trk_canon
-                    lbsr      pg_merge
+                    bsr       pg_merge
 edt8                ldx       <cpos               the pages around the cut may be small
-                    lbsr      pg_merge
+                    bsr       pg_merge
                     ldx       <cpos
                     ldx       DS.PREV,x
                     beq       edt9
-                    lbsr      pg_merge
+                    bsr       pg_merge
 edt9                puls      d,x,y,u,pc
 
 * pg_remove: drop empty page X from the chain (unless it is the only one)

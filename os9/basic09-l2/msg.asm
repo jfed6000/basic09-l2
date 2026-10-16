@@ -264,7 +264,7 @@ cmw5                cmpa      #EK.F1+5            F6
                     beq       cmw8
                     leax      mwhint,pcr          not a key here: stay
                     stx       <msgp
-                    lbra      cmw1
+                    bra       cmw1
 cmw8                clr       <msgfoc
                     lbra      rd_all
 cmw9                rts

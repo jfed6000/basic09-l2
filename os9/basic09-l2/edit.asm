@@ -177,10 +177,7 @@ c_full              leax      fullms,pcr
 c_enter             lbsr      sel_del
                     ldu       <base
                     leau      wp,u
-                    ldd       <cpos
-                    std       ,u
-                    ldd       <cpos+2
-                    std       2,u
+                    lbsr      cp_u
                     lbsr      p_bol
                     ldx       #0                  leading spaces before the cursor
                     tst       <noindt
@@ -217,8 +214,7 @@ ce5                 lda       #RD.BELOW+RD.PREV   the line split above too
 * c_bs: delete the character before the cursor
 c_bs                lbsr      sel_del
                     bcs       cb9
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_prev
                     bcs       cb9
                     lbsr      p_char
@@ -236,8 +232,7 @@ cb9                 rts
 * c_del: delete the character at the cursor
 c_del               lbsr      sel_del
                     bcs       cd9
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_char
                     bcs       cd9
                     cmpa      #C$CR
@@ -250,8 +245,7 @@ cd9                 rts
 
 * c_delln: delete the cursor line
 c_delln             lbsr      sel_off
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_bol
 cdl1                lbsr      ed_del
                     bcs       cdl9
@@ -261,8 +255,7 @@ cdl9                lbra      rd_below
 
 * Cursor movement.  The cursor line number follows every carriage
 * return crossed.
-c_left              ldu       <base
-                    leau      cpos,u
+c_left              lbsr      a_cpos
                     lbsr      p_prev
                     bcs       cl9
                     lbsr      p_char
@@ -273,8 +266,7 @@ c_left              ldu       <base
                     std       <curline
 cl9                 rts
 
-c_right             ldu       <base
-                    leau      cpos,u
+c_right             lbsr      a_cpos
                     lbsr      p_char
                     bcs       cr9
                     cmpa      #C$CR
@@ -291,8 +283,7 @@ c_up                clr       <setwant
                     beq       cu9
                     subd      #1
                     std       <curline
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     lbsr      p_prevln
                     ldd       <wantcol
                     lbra      p_tocol
@@ -301,10 +292,7 @@ cu9                 rts
 c_down              clr       <setwant
                     ldu       <base
                     leau      wp,u
-                    ldd       <cpos
-                    std       ,u
-                    ldd       <cpos+2
-                    std       2,u
+                    lbsr      cp_u
                     lbsr      p_nextln
                     bcs       cdn9
                     ldd       ,u
@@ -314,18 +302,15 @@ c_down              clr       <setwant
                     ldd       <curline
                     addd      #1
                     std       <curline
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
                     ldd       <wantcol
                     lbra      p_tocol
 cdn9                rts
 
-c_home              ldu       <base
-                    leau      cpos,u
+c_home              lbsr      a_cpos
                     lbra      p_bol
 
-c_end               ldu       <base
-                    leau      cpos,u
+c_end               lbsr      a_cpos
                     lbra      p_eol
 
 c_top               ldd       <first
@@ -409,16 +394,14 @@ iw1                 orcc      #Carry
                     rts
 
 * c_wright: to the start of the next word
-c_wright            ldu       <base
-                    leau      cpos,u
+c_wright            lbsr      a_cpos
                     lbsr      p_char
                     bcs       cwr9
                     bsr       is_word
                     bcc       cwr1
                     lbsr      c_right
                     bra       c_wright
-cwr1                ldu       <base
-                    leau      cpos,u
+cwr1                lbsr      a_cpos
                     lbsr      p_char
                     bcs       cwr9
                     bsr       is_word
@@ -445,10 +428,7 @@ cwl9                rts
 * prevch: A = the character before the cursor; carry at the start
 prevch              ldu       <base
                     leau      wp,u
-                    ldd       <cpos
-                    std       ,u
-                    ldd       <cpos+2
-                    std       2,u
+                    lbsr      cp_u
                     lbsr      p_prev
                     bcs       pvc9
                     lbra      p_char
@@ -459,8 +439,7 @@ c_goto              lbsr      sel_off
                     leax      gomsg,pcr
                     lbsr      dlg_in
                     bcs       cg9
-                    ldx       <base
-                    leax      inbuf,x
+                    lbsr      a_inbx
                     lbsr      getnum
                     subd      #1
                     bcc       cgo1
@@ -488,8 +467,7 @@ gl2                 ldd       DS.LINES,x          the page holding that many
 gl3                 stx       <cpos
                     ldd       #0
                     std       <cpos+2
-                    ldu       <base
-                    leau      cpos,u
+                    lbsr      a_cpos
 gl4                 lbsr      p_char
                     lbsr      p_next
                     cmpa      #C$CR
@@ -523,7 +501,4 @@ buf_top             lbsr      bp_clear
                     std       <topline
                     std       <leftcol
                     std       <wantcol
-                    lda       #RD.ALL
-                    ora       <redraw
-                    sta       <redraw
-                    rts
+                    lbra      rd_all

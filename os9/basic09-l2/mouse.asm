@@ -445,8 +445,7 @@ mg2                 cmpb      <wcols              the right border: the last col
                     decb
 mg2a                clra
                     addd      <leftcol
-mg3                 ldu       <base
-                    leau      cpos,u
+mg3                 lbsr      a_cpos
                     lbra      p_tocol
 
 * mo_mouse: a mouse event in an open menu.  Pressing or dragging over a

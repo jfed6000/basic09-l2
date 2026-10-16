@@ -1,0 +1,6 @@
+* l2basic09: basic09-l2's F1 help box (scripted, -h snapshot)
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -h -t=/dd/l2b09/term.out hp.b09 <keys.bin >/term
