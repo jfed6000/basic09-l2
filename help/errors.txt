@@ -2,7 +2,159 @@
 @category Errors
 
 == Errors | Error messages
-How errors are reported, and what each number means.
+Every error number and what it means; a number is a link to its page
+(the cause and what to do).  How errors are reported is at the end.
+
+Basic09 control:
+    {1|Error 1}  Unconditional Abort
+    {2|Error 2}  Keyboard Abort
+    {3|Error 3}  Keyboard Interrupt
+
+Basic09 errors:
+   {10|Error 10}  Unrecognized Symbol
+   {11|Error 11}  Excessive Verbage
+   {12|Error 12}  Illegal Statement Construction
+   {13|Error 13}  I-code Overflow
+   {14|Error 14}  Illegal Channel Reference
+   {15|Error 15}  Illegal Mode (read/write/update)
+   {16|Error 16}  Illegal Number
+   {17|Error 17}  Illegal Prefix
+   {18|Error 18}  Illegal Operand
+   {19|Error 19}  Illegal Operator
+   {20|Error 20}  Illegal Record Field Name
+   {21|Error 21}  Illegal Dimension
+   {22|Error 22}  Illegal Literal
+   {23|Error 23}  Illegal Relational
+   {24|Error 24}  Illegal Type Suffix
+   {25|Error 25}  Too-large Dimension
+   {26|Error 26}  Too-large Line Number
+   {27|Error 27}  Missing Assignment Statement
+   {28|Error 28}  Missing Path Number
+   {29|Error 29}  Missing Comma
+   {30|Error 30}  Missing Dimension
+   {31|Error 31}  Missing DO Statement
+   {32|Error 32}  Memory Full
+   {33|Error 33}  Missing GOTO
+   {34|Error 34}  Missing Left Parenthesis
+   {35|Error 35}  Missing Line Reference
+   {36|Error 36}  Missing Operand
+   {37|Error 37}  Missing Right Parenthesis
+   {38|Error 38}  Missing THEN statement
+   {39|Error 39}  Missing TO
+   {40|Error 40}  Missing Variable Reference
+   {41|Error 41}  No Ending Quote
+   {42|Error 42}  Too Many Subscripts
+   {43|Error 43}  Unknown Procedure
+   {44|Error 44}  Multiply-defined Procedure
+   {45|Error 45}  Divide by Zero
+   {46|Error 46}  Operand Type Mismatch
+   {47|Error 47}  String Stack Overflow
+   {48|Error 48}  Unimplemented Routine
+   {49|Error 49}  Undefined Variable
+   {50|Error 50}  Floating Overflow
+   {51|Error 51}  Line with Compiler Error
+   {52|Error 52}  Value out of Range for Destination
+   {53|Error 53}  Subroutine Stack Overflow
+   {54|Error 54}  Subroutine Stack Underflow
+   {55|Error 55}  Subscript out of Range
+   {56|Error 56}  Parameter Error
+   {57|Error 57}  System Stack Overflow
+   {58|Error 58}  I/O Type Mismatch
+   {59|Error 59}  I/O Numeric Input Format Bad
+   {60|Error 60}  I/O Conversion: Number out of Range
+   {61|Error 61}  Illegal Input Format
+   {62|Error 62}  I/O Format Repeat Error
+   {63|Error 63}  I/O Format Syntax Error
+   {64|Error 64}  Illegal Path Number
+   {65|Error 65}  Wrong Number of Subscripts
+   {66|Error 66}  Non-record-type Operand
+   {67|Error 67}  Illegal Argument
+   {68|Error 68}  Illegal Control Structure
+   {69|Error 69}  Unmatched Control Structure
+   {70|Error 70}  Illegal FOR Variable
+   {71|Error 71}  Illegal Expression Type
+   {72|Error 72}  Illegal Declarative Statement
+   {73|Error 73}  Array Size Overflow
+   {74|Error 74}  Undefined Line Number
+   {75|Error 75}  Multiply-defined Line Number
+   {76|Error 76}  Multiply-defined Variable
+   {77|Error 77}  Illegal Input Variable
+   {78|Error 78}  Seek Out of Range
+   {79|Error 79}  Missing Data Statement
+   80  I/O buffer overflow (no text in errmsg: an input or output
+       line longer than the I/O buffer)
+
+OS-9 system errors:
+  {183|Error 183}  Illegal window type
+  {184|Error 184}  Window already defined
+  {185|Error 185}  Font Not found
+  {186|Error 186}  Stack Overflow
+  {187|Error 187}  Illegal Argument
+  {188|Error 188}  unused
+  {189|Error 189}  Illegal Coordinates
+  {190|Error 190}  Internal Integrity check
+  {191|Error 191}  Buffer size is too small
+  {192|Error 192}  Illegal Command
+  {193|Error 193}  Screen or Window Table is Full
+  {194|Error 194}  Bad/Undefined buffer number
+  {195|Error 195}  Illegal window definition
+  {196|Error 196}  Window undefined
+  {197|Error 197}  unused
+  {198|Error 198}  unused
+  {199|Error 199}  unused
+  {200|Error 200}  Path Table Full
+  {201|Error 201}  Illegal Path Number
+  {202|Error 202}  Interrupt Polling Table Full
+  {203|Error 203}  Illegal Mode
+  {204|Error 204}  Device Table Full
+  {205|Error 205}  Illegal Module Header
+  {206|Error 206}  Module Directory Full
+  {207|Error 207}  Memory Full
+  {208|Error 208}  Illegal Service Request
+  {209|Error 209}  Module Busy
+  {210|Error 210}  Boundary Error
+  {211|Error 211}  End of File
+  {212|Error 212}  Returning non-allocated memory
+  {213|Error 213}  Non-existing Segment
+  {214|Error 214}  No Permission
+  {215|Error 215}  Bad Path Name
+  {216|Error 216}  Path Name Not Found
+  {217|Error 217}  Segment List Full
+  {218|Error 218}  File Already Exists
+  {219|Error 219}  Illegal Block Address
+  {220|Error 220}  Phone Hangup-Data Carrier Detect lost
+  {221|Error 221}  Module Not Found
+  {223|Error 223}  Suicide Attempt
+  {224|Error 224}  Illegal Process Number
+  {226|Error 226}  No Children
+  {227|Error 227}  Illegal SWI Code
+  {228|Error 228}  Process Aborted
+  {229|Error 229}  Process Table Full
+  {230|Error 230}  Illegal Parameter Area
+  {231|Error 231}  Known module
+  {232|Error 232}  Incorrect Module CRC
+  {233|Error 233}  Signal Error
+  {234|Error 234}  Non-existent Module
+  {235|Error 235}  Bad Name
+  {236|Error 236}  Bad Module Header
+  {237|Error 237}  RAM Full
+  {238|Error 238}  Unknown Process ID
+  {239|Error 239}  No task number available
+  {240|Error 240}  Unit Error
+  {241|Error 241}  Sector Error
+  {242|Error 242}  Write Protect
+  {243|Error 243}  CRC Error
+  {244|Error 244}  Read Error
+  {245|Error 245}  Write Error
+  {246|Error 246}  Not Ready
+  {247|Error 247}  Seek Error
+  {248|Error 248}  Media Full
+  {249|Error 249}  Wrong Type
+  {250|Error 250}  Device Busy
+  {251|Error 251}  Disk ID Change
+  {252|Error 252}  Record is locked-out
+  {253|Error 253}  Non-sharable file busy
+  {254|Error 254}  I/O Deadlock Error
 
 In the editor:
   Make sends the program to l2b09run.  Each compile error (%CERR),
@@ -22,50 +174,6 @@ In l2b09run (and stock Basic09):
 In a program:
   {ON ERROR} GOTO <line> traps run-time errors; {ERR} gives the number.
   Unhandled errors stop the program.  ERROR(n) raises error n itself.
-
-Basic09 control: {Error 1}  {Error 2}  {Error 3}
-
-Basic09 errors (10-79):
-  {10|Error 10} {11|Error 11} {12|Error 12} {13|Error 13}
-  {14|Error 14} {15|Error 15} {16|Error 16} {17|Error 17}
-  {18|Error 18} {19|Error 19} {20|Error 20} {21|Error 21}
-  {22|Error 22} {23|Error 23} {24|Error 24} {25|Error 25}
-  {26|Error 26} {27|Error 27} {28|Error 28} {29|Error 29}
-  {30|Error 30} {31|Error 31} {32|Error 32} {33|Error 33}
-  {34|Error 34} {35|Error 35} {36|Error 36} {37|Error 37}
-  {38|Error 38} {39|Error 39} {40|Error 40} {41|Error 41}
-  {42|Error 42} {43|Error 43} {44|Error 44} {45|Error 45}
-  {46|Error 46} {47|Error 47} {48|Error 48} {49|Error 49}
-  {50|Error 50} {51|Error 51} {52|Error 52} {53|Error 53}
-  {54|Error 54} {55|Error 55} {56|Error 56} {57|Error 57}
-  {58|Error 58} {59|Error 59} {60|Error 60} {61|Error 61}
-  {62|Error 62} {63|Error 63} {64|Error 64} {65|Error 65}
-  {66|Error 66} {67|Error 67} {68|Error 68} {69|Error 69}
-  {70|Error 70} {71|Error 71} {72|Error 72} {73|Error 73}
-  {74|Error 74} {75|Error 75} {76|Error 76} {77|Error 77}
-  {78|Error 78} {79|Error 79}
-  (Error 80, I/O buffer overflow, has no text in errmsg: an input or
-  output line longer than the I/O buffer.)
-
-OS-9 system errors (183-254):
-  {183|Error 183} {184|Error 184} {185|Error 185} {186|Error 186}
-  {187|Error 187} {188|Error 188} {189|Error 189} {190|Error 190}
-  {191|Error 191} {192|Error 192} {193|Error 193} {194|Error 194}
-  {195|Error 195} {196|Error 196} {197|Error 197} {198|Error 198}
-  {199|Error 199} {200|Error 200} {201|Error 201} {202|Error 202}
-  {203|Error 203} {204|Error 204} {205|Error 205} {206|Error 206}
-  {207|Error 207} {208|Error 208} {209|Error 209} {210|Error 210}
-  {211|Error 211} {212|Error 212} {213|Error 213} {214|Error 214}
-  {215|Error 215} {216|Error 216} {217|Error 217} {218|Error 218}
-  {219|Error 219} {220|Error 220} {221|Error 221} {223|Error 223}
-  {224|Error 224} {226|Error 226} {227|Error 227} {228|Error 228}
-  {229|Error 229} {230|Error 230} {231|Error 231} {232|Error 232}
-  {233|Error 233} {234|Error 234} {235|Error 235} {236|Error 236}
-  {237|Error 237} {238|Error 238} {239|Error 239} {240|Error 240}
-  {241|Error 241} {242|Error 242} {243|Error 243} {244|Error 244}
-  {245|Error 245} {246|Error 246} {247|Error 247} {248|Error 248}
-  {249|Error 249} {250|Error 250} {251|Error 251} {252|Error 252}
-  {253|Error 253} {254|Error 254}
 
 # ---------------------------------------------------------------- signals
 
