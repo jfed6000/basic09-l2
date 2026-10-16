@@ -786,6 +786,9 @@ bpp2                puls      b
                     bra       bpp1
 bpp3                cmpy      #0
                     beq       bpp_no
+                    lda       PR.FLAG,y           a DEFTYPE block is no procedure
+                    bita      #PF.DEF
+                    bne       bpp_no
                     ldd       ,s
                     subd      PR.LINE,y
                     std       ,s

@@ -3,7 +3,8 @@
 colours, from the compiler's own keyword table (KEYTAB in src/comand.asm).
 
 Statements, reserved words and operator words (STMBEG, RESRVD, OPRTR) are
-keywords; the rest (FNCREF) are functions.
+keywords; the rest (FNCREF) are functions.  The editor's own words
+(EXTRA: DEFTYPE, USE) are keywords too.
 
 Table format (kw_find in hl.asm):
     kwidx   offsets (fdb, from kwtab), one per first letter from A to
@@ -39,6 +40,9 @@ for l in lines[start + 1:]:
         words[m.group(1).upper()] = cls
         kind = None
 
+EXTRA = ('DEFTYPE', 'USE')         # the editor's own: DEFTYPE blocks
+for w in EXTRA:
+    words[w] = 'KC.KW'
 letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 last = max(w[0] for w in words if len(w) > 1)
 letters = letters[:letters.index(last) + 1]

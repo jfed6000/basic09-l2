@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Global TYPE lines: a procedure's "(* #use globals *)" line gets the
-TYPE lines of the procedure globals in front of it when Make sends it,
-joined with backslashes into one line, without their comments (Basic09
-wants a backslash before a comment after TYPE).  A change
-to globals alone sends the procedures that use it again: main prints the
-size of its record, 10 and then 15.  Pretty print keeps the #use lines
-(indented like the body) and does not bring the TYPE text into them.
+"""Global TYPE lines: DEFTYPE <name> ... END DEFTYPE blocks hold TYPE
+lines; they are not procedures and are never sent.  A procedure's
+"USE <name>" line goes to l2b09run as the block's TYPE lines, joined
+with backslashes into one line and without their comments, then
+"(* " and the line.  A change to the block alone sends the procedures
+that use it again: main prints the size of its record, 10 and then 15.
+Run starts main, not the block before it.  Pretty print keeps the USE
+lines (indented like the body) and leaves the blocks alone, also the
+one between two procedures.
 
 usage: gen <outdir>
 """
@@ -16,35 +18,38 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from keys import compile_keys  # noqa: E402
 
 out = sys.argv[1]
-prog = '''PROCEDURE main
-(* #use globals *)
+prog = '''DEFTYPE shapes
+TYPE pt=x,y:REAL (* a point *)
+END DEFTYPE
+PROCEDURE main
+USE shapes
 DIM p:pt
 p.x=1.5
 p.y=2
 PRINT "size="; SIZE(p)
 RUN show(p)
 END
+DEFTYPE unused
+  TYPE nothing=n:INTEGER
+END DEFTYPE
 PROCEDURE show
-   (* #USE globals *)
+   use shapes
 PARAM q:pt
 PRINT "x="; q.x; " y="; q.y
 END
-PROCEDURE globals
-TYPE pt=x,y:REAL \\ (* a point *)
-END
 '''
 keys = '''
-^b                          # Make: all three
-^r                          # Run: size=10
-^g "15" enter right*10 "z," # globals only: TYPE pt=x,z,y:REAL
-^b                          # Make: globals, and main and show with it
+^b                          # Make: main and show, not the blocks
+^r                          # Run main: size=10
+^g "2" enter right*10 "z,"  # the block only: TYPE pt=x,z,y:REAL
+^b                          # Make: main and show again
 ^r                          # Run: size=15
 ^space                      # pretty print every procedure
 ^b                          # up to date: nothing is sent
 ^s ^q
 '''
-# Make sends the TYPE text with main and show; the second Make sends
-# them again with globals.  LIST shows the joined lines.
+# Make sends the TYPE text with main and show; LIST shows the joined
+# lines
 log = r'''# -t=/dd/l2b09/term.out
 < l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware
 
@@ -53,57 +58,53 @@ log = r'''# -t=/dd/l2b09/term.out
 > load basic09-l2.tmp
 < main
 < show
-< globals
 < %READY
 > run main
 < %READY
 > load basic09-l2.tmp
 < main
 < show
-< globals
 < %READY
 > run main
 < %READY
 > list main
 < PROCEDURE main
-<  0000      TYPE pt=x,z,y:REAL \(* #use globals *)
-<  0025      DIM p:pt
-<  002E      p.x=1.5
-<  003D      p.y=2
-<  0049      PRINT "size="; SIZE(p)
-<  0058      RUN show(p)
-<  0062      END 
+<  0000      TYPE pt=x,z,y:REAL \(* USE shapes
+<  0020      DIM p:pt
+<  0029      p.x=1.5
+<  0038      p.y=2
+<  0044      PRINT "size="; SIZE(p)
+<  0053      RUN show(p)
+<  005D      END 
 < %READY
 > list show
 < PROCEDURE show
-<  0000      TYPE pt=x,z,y:REAL \(* #USE globals *)
-<  0025      PARAM q:pt
-<  002E      PRINT "x="; q.x; " y="; q.y
-<  0048      END 
-< %READY
-> list globals
-< PROCEDURE globals
-<  0000      TYPE pt=x,z,y:REAL \(* a point *)
-<  0020      END 
+<  0000      TYPE pt=x,z,y:REAL \(* use shapes
+<  0020      PARAM q:pt
+<  0029      PRINT "x="; q.x; " y="; q.y
+<  0043      END 
 < %READY
 > bye
 '''
-# pretty print keeps the #use lines
-expect = r'''procedure main
-  (* #use globals *)
+# pretty print keeps the USE lines and the blocks
+expect = r'''DEFTYPE shapes
+TYPE pt=x,z,y:REAL (* a point *)
+END DEFTYPE
+procedure main
+  USE shapes
   dim p:pt
   p.x=1.5
   p.y=2
   print "size="; size(p)
   run show(p)
 end
+DEFTYPE unused
+  TYPE nothing=n:INTEGER
+END DEFTYPE
 procedure show
-  (* #USE globals *)
+  use shapes
   param q:pt
   print "x="; q.x; " y="; q.y
-end
-procedure globals
-  type pt=x,z,y:real \(* a point *)
 end
 '''
 with open(os.path.join(out, 'prog.b09'), 'w', newline='') as f:

@@ -74,8 +74,11 @@ pg6                 cmpb      <nproc
                     pshs      b
                     lbsr      pt_at
                     tfr       x,y
+                    lda       PR.FLAG,y           (not the DEFTYPE blocks)
+                    bita      #PF.DEF
+                    bne       pg6a
                     lbsr      pp_one
-                    puls      b
+pg6a                puls      b
                     bcs       pg_done
                     incb
                     bra       pg6
@@ -118,7 +121,7 @@ pp_one              lda       PR.FLAG,y
                     leax      pperms,pcr
                     lbra      po_msg
 po1                 pshs      y
-                    lbsr      pp_usei             (#use lines stay as they are)
+                    lbsr      pp_usei             (USE lines stay as they are)
                     ldy       ,s
                     lbsr      a_rline             "list <name>"
                     leay      listcm,pcr
@@ -192,7 +195,7 @@ pp_clean            ldu       <base
                     lbsr      pp_use
                     puls      y
                     bcs       ppc0a               (carry: no pages)
-                    beq       ppc0                ..not a #use line
+                    beq       ppc0                ..not a USE line
 ppc0a               rts
 ppc0                tfr       y,d
                     lbsr      a_rline
@@ -430,7 +433,7 @@ pp_isend            pshs      d
 pie8                andcc     #^Zero
                     puls      d,pc
 
-* pp_usei: for entry Y: if it has #use lines, usep = its PROCEDURE line,
+* pp_usei: for entry Y: if it has USE lines, usep = its PROCEDURE line,
 * so that pp_use can follow the LIST lines in the text
 pp_usei             ldu       <base
                     clr       ppmid,u
@@ -449,7 +452,7 @@ pp_usei             ldu       <base
                     std       usep+2,u
 pui9                rts
 
-* pp_use: LIST printed the TYPE text a #use line brought in (mk_types)
+* pp_use: LIST printed the TYPE text a USE line brought in (mk_types)
 * in front of the comment, so the line in the text goes in instead.
 * For the LIST line in rline (Y bytes): NE if it was such a line (or
 * the rest of one), carry if the pages ran out
@@ -462,7 +465,7 @@ pp_use              tfr       y,d
                     ldu       <base
                     tst       ppmid,u             the start of a line?
                     beq       pus2
-                    tst       ppskip,u            ..no: drop the rest of a #use line
+                    tst       ppskip,u            ..no: drop the rest of a USE line
                     beq       pus_no
                     bra       pus_yes
 pus2                clr       ppskip,u
@@ -515,38 +518,22 @@ pus_app             pshs      d,x                 A to the new text
                     puls      d,x,pc
 
 * pp_put: the new text in place of the lines of the procedure of entry
-* Y (from the line after PROCEDURE up to the next PROCEDURE line or the
-* end of the text); carry if the pages ran out
+* Y (from the PROCEDURE line up to the next PROCEDURE or DEFTYPE line,
+* or the end of the text); carry if the pages ran out
 pp_put              ldd       PR.LINE,y           from the PROCEDURE line
                     pshs      d,y
-                    ldd       #$FFFF              the next PROCEDURE line
-                    pshs      d
-                    clrb
-ppt1                cmpb      <nproc
-                    bhs       ppt3
-                    pshs      b                   0 entry, 1 next, 3 body start
-                    lbsr      pt_at
-                    ldd       PR.LINE,x
-                    cmpd      3,s
-                    bls       ppt2                (at or before this one)
-                    cmpd      1,s
-                    bhs       ppt2
-                    std       1,s
-ppt2                puls      b
-                    incb
-                    bra       ppt1
-ppt3                puls      d
-                    cmpd      #$FFFF
-                    bne       ppt4
-                    ldd       <nlines             no next one: the end of the text
                     lbsr      goto_line
-                    lbsr      a_cpos
-                    lbsr      p_eol
-                    bra       ppt5
-ppt4                lbsr      goto_line
-ppt5                ldd       <cpos
-                    std       <xpos
+                    ldu       <base
+                    ldd       <cpos
+                    std       usep,u
                     ldd       <cpos+2
+                    std       usep+2,u
+ppt1                lbsr      us_xu               to the end of the procedure
+                    lbsr      ln_next
+                    bcc       ppt1
+                    ldd       ,x
+                    std       <xpos
+                    ldd       2,x
                     std       <xpos+2
                     puls      d,y
                     lbsr      goto_line

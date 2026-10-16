@@ -27,7 +27,8 @@ PR.SIZE             equ       NAMEMAX+13
 PF.SEEN             equ       $01                 found by this Make
 PF.SEND             equ       $02                 to be loaded
 PF.ERR              equ       $04                 the runtime reported an error in it
-PF.USE              equ       $08                 it has a #use line
+PF.USE              equ       $08                 it has a USE line
+PF.DEF              equ       $10                 a DEFTYPE block, not a procedure
 
 pipenm              fcc       "/pipe"
                     fcb       C$CR
@@ -918,11 +919,13 @@ mdy1                cmpb      <nproc
                     bhs       mdy_no
                     lbsr      pt_at
                     lda       PR.FLAG,x
+                    bita      #PF.DEF             (its users are marked)
+                    bne       mdy2
                     bita      #PF.SEND
                     bne       mdy_yes
                     bita      #PF.SEEN
                     beq       mdy_yes
-                    incb
+mdy2                incb
                     bra       mdy1
 mdy_no              orcc      #Zero
                     rts
@@ -992,17 +995,28 @@ mk_scan             lda       #PF.SEEN+PF.SEND+PF.USE
                     std       <h1
                     std       <h2
                     std       <hlen
-mks1                lbsr      mk_isproc
+mks1                lbsr      mk_isproc           PROCEDURE <name>
+                    bcc       mks1p
+                    ldx       <base               DEFTYPE <name>: an entry too
+                    leax      mkp,x
+                    lbsr      ln_def
                     bcs       mks2
-                    bsr       mk_close
+                    lda       #PF.DEF
+                    bra       mks1q
+mks1p               clra
+mks1q               pshs      a
+                    lbsr      mk_close
                     ldy       <base
                     leay      nbuf,y
                     lbsr      pt_find
                     bcc       mks1a
                     lbsr      pt_add
-                    bcs       mks9
+                    bcc       mks1a
+                    puls      a,pc                (carry)
 mks1a               lda       PR.FLAG,y
+                    anda      #^PF.DEF
                     ora       #PF.SEEN
+                    ora       ,s+
                     sta       PR.FLAG,y
                     ldd       <mkln
                     std       PR.LINE,y
@@ -1015,7 +1029,7 @@ mks1a               lda       PR.FLAG,y
                     std       <h1
                     std       <h2
                     std       <hlen
-mks2                ldx       <base               a #use line?
+mks2                ldx       <base               a USE line?
                     leax      mkp,x
                     lbsr      ln_use
                     bcs       mks2a
@@ -1024,13 +1038,29 @@ mks2                ldx       <base               a #use line?
                     lda       PR.FLAG,y
                     ora       #PF.USE
                     sta       PR.FLAG,y
-mks2a               lbsr      mk_line
+mks2a               ldx       <base               END DEFTYPE?
+                    leax      mkp,x
+                    lbsr      ln_enddef
+                    tfr       cc,a
+                    pshs      a
+                    lbsr      mk_line
+                    puls      a
                     bcs       mks8
-                    ldd       <mkln
-                    addd      #1
-                    std       <mkln
-                    bra       mks1
-mks8                bsr       mk_close
+                    ldx       <mkln
+                    leax      1,x
+                    stx       <mkln
+                    bita      #Carry
+                    lbne      mks1
+                    ldy       <curp               it ends a DEFTYPE block: what
+                    lbeq      mks1                follows up to the next PROCEDURE
+                    lda       PR.FLAG,y           belongs to nothing
+                    bita      #PF.DEF
+                    lbeq      mks1
+                    bsr       mk_close
+                    clr       <curp
+                    clr       <curp+1
+                    lbra      mks1
+mks8                lbsr      mk_close
                     bsr       mk_uses
                     andcc     #^Carry
 mks9                rts
@@ -1063,14 +1093,14 @@ mc1                 ldd       <h1
                     sta       PR.FLAG,y
 mc9                 rts
 
-* mk_uses: a procedure with a "(* #use <name> *)" line is sent too when
-* the procedure it names is sent, or is not there
+* mk_uses: a procedure with a "USE <name>" line is sent too when the
+* DEFTYPE block it names changed, or is not there
 mk_uses             clrb
 mu1                 cmpb      <nproc
                     bhs       mu9
                     lbsr      pt_at
                     lda       PR.FLAG,x
-                    anda      #PF.USE+PF.SEND
+                    anda      #PF.USE+PF.SEND+PF.DEF
                     cmpa      #PF.USE
                     bne       mu8
                     pshs      b,x
@@ -1086,6 +1116,8 @@ mu2                 bsr       us_xu               its lines, after PROCEDURE
                     lbsr      pt_find
                     bcs       mu6                 ..not there
                     lda       PR.FLAG,y
+                    bita      #PF.DEF
+                    beq       mu6                 ..a procedure, not a block
                     bita      #PF.SEND
                     beq       mu2
 mu6                 ldx       1,s
@@ -1106,17 +1138,23 @@ us_set              ldd       PR.PG,x
                     rts
 
 * ln_next: position X to the next line of its procedure; carry at the
-* end of the text or at the next PROCEDURE line.  Keeps X and Y.
+* end of the text or at the next PROCEDURE or DEFTYPE line.  Keeps X
+* and Y.
 ln_next             pshs      x,y
                     leau      ,x
                     lbsr      p_nextln
                     bcs       lnx9
                     ldx       ,s
                     bsr       ln_proc
+                    bcc       lnx8
+                    ldx       ,s
+                    bsr       ln_def
                     tfr       cc,a                carry the other way round
                     eora      #Carry
                     tfr       a,cc
 lnx9                puls      x,y,pc
+lnx8                orcc      #Carry
+                    puls      x,y,pc
 
 * us_xu: X = U = usep
 us_xu               ldx       <base
@@ -1135,14 +1173,23 @@ ln_proc             bsr       ln_at
                     bcc       ln_name
                     rts
 
-* ln_use: if the line at position X is "(* #use <name>" (any case,
-* spaces before the words), the name to nbuf; carry if it is not
-ln_use              bsr       ln_at
-                    leay      usekw,pcr
-                    bsr       ln_word             "(*"
-                    bcs       lnw9
-                    bsr       ln_word             "#USE"
+* ln_use, ln_def: if the line at position X is "USE <name>" or
+* "DEFTYPE <name>" (any case, spaces before the words), the name to
+* nbuf; carry if it is not
+ln_use              leay      usekw,pcr
+                    bra       lnu1
+ln_def              leay      defkw,pcr
+lnu1                bsr       ln_at
+                    bsr       ln_word
                     bcc       ln_name
+                    rts
+
+* ln_enddef: carry clear if the line at position X is "END DEFTYPE"
+ln_enddef           bsr       ln_at
+                    leay      endkw,pcr
+                    bsr       ln_word             "END"
+                    bcs       lnw9
+                    bra       ln_word             "DEFTYPE"
 lnw9                rts
 
 * ln_at: U = wp = a copy of the position at X
@@ -1207,8 +1254,9 @@ lnn3                clr       ,x
                     andcc     #^Carry
                     rts
 prockw              fcn       "PROCEDURE"
-usekw               fcn       "(*"
-                    fcn       "#USE"
+usekw               fcn       "USE"
+endkw               fcn       "END"
+defkw               fcn       "DEFTYPE"
 typekw              fcn       "TYPE"
 
 * mk_line: add the line at mkp to the signature (h1 = sum of the bytes,
@@ -1277,8 +1325,10 @@ msw1                cmpb      <nproc
                     lda       PR.FLAG,x
                     bita      #PF.SEEN
                     bne       msw2
+                    bita      #PF.DEF             (l2b09run never had a DEFTYPE)
+                    bne       msw1a
                     bsr       mk_kill
-                    puls      d
+msw1a               puls      d
                     bcs       msw8
                     incb
                     bra       msw1
@@ -1336,7 +1386,11 @@ mw1                 cmpb      <nproc
                     bhs       mw8
                     lbsr      pt_at
                     lda       PR.FLAG,x
-                    bita      #PF.SEND
+                    bita      #PF.DEF             a DEFTYPE block is not sent
+                    beq       mw1a
+                    anda      #^PF.SEND
+                    sta       PR.FLAG,x
+mw1a                bita      #PF.SEND
                     beq       mw2
                     pshs      b
                     bsr       mk_wproc
@@ -1418,9 +1472,11 @@ mwp_err             leas      1,s
                     rts
 crbyte              fcb       C$CR
 
-* mk_wuse: write the text of entry X a line at a time, with the TYPE
-* lines of the procedure each "(* #use <name> *)" line names in front
-* of it, joined by backslashes, so that every line stays one line
+* mk_wuse: write the text of entry X a line at a time.  A "USE <name>"
+* line goes as the TYPE lines of the DEFTYPE block it names, joined by
+* backslashes, then "(* " and the line, so that every line stays one
+* line.  If there is no such block it goes as it is, and the compiler
+* says so.
 mk_wuse             ldd       PR.LEN,x
                     std       <tmpc
                     lbsr      us_set
@@ -1432,6 +1488,11 @@ mwu1                ldd       <tmpc
                     leay      ,x                  Y = where the line goes
                     bcs       mwu2
                     bsr       mk_types
+                    bcs       mwu2
+                    ldd       #'(*256+'*
+                    std       ,y++
+                    lda       #C$SPAC
+                    sta       ,y+
 mwu2                ldd       <tmpc               the line itself
                     beq       mwu4
                     lbsr      us_xu
@@ -1473,26 +1534,39 @@ mwu_out             lbsr      a_rline             write rline up to Y
                     os9       I$Write
                     rts
 
-* mk_types: the TYPE lines of the procedure named by nbuf to Y, each
-* without its comment (and the backslash in front of it) and followed
-* by " \ "; Y after them.  At most TYMAX bytes go, so that the
-* line stays under l2b09run's 256.
+* mk_types: the TYPE lines of the DEFTYPE block named by nbuf to Y,
+* each without its comment (and a backslash in front of it) and
+* followed by " \ "; Y after them.  At most TYMAX bytes go, so that the
+* line stays under l2b09run's 256.  Carry (Y as it was) if there is no
+* such block.
 TYMAX               equ       200
+mty_no              orcc      #Carry
+mty9                rts
+hd_x                ldx       <base               X = hdrp
+                    leax      hdrp,x
+                    rts
 mk_types            pshs      y
                     ldy       <base
                     leay      nbuf,y
                     lbsr      pt_find
                     tfr       y,x
                     puls      y
-                    bcs       mty9                ..not there: nothing
+                    bcs       mty9                ..not there
+                    lda       PR.FLAG,x
+                    bita      #PF.DEF
+                    beq       mty_no              ..a procedure, not a block
                     ldd       PR.PG,x
                     ldu       <base
                     std       hdrp,u
                     ldd       PR.OFF,x
                     std       hdrp+2,u
-mty1                bsr       hd_x                its lines, after PROCEDURE
-                    lbsr      ln_next
-                    bcs       mty9
+mty1                bsr       hd_x                its lines, after DEFTYPE, up to
+                    lbsr      ln_next             END DEFTYPE
+                    bcs       mty8
+                    pshs      y
+                    lbsr      ln_enddef
+                    puls      y
+                    bcc       mty8
                     lbsr      ln_at               "TYPE" and a space?
                     pshs      y
                     leay      typekw,pcr
@@ -1534,7 +1608,8 @@ mty4b               lda       #C$SPAC
                     lda       #C$SPAC
                     bsr       ty_put
                     bra       mty1
-mty9                rts
+mty8                andcc     #^Carry
+                    rts
 ty_put              pshs      x                   A to Y, while there is room
                     lbsr      a_rline
                     leax      TYMAX,x
@@ -1544,9 +1619,6 @@ ty_put              pshs      x                   A to Y, while there is room
                     bhs       typ9
                     sta       ,y+
 typ9                rts
-hd_x                ldx       <base               X = hdrp
-                    leax      hdrp,x
-                    rts
 
 * rt_send: send command X (ending in CR); carry if the runtime has gone
 rt_send             ldy       <base
@@ -1575,25 +1647,31 @@ crn0                leax      runcm,pcr
 run_first           pshs      x
                     lbsr      bp_sync
                     bcs       crn8
-                    ldb       <nproc
-                    bne       crn1
+                    ldy       #0                  the procedure with the lowest line
+                    clrb                          (not a DEFTYPE block)
+crn2                cmpb      <nproc
+                    bhs       crn3
+                    lbsr      pt_at
+                    pshs      b
+                    lda       PR.FLAG,x
+                    bita      #PF.DEF
+                    bne       crn2b
+                    cmpy      #0
+                    beq       crn2a
+                    ldd       PR.LINE,x
+                    cmpd      PR.LINE,y
+                    bhs       crn2b
+crn2a               tfr       x,y
+crn2b               puls      b
+                    incb
+                    bra       crn2
+crn3                cmpy      #0
+                    bne       crn3a
                     leax      noprms,pcr
                     stx       <msgp
 crn8                puls      x
 crn9                rts
-crn1                clrb                          the entry with the lowest line
-                    lbsr      pt_at
-                    tfr       x,y
-crn2                incb
-                    cmpb      <nproc
-                    bhs       crn3
-                    lbsr      pt_at
-                    ldd       PR.LINE,x
-                    cmpd      PR.LINE,y
-                    bhs       crn2
-                    tfr       x,y
-                    bra       crn2
-crn3                lbsr      a_rline             "run <name>"
+crn3a               lbsr      a_rline             "run <name>"
                     exg       x,y
                     pshs      x
                     ldx       2,s

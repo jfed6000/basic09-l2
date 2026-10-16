@@ -29,7 +29,7 @@ It is written in 6809 assembly (`os9/basic09-l2/`, built as `build/basic09-l2`).
 | P5.5 | Line breakpoints, run to cursor, step over (`l2b09run` and the editor) | done |
 | P5.6 | Syntax colours and pretty print | done |
 | P5.7 | Mouse: click, drag select, right-click extend, menus, dialogs, message window, breakpoint border | done |
-| — | Global TYPE lines: `(* #use <procedure> *)` (2026-10-15) | done |
+| — | Global TYPE lines: `DEFTYPE` blocks and `USE` (2026-10-15) | done |
 
 ## Keys
 
@@ -161,7 +161,7 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 ## Syntax colours
 
 - **Per line:** Basic09 has nothing that spans lines, so `v_line` colours each line as it draws it, from the line's start (`hl.asm`). There is no state between lines and no extra pass over the text.
-- **Keywords** come from the compiler's own table (`KEYTAB` in `src/comand.asm`). `tools/mkkw.py` turns it into `os9/basic09-l2/kwtab.asm` (115 words; per first letter the keywords, then the functions), so the two agree. Statements, reserved words and operator words are keywords, and the rest are functions. Case is ignored, as in the compiler.
+- **Keywords** come from the compiler's own table (`KEYTAB` in `src/comand.asm`). `tools/mkkw.py` turns it into `os9/basic09-l2/kwtab.asm` (115 words, plus the editor's `DEFTYPE` and `USE`; per first letter the keywords, then the functions), so the two agree. Statements, reserved words and operator words are keywords, and the rest are functions. Case is ignored, as in the compiler.
 - **Colours:** the editor uses its own, as Turbo C did: yellow text (7) on blue (6), with keywords white (1), functions pale cyan (3), strings green (5), comments light grey (15) and numbers orange (8), in the Wildbits text palette. On Wildbits, when the screen is a terminal, the editor also changes two palette entries at start: background slot 6 to `#000050` and foreground slot 7 to `#E6D67A`, because the default `#0000AA`/`#DDDD77` came out too bright and pale on the K2's video output. The text palette belongs to the screen, so other terminals' slot 6 and 7 change too while the editor runs. It cannot be read back, so on exit the editor puts back the palette module's defaults (`hl_pal`). Window frames (the text, message and watch windows, with their titles and the line:column) are white (1). The menu bar, the drop-down menus and the hint line are black on light grey (15), with the open menu's title and the selected item on green (5); with colours off they are in reverse video as before. A highlight (the selection, the line the program stopped at) is a colour pair of its own, not VTIO's reverse video: that swaps the colours in force, so a syntax colour sent inside a reversed run changed the background, and the swap back left the wrong pair for the rows after it. The terminal's own colours are read with `SS.FBRgs` at start and put back on exit, and also when colours are turned off. A colour is sent only when it changes, and each row ends in the normal colour, so the frame, menus and dialogs never set one. `$0A` and `$0D` are not used as colour numbers.
 - **Cost:** `make p5itest` pages through a 5,000-line file 150 times: 81 s with colours and 67 s without (+21%). Options ▸ Syntax colours turns them off.
 
@@ -229,7 +229,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 
 - **The runtime:** the first Make forks `l2b09run -t=<term> [-b=<kb>]` with two pipes (PROTOCOL.md, "Connecting"). It keeps running until the editor quits, which sends `bye` and waits for it to exit. If it ends on its own (a program's `BYE`), the bottom line says so, with its exit status, and the next Make starts a new one.
 - **Blocking:** pipes cannot be polled, so the editor waits for each reply. Make shows "Making..." while `l2b09run` compiles.
-- **Procedures:** a line `PROCEDURE <name>` (any case, spaces before it) starts a procedure, which runs to the next such line. Text before the first one is not sent.
+- **Procedures:** a line `PROCEDURE <name>` (any case, spaces before it) starts a procedure, which runs to the next such line or the next `DEFTYPE` block (see "Global TYPE lines"). Text before the first one is not sent.
 - **What Make sends:** a table holds each procedure `l2b09run` has, with a signature of the text it was loaded from: two 16-bit sums (of the bytes, and of those sums) and the length. Make scans the text and compares.
   - A procedure whose signature changed, a new one, or one with a compile or bind error last time is written to `basic09-l2.tmp` (in the current directory, deleted on exit), and all of them go in one `load basic09-l2.tmp`.
   - A name that is no longer in the text gets `kill <name>` first.
@@ -246,14 +246,26 @@ The text is paged, so a file can be far larger than the editor's 64K.
 
 ## Global TYPE lines
 
-Basic09 has no global variables, and every procedure that shares a record (a context record passed as `PARAM g:ctx`) has to repeat its `TYPE` by hand. The editor can supply the TYPE lines from one place instead. `l2b09run` is unchanged.
+Basic09 has no global variables, and every procedure that shares a record (a context record passed as `PARAM g:ctx`) has to repeat its `TYPE` by hand. The editor supplies the TYPE lines from one place instead. `l2b09run` is unchanged.
 
-- **The header:** an ordinary procedure holding the shared `TYPE` lines, for example `PROCEDURE globals`. It is loaded like any other, so it must compile. Basic09 wants a backslash before a comment after a `TYPE` (`TYPE pt=x,y:REAL \ (* a point *)`).
-- **Using it:** a line `(* #use globals *)` (any case, spaces allowed before the words) in a procedure that needs the types, before its `DIM` and `PARAM` lines. It is a comment, so the file stays valid Basic09; stock Basic09 just does not get the types.
-- **What Make sends:** each `#use` line goes to `l2b09run` with every `TYPE` line of the named procedure in front of it on the same line, joined by backslashes, without their comments: `TYPE pt=x,y:REAL \ (* #use globals *)`. The comment has to come last, because a `(*` comment runs to the end of the line. One line keeps every source line one I-code line, so error lines, breakpoints, debugger stops and pretty print stay right. The TYPE text is cut at 200 characters (`TYMAX`) so that the line fits `l2b09run`'s 256; a header with more goes in two, each with its own `#use` line.
-- **Changes:** Make notes which procedures have a `#use` line (`PF.USE`). When the procedure a `#use` line names is sent (changed, new, or with errors) or is gone, the procedures that use it are sent too (`mk_uses`), so a change to the header alone reloads them.
-- **Pretty print:** `LIST` shows the joined line, so for a procedure with `#use` lines pretty print follows the text line by line and puts the user's `#use` line back in place of `LIST`'s, indented like the body (`pp_use`).
-- **Not handled:** a `#use` line in the header itself is not expanded (only its `TYPE` lines are taken), and `l2b09ctl` or stock Basic09 loading the file do not expand anything.
+```
+DEFTYPE shapes
+TYPE pt=x,y:REAL           (* a point *)
+TYPE box=corner:pt; w,h:REAL
+END DEFTYPE
+
+PROCEDURE main
+USE shapes
+DIM p:pt
+```
+
+- **`DEFTYPE <name>` … `END DEFTYPE`:** a block of `TYPE` lines anywhere in the file: before the first procedure or between procedures. It is not a procedure: Make never sends it, Run never starts it, and pretty print, breakpoints and `kill` leave it alone. A `DEFTYPE` line ends the procedure before it, as a `PROCEDURE` line does. Lines after `END DEFTYPE` up to the next `PROCEDURE` belong to nothing (like text before the first procedure). The lines in a block are not compiled on their own, so a `TYPE` line may carry a comment without a backslash. Its name must not be a procedure's: both are in Make's table (`PF.DEF` marks a block).
+- **`USE <name>`:** a line of its own in a procedure that needs the types, before its `DIM` and `PARAM` lines. Any case; spaces before it are allowed.
+- **What Make sends:** the `USE` line goes to `l2b09run` as every `TYPE` line of the block, joined by backslashes and without their comments, then `(* ` and the line itself: `TYPE pt=x,y:REAL \ TYPE box=… \ (* USE shapes`. The comment has to come last, because a `(*` comment runs to the end of the line. One line keeps every source line one I-code line, so error lines, breakpoints, debugger stops and pretty print stay right; an error in the TYPE text shows on the `USE` line. The TYPE text is cut at 200 characters (`TYMAX`) so that the line fits `l2b09run`'s 256; more types go in a second block with its own `USE` line. If there is no such block, the line goes as it is, and the compiler reports it.
+- **Changes:** a block has a signature like a procedure's. When a block changes (or goes), the procedures that `USE` it are sent again (`mk_uses`).
+- **Pretty print:** `LIST` shows the joined line, so for a procedure with `USE` lines pretty print follows the text line by line and puts the user's `USE` line back in place of `LIST`'s, indented like the body (`pp_use`). It replaces a procedure's lines only up to the next `PROCEDURE` or `DEFTYPE` line.
+- **Colours:** `DEFTYPE` and `USE` are keywords (`tools/mkkw.py`, `EXTRA`).
+- **Not handled:** `l2b09ctl` and stock Basic09 do not know `DEFTYPE` or `USE`; a file that uses them needs the editor.
 
 ## The debugger
 
@@ -302,7 +314,7 @@ Basic09 has no global variables, and every procedure that shares a record (a con
 - **`make p5ltest` (P5.7):** `test/p5l`, the real keyboard and mouse on `/term`, driven by the MAME script `test/p5l/lua`. It types after clicks on two lines, sets a breakpoint on the left border, and runs the program from the Run menu by pressing on its title, dragging down and releasing on Run. The snapshot must show the edits and the stop on the breakpoint's line.
 - **`make p5qtest` (P5.7):** `test/p5q`, the workspace size. A generated procedure too big for 8K, with `-m=8`: Make's load runs out of memory twice, the editor grows the workspace to 16K and then 24K and the load succeeds; then Options ▸ Memory... sets 24K. The protocol log must show the `mem` commands and what they got.
 - **`make p5rtest`:** `test/p5r`, the F1 help box from a key script (`-h`): the snapshot must show the keys at column 3 and what they do at column 29, as before the help text lost its padding.
-- **`make p5stest`:** `test/p5s`, global TYPE lines. `main` and `show` use `globals` (one with `#USE` indented). Make and Run print the record's size, 10; a field is added to `globals` alone, and the next Make sends all three and Run prints 15. Then pretty print keeps both `#use` lines, and a last Make sends nothing. The protocol log (with the joined lines in `LIST`) and the saved file must match.
+- **`make p5stest`:** `test/p5s`, global TYPE lines. A `DEFTYPE` block comes before `main` (Run must still start `main`) and another, unused, between `main` and `show`; both procedures `USE` the first (one in lower case, indented). Make sends only the procedures, and Run prints the record's size, 10. A field is added to the block alone; the next Make sends both procedures again and Run prints 15. Pretty print keeps the `USE` lines and leaves both blocks alone, and a last Make sends nothing. The protocol log (with the joined lines in `LIST`) and the saved file must match.
 - **`make p5ptest` (P5.7):** `test/p5p`, the screen switch live in MAME. The script counts the grey pixel rows down one column (menu bar, its gap row, hint line), which tell 80×30 from 80×60 and single from double spacing, through four switches; then quits on 80×60 and checks the shell is back on 80×30.
 - **`make p5otest` (P5.7):** `test/p5o`, double spacing from a key script on the 80×30 screen. The snapshot must show the text on the even rows, the borders and the scroll bar's track on the gap rows, the gap rows clean after a dialog, and a press on logical row 5 typing on line 4.
 - **`make p5ntest` (P5.7):** `test/p5n`, the scroll bar from a key script (drawn in ASCII: `^` `v` arrows, `:` track, `#` thumb). Two clicks on ▼, a click on the track, the thumb dragged to the bottom and a click on ▲, each followed by a letter typed; the saved file shows where the cursor went, and the snapshot the window and thumb.
