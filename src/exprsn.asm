@@ -29,6 +29,10 @@ J$STER jsr M.STMTS
  fcb X$STER  statement error exit
 J$CVIO jsr M.CNVIO
  fcb X$CVIO  call cnvio
+ ifne L2B09
+J$NEAR jsr M.STMTS
+ fcb X$NEAR Refuse a far element
+ endc
 
  ifne INCLUDED&EDITOR
 J$TEXP jsr M.COMAND
@@ -346,8 +350,12 @@ VARR02 ldd ,X++ Get symbol table offset
  std I.OFFS Save it
  ifne L2B09
  lda 2,U
- cmpa #$FF far array mark?
- lbeq L2FVRF
+ inca far array mark ($FF)?
+ bne L2VR01
+ tst DEFNAS parameter?
+ beq L2VR01 ..yes; not far
+ tst I.VRFL field?
+ lbne L2FVRF ..no; far
 L2VR01 lda 1,S Get subscript count
  else
  lda 1,S Get subscript count
@@ -2914,7 +2922,7 @@ VALFNC ldd I.IOBG Get I/O buffer ptrs
 
 ADRFNC lbsr EVAL20 Call eval recursively
  ifne L2B09
- lbsr L2NOFR no ADDR of far elements
+ lbsr J$NEAR no ADDR of far elements
  endc
  leay -OPSIZE,Y Make room on opstack
  stu 1,Y Store variable addr
@@ -4415,11 +4423,7 @@ INIT1 ldd ,X++ Copy values
 * Input: as VARREF, at VARR03; (U)=Array description ptr
 *        0,S=TYPE, 1,S=subscript count
 
-L2FVRF tst DEFNAS parameter?
- lbeq L2VR01 ..yes; not far
- tst I.VRFL field?
- lbeq L2VR01 ..yes; not far
- ldb 1,S subscript count
+L2FVRF ldb 1,S subscript count
  bne L2FV05
  ldb #M$IES Err: a far array must be subscripted
  lbra EVLERR
@@ -4505,18 +4509,16 @@ L2FV55 lsr 1,S divisor := divisor / 2
  ldd  ,U allocated?
  bne L2FV60 ..yes
  ldx 13,S
- lbsr L2FALC
+ bsr L2FALC
  ldd  ,U
 L2FV60 addb 2,S add block number
  adca #0
  bsr L2FMAP (X)=data window
  bcs L2FVER
- tfr X,D
- addd  ,S++
- tfr D,U (U)=element address
- leas 9,S drop work area
- puls X Retrieve I-Code ptr
- leas 2,S
+ puls D
+ leau D,X (U)=element address
+ ldx 9,S Retrieve I-Code ptr
+ leas 13,S drop work area
  lbra VARR18
 L2FVER lbra EVLERR
 
@@ -4616,36 +4618,6 @@ L2FME stb 1,S
  puls D,Y,U
  orcc #1
  rts
-
-***************
-* Subroutine L2INWN
-*   Is (U) in the data window?  Carry set if so.
-
-L2INWN pshs D
- ldd DWADR
- beq L2IW8 ..no window
- pshs D
- tfr U,D
- subd ,S++
- blo L2IW8
- cmpd #L2BLSZ
- bhs L2IW8
- puls D
- orcc #1
- rts
-L2IW8 puls D
- andcc #$FE
- rts
-
-***************
-* Subroutine L2NOFR
-*   ADDR of a far element would be meaningless: the window moves
-
-L2NOFR bsr L2INWN
- bcs L2NF1
- rts
-L2NF1 ldb #M$IARG Err: illegal argument
- lbra EVLERR
 
  endc
 

@@ -77,6 +77,7 @@ X$TROF rmb 2 Turn off trace mode
 X$L2RS rmb 2 Resolve procedure ptr (map banked procedure)
 X$L2MW rmb 2 Map far block into the code window
 X$FALL rmb 2 Free all far arrays
+X$NEAR rmb 2 Refuse a far element
  endc
 
 *** Expression Interpreter Entries

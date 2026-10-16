@@ -246,8 +246,10 @@ J$PHEX jsr M.BINDER
  fcb X$PHEX Print hex number
 J$BSTM jsr M.BINDER
  fcb X$BSTM Bind statement
+ ifeq L2B09 unused
 J$TRON jsr M.STMTS
  fcb X$TRON  turn on trace mode
+ endc
 J$TROF jsr M.STMTS
  fcb X$TROF  turn off trace mode
 J$ISTM jsr M.STMTS
@@ -1182,7 +1184,9 @@ FREE fcs " free"
  endc
 DEFNAM fcs "Program"
 PRCEDR fcs "PROCEDURE"
+ ifeq L2B09 unused
 CR.RET fcb V$CR
+ endc
  ifeq L2B09
 DIRHDR fcb $A
  fcs "  Name      Proc-Size  Data-Size"
@@ -1195,8 +1199,10 @@ OVWRIT fcc "%ASK Rewrite?"
 OVWRIT fcc "Rewrite?: "
  endc
 OVWLEN equ *-OVWRIT
+ ifeq L2B09 only the line editor uses it
 RNGERR fcc "RANGE"
  fcb $87
+ endc
 DBGMSG equ *
  ifne Tandy-0
  fcb C$Alpha change to alpha screen
@@ -1465,7 +1471,7 @@ COMAN0 bsr SETUP reserve opstack
 RUNCMD pshs X,Y Save regs
  clr G.SIGN any signal now is ignored
  ifne L2B09
- cmpx #0 no prompt (caller wrote an event line)?
+ leax ,X no prompt (caller wrote an event line)?
  beq RUNCMD02
  lbsr PRTLIN prompt is a whole line
 RUNCMD02 equ *
@@ -1610,7 +1616,9 @@ CHXD10 leax  ,Y (x)=pathname ptr
 RBIND1 lbra REBIND Rebind the procedure and return carry clear
  endc
 
+ ifeq L2B09 only RENAME (in the overlay) uses it
 ERPRCX ldb #M$MDPC Error - multiply defined proc
+ endc
 ERREXT lbsr PRTERR
 EXIT1 lbra EXIT
 
@@ -1921,7 +1929,7 @@ LIST1 pshs Y Save proc list ptr
  ifne L2B09
  tfr Y,X
  lbsr J$L2RS banked? map it
- lbcs LIST15
+ bcs LIST15
  tfr X,Y
  endc
  sty I.APRC set active procedure
@@ -2730,7 +2738,7 @@ L2GARD pshs D,X,Y,U
  ldd G.WSPA room for a process descriptor copy?
  addd G.WSPS
  subd G.PRCA
- cmpd #512
+ cmpa #512/256
  blo L2GAR9
  OS9 F$ID (A)=our process ID
  bcs L2GAR9
@@ -2771,6 +2779,8 @@ L2FRE1 ldx FARBAS
  clr WINBLK+1
 L2FRE9 puls D,X,U,PC
 
+L2BNK0 puls D,X,Y,U,PC L2BANK's early exit, in reach of short branches
+
 ***************
 * Subroutine L2BANK
 *   After LOAD binds a procedure, move it to the far store and
@@ -2780,28 +2790,28 @@ L2FRE9 puls D,X,U,PC
 
 L2BANK pshs D,X,Y,U
  ldd FARBAS
- lbeq L2BNK9 ..banking off
+ beq L2BNK0 ..banking off
  ldx I.APRC the procedure just bound
  lda P.STAT,X
  bita #1+P.BANK errors, or already banked?
- lbne L2BNK9
+ bne L2BNK0
  ldd G.PRCA must be the top procedure
  addd G.PRCS
  pshs D
  tfr X,D
  addd P.SIZE,X
  cmpd ,S++
- lbne L2BNK9
+ bne L2BNK0
  ldd P.SIZE,X
  cmpd WINLIM
- lbhi L2BNK9 ..bigger than the window
+ bhi L2BNK0 ..bigger than the window
  addd FAROFS
  cmpd WINLIM
  bls L2BNK1 ..fits in the current block
  lda FARIDX
  inca next block
  cmpa FARCNT
- lbhs L2BNK9 ..store full
+ bhs L2BNK0 ..store full
  sta FARIDX
  clr FAROFS
  clr FAROFS+1

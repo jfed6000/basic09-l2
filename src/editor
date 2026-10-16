@@ -1010,13 +1010,11 @@ ACTLIN pshs Y
 * Returns: (D)=Line number (1 = first line of procedure)
 
 L2LINE pshs X,Y,U
- tfr Y,U target
  ldx #0
  ldy I.ICBG
 L2LIN1 leax 1,X line (X) starts at (Y)
  lbsr NXTONE (Y)=start of next line
- pshs U
- cmpy ,S++
+ cmpy 2,S the target
  bhi L2LIN2 ..target is on line (X)
  cmpy I.ICLM
  blo L2LIN1
@@ -1059,11 +1057,8 @@ L2EV10 ldy L2EVSZ+4,S icode ptr
  bsr L2EDEC line number
 L2EV20 lda #V$CR
  sta ,U+
- tfr U,D
  leax ,S
- pshs X
- subd ,S++ length
- tfr D,Y
+ ldy #L2EVSZ I$WritLn stops at the CR
  lda #CMDOUT
  OS9 I$WritLn
  leas L2EVSZ,S
@@ -1110,7 +1105,7 @@ L2DPMT pshs B,Y
  leax <L2DBGE,PCR
  clrb
  ldy I.ICPT
- lbsr L2EVNT
+ bsr L2EVNT
  ldx #0
  puls B,Y,PC
 

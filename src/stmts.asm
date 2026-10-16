@@ -21,6 +21,7 @@ STMTENT equ *
  fdb L2RSLV-STMTENT Resolve procedure ptr
  fdb L2MAPW-STMTENT Map far block into the code window
  fdb L2FALL-STMTENT Free all far arrays
+ fdb L2NEAR-STMTENT Refuse a far element
  endc
 
 ***************
@@ -73,8 +74,10 @@ J$L2EV jsr M.COMAND
  endc
 J$PBLN jsr M.COMAND
  fcb X$PBLN Print a bound line
+ ifeq L2B09 unused
 J$TEXP jsr M.COMAND
  fcb X$TEXP Trace expression address
+ endc
 J$TEXR jsr M.COMAND
  fcb X$TEXR Trace result
  endc
@@ -1692,6 +1695,7 @@ CHXSTM jsr J$EVAL
 * Subroutine SPATH
 *   Set Variable to Path
 
+ ifeq L2B09 nothing calls it
 SPATH lbsr ASGVAR Get variable address
  ldy I.OPBG Get opstack ptr
  leay -6,Y Get room
@@ -1699,6 +1703,7 @@ SPATH lbsr ASGVAR Get variable address
  clra
  std 1,Y Put in stack
  lbra ASGDIS
+ endc
 
 ***************
 * Subroutine CHNSTM
@@ -2086,7 +2091,7 @@ RUNS50 ldd U.STBG,U Get string stack beginning
  ldx U.PROC,U Get procedure ptr
  ifne L2B09
  lbsr L2RSLV caller banked? map it back
- lbcs RUNERR
+ bcs RUNERR
  endc
  lbsr SETGLB Set I.xxxx
  ldx U.ICPT,U Restore I-Code ptr
@@ -2360,7 +2365,10 @@ L2FPOP pshs D,X,U
  ldx I.APRC
  ldd P.VARC,X
  addd I.ASTR end of its storage
- pshs D
+ bra L2FPP0
+L2FAL0 pshs D,X,U
+ ldd #$FFFF all of them
+L2FPP0 pshs D
 L2FPP1 ldu FARLST
  beq L2FPP9
  cmpu  ,S
@@ -2376,15 +2384,7 @@ L2FPP9 leas 2,S
 * Subroutine L2FALL  (X$FALL)
 *   Free all far arrays: no procedure is running any more
 
-L2FALL pshs D,U
-L2FAL1 ldu FARLST
- beq L2FAL2
- bsr L2FREL
- ldd 2,U
- std FARLST
- bra L2FAL1
-L2FAL2 bsr L2UNMW
- puls D,U,PC
+L2FALL bsr L2FAL0 and unmap the window
 
 ***************
 * Subroutine L2UNMW
@@ -2410,25 +2410,19 @@ L2UMW9 puls D,X,U,PC
 *   Is (U) in the data window?  Carry set if so.
 
 L2INWN pshs D
- ldd DWADR
- beq L2IW8 ..no window
- pshs D
  tfr U,D
- subd ,S++
- blo L2IW8
- cmpd #L2BLSZ
- bhs L2IW8
- puls D
- orcc #1
- rts
-L2IW8 puls D
- andcc #$FE
- rts
+ subd DWADR
+ cmpa #L2BLSZ/256 within a block of it?
+ bcc L2IW9 ..no
+ ldd DWADR leaves the carry alone
+ bne L2IW9 ..and there is a window
+ clra no window: carry clear
+L2IW9 puls D,PC
 
 ***************
-* Subroutine L2NEAR
-*   A parameter passed by reference must not be a far element:
-*   the data window moves on under it
+* Subroutine L2NEAR  (X$NEAR)
+*   A parameter passed by reference (or ADDR's argument) must not
+*   be a far element: the data window moves on under it
 
 * Passed: (U)=Parameter address
 
@@ -2480,7 +2474,7 @@ L2UP1 pshs D
  cmpa #S.RCRD a far record from the window?
  bne L2UP15
  ldu 1,Y
- lbsr L2INWN
+ bsr L2INWN
  bcc L2UP15
  ldd I.STSP ..yes; copy it out first
  addd 3,Y
@@ -2490,15 +2484,13 @@ L2UP1 pshs D
  blo L2UPOV
  ldx I.STSP
  stx 1,Y the copy is the source now
- ldd 3,Y
- pshs D byte count
+ pshs Y
+ ldy 3,Y byte count
 L2UP12 lda ,U+
  sta ,X+
- ldd  ,S
- subd #1
- std  ,S
+ leay -1,Y
  bne L2UP12
- leas 2,S
+ puls Y
 L2UP15 puls D
  lbsr J$FMAP (X)=window
  lbcs EXCERR

@@ -2585,7 +2585,7 @@ L2FD12 clra
 * 0,S=element count, 3,S=var stack ptr, 5,S=symbol ptr, 7,S=dim count
 L2FD20 ldd ,--X get subscript
  std ,U++ put in descr area
- lbsr L2MU24 count := count * subscript
+ bsr L2MU24 count := count * subscript
  bcs L2FDER ..too many elements
  dec 7,S
  bne L2FD20
@@ -2609,7 +2609,7 @@ L2FD32 lda 1,S elements left?
  ora 3,S
  beq L2FD36 ..no
  inc  ,S one more block
- beq L2FDE2 ..more than 255
+ beq L2FD36 ..more than 255: (B)=0 there
  ldd 2,S
  subd  ,U
  std 2,S
@@ -2618,9 +2618,7 @@ L2FD32 lda 1,S elements left?
  sta 1,S
  bcc L2FD32
 L2FD36 ldb ,S+ (B)=block count
- bne L2FD40
- bra L2FDER no elements
-L2FDE2 leas 1,S
+ bne L2FD40 ..none: no elements, or too many
 L2FDER pshs Y
  ldy 13,S I-Code ptr (PDECLR's), for the error's line
  lda #M$ASO Err: array size overflow
