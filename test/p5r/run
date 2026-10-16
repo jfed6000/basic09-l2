@@ -1,6 +1,12 @@
-* l2basic09: basic09-l2's F1 help box (scripted, -h snapshot)
+* l2basic09: the help browser l2b09help on its own (screen to a file)
+* and from the editor's F1 (-h snapshot)
 -x
 chd /dd/l2b09
+l2b09help le <keys1.bin >v1.out
+l2b09help print <keys2.bin >v2.out
+l2b09help nosuchword <keys3.bin >v3.out
 load /dd/l2b09/l2b09run
 echo >term.out
+/dd/l2b09/basic09-l2 -t=/dd/l2b09/term.out hp.b09 <keys4.bin >e1.out
+echo == editor back
 /dd/l2b09/basic09-l2 -h -t=/dd/l2b09/term.out hp.b09 <keys.bin >/term

@@ -167,8 +167,14 @@ scrm60              fcn       "80x60 screen"      also lspace.asm's message
                     fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
-helptl              fcn       "Keys"              also the help box's title
+                    fcn       "Topic at cursor"
                     fcn       "F1"
+                    fdb       c_hcont-cmdtab
+                    fcn       "Contents"
+                    fcn       ""
+                    fdb       c_hkeys-cmdtab
+                    fcn       "Keys"
+                    fcn       ""
                     fdb       c_about-cmdtab
                     fcn       "About"
                     fcn       ""
@@ -743,103 +749,74 @@ asktl               fcn       "Confirm"
 msgtl               fcn       "basic09-l2"
 
 ********************************************************************
-* Help
+* Help: the help browser l2b09help (docs/HELP.md) runs on this terminal
+* and reads the same keys; the editor waits for it, then redraws
 
-c_help              lda       <scrw               a box over everything
-                    sta       <bx.w
-                    lda       <scrh
-                    deca
-                    sta       <bx.h
-                    clr       <bx.col
-                    clr       <bx.row
-                    lda       #GL.TL2
-                    sta       <bx.st
-                    lbsr      bx_draw
-                    leax      helptl,pcr
-                    lbsr      bx_title
-                    leax      helptx,pcr
-                    ldb       #2
-chl1                lda       ,x
-                    inca
-                    beq       chl9                $FF ends the list
-                    lda       #3                  the keys
-                    bsr       chl5
-                    lda       #3+HLPKW            what they do
-                    bsr       chl5
-                    incb
-                    pshs      b                   stop above the bottom border
-                    ldb       <bx.h
-                    decb
-                    cmpb      ,s
-                    puls      b
-                    bhi       chl1
-chl9                lbsr      t_curoff
+* c_help: the page for the word at the cursor (F1; LEFT$ with its $),
+* or the contents if there is none
+c_help              lbsr      word_at             to inbuf; Z if none
+                    beq       c_hcont
+                    lbsr      p_char              (U is past the word)
+                    cmpa      #'$
+                    bne       chp1
+                    sta       ,x+
+                    clr       ,x
+chp1                lbsr      a_inbx
+                    bra       hlp_go
+c_hkeys             leax      keystp,pcr          Help > Keys
+                    bra       hlp_go
+c_hcont             leax      keystp+4,pcr        Help > Contents: no topic
+* hlp_go: run "l2b09help -e [-n] <topic X>" and wait for it
+hlp_go              pshs      x
+                    ldy       <base
+                    leay      rline,y
+                    leax      hlpe,pcr
+                    lbsr      s_cpy
+                    tst       <nocolr
+                    beq       hg0
+                    leax      hlpn,pcr
+                    lbsr      s_cpy
+hg0                 tst       <hold               (-h for the tests' snapshots)
+                    beq       hg1
+                    leax      hlph,pcr
+                    lbsr      s_cpy
+hg1                 puls      x
+                    lbsr      s_cpy
+                    lda       #C$CR
+                    sta       ,y+
+                    lbsr      a_rline             U = the parameters, Y = their
+                    tfr       y,d                 length
+                    pshs      x
+                    subd      ,s
+                    tfr       d,y
+                    puls      u
+                    leax      hlpnm,pcr
+                    clra
+                    clrb
                     lbsr      t_flush
-                    lbsr      getkd
-                    lbra      dlg_done
-chl5                lbsr      t_xy                print a string at column A, row B
-                    lbsr      t_str
-chl6                tst       ,x+                 and step over it
-                    bne       chl6
-                    rts
-
-* each line is two strings: the keys and, at column 3+HLPKW, what they do
-HLPKW               equ       26
-helptx              fcn       "Arrows"
-                    fcn       "move"
-                    fcn       "Ctrl+Left, Ctrl+Right"
-                    fcn       "word left, right"
-                    fcn       "Ctrl+Up, Ctrl+Down"
-                    fcn       "page up, down"
-                    fcn       "Ctrl+Shift+Up, +Down"
-                    fcn       "top, end of the file"
-                    fcn       "^J, ^K (K2: Home)"
-                    fcn       "start, end of the line"
-                    fcn       "Backspace"
-                    fcn       "delete the character before the cursor"
-                    fcn       "Shift+Backspace"
-                    fcn       "delete the character at the cursor"
-                    fcn       "Enter"
-                    fcn       "new line (indented like this one)"
-                    fcn       "^D"
-                    fcn       "delete the line"
-                    fcn       "^G"
-                    fcn       "go to a line"
-                    fcn       "^S, F2 / ^O, F3"
-                    fcn       "save / open a file"
-                    fcn       "^Q"
-                    fcn       "quit"
-                    fcn       "Alt+F E S R C D O H"
-                    fcn       "menus: File Edit Search Run Compile"
-                    fcn       ""
-                    fcn       "Debug Options Help"
-                    fcn       "  in a menu:"
-                    fcn       "arrows, Enter or the first letter; Esc"
-                    fcn       "^B"
-                    fcn       "make: load the changed procedures"
-                    fcn       "^R"
-                    fcn       "make, then run the first procedure"
-                    fcn       "^N, F6"
-                    fcn       "next message, message window"
-                    fcn       "F5"
-                    fcn       "the program's screen"
-                    fcn       "F7, F8, F4"
-                    fcn       "step into, step over, run to the cursor"
-                    fcn       "^T"
-                    fcn       "breakpoint on this line (on or off)"
-                    fcn       "^Space"
-                    fcn       "pretty print every procedure"
-                    fcn       "^R, ^P when stopped"
-                    fcn       "continue, reset the program"
-                    fcn       "^E, ^W"
-                    fcn       "evaluate (or x:=value), add a watch"
-                    fcn       "^1, ^2"
-                    fcn       "single, double line spacing"
-                    fcn       "F1"
-                    fcn       "this help"
-                    fcn       "Press any key."
-                    fcn       ""
-                    fcb       $FF
+                    os9       F$Fork
+                    bcs       hg9
+                    pshs      a
+hg2                 os9       F$Wait              (l2b09run may end meanwhile)
+                    bcc       hg3
+                    cmpb      #E$NoChld
+                    bne       hg2
+                    clrb
+                    bra       hg4
+hg3                 cmpa      ,s
+                    bne       hg2
+hg4                 leas      1,s
+hg9                 stb       <msgerr             its exit status (or why it did not run)
+                    lbsr      hl_set              everything again, in our colours
+                    ldx       <base
+                    inc       gapdty,x
+                    lbra      rd_all
+hlpnm               fcc       "l2b09help"
+                    fcb       C$CR
+hlpe                fcn       "-e "
+hlpn                fcn       "-n "
+hlph                fcn       "-h "
+keystp              fcn       "Keys"
 
 c_about             leax      aboutm,pcr
                     lbra      dlg_msg

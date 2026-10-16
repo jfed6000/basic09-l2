@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""The F1 help box, from a key script: each line's keys at column 3 and
-what they do at column 29, from row 2 down.
+"""The help browser.  On its own, with the screen going to a file:
+"le" is no page, so the names starting with it are listed, and Enter
+opens the first (LEFT$); "print", Right, Enter follows the second link
+on the PRINT page (PRINT USING) and Backspace comes back; a word with no
+page and no name starting with it opens the contents.  Then from the
+editor (its screen to a file): F1 with the cursor in LEFT$ (its $
+included) opens that page, Esc goes back to the editor, and ^Q quits
+it.  Last, the same with -h: the snapshot shows the editor drawn again
+after the help.
 
 usage: gen <outdir>
 """
@@ -12,6 +19,11 @@ from keys import compile_keys  # noqa: E402
 
 out = sys.argv[1]
 with open(os.path.join(out, 'hp.b09'), 'w', newline='') as f:
-    f.write('PROCEDURE hp\rEND\r')
-with open(os.path.join(out, 'keys.bin'), 'wb') as f:
-    f.write(compile_keys('f1'))
+    f.write('PROCEDURE hp\rPRINT LEFT$("ab",1)\rEND\r')
+for name, keys in (('keys1.bin', 'enter esc'),
+                   ('keys2.bin', 'right enter bs esc'),
+                   ('keys3.bin', 'esc'),
+                   ('keys4.bin', 'down right*8 f1 esc ^q'),
+                   ('keys.bin', 'down right*8 f1 esc')):
+    with open(os.path.join(out, name), 'wb') as f:
+        f.write(compile_keys(keys))

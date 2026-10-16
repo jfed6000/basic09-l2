@@ -1,4 +1,10 @@
-mame.log  02: ||  Arrows                    move                                              ||
-mame.log  15: ||                            Debug Options Help                                ||
-mame.log  16: ||    in a menu:              arrows, Enter or the first letter; Esc            ||
-mame.log  27: ||  F1                        this help                                         ||
+v1.out    Search: LE
+v1.out    LEFT$ function
+v2.out    PRINT statement
+v2.out    Prints values in a set format.
+v3.out    basic09-l2 help
+e1.out    LEFT$ function
+e1.out    Returns the first characters of a string.
+mame.log  02: ||PROCEDURE hp                                                                  ^|
+mame.log  03: ||PRINT LEFT$("ab",1)                                                           #|
+mame.log  28: |+== 2:9 =======================================================================+|

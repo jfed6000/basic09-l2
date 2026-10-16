@@ -1,0 +1,578 @@
+@category Editor
+# Help pages for the basic09-l2 editor (docs/EDITOR.md, menu.asm)
+
+== About | About basic09-l2
+basic09-l2 is a full-screen editor for Basic09 on NitrOS-9 Level 2.
+
+It looks and works like the Turbo C editor of DOS days. It edits one
+whole .b09 file, which can be far larger than 64K: the text is kept in
+2K pages in a swap file, with only some of them in memory.
+
+The editor does not compile anything itself. On the first {Make} it
+starts l2b09run, the Level 2 Basic09 compiler, runtime and debugger,
+and talks to it over two pipes. l2b09run loads the procedures, runs the
+program and stops it in the {Debugger}. A program can use memory beyond
+64K.
+
+Start it from the shell:
+
+  basic09-l2 [-c=<pages>] [-t=<term>] [-b=<kb>] [-m=<kb>] [<file>]
+
+  -c   2K pages kept in memory, 3 to 24 (12 by default)
+  -t   the terminal the program runs on (a free /vt window by default)
+  -b   far memory, in KB, for l2b09run to bank procedure code into
+  -m   l2b09run's workspace in KB, at most 63 (16 by default)
+
+See {Keys}, {Menus} and {Files}.
+
+== Keys | Editor keys
+Every editor command has a key. ^X means Ctrl+X.
+
+Moving
+  Arrows                   move
+  Ctrl+Left, Ctrl+Right    a word left, right
+  Ctrl+Up, Ctrl+Down       a page up, down
+  Ctrl+Shift+Up, +Down     the top, the end of the file
+  ^J, ^K                   the start, the end of the line
+  ^G                       go to a line number
+
+Editing
+  Backspace                delete the character before the cursor
+  Shift+Backspace          delete the character at the cursor
+  Enter                    new line, indented like this one
+  ^D                       delete the line
+  ^Z, ^Y                   {Undo}, redo
+
+Selection and clipboard ({Selection}, {Clipboard})
+  Shift+arrows             select
+  Ctrl+Shift+Left, Right   select a word at a time
+  ^A                       select all
+  ^X, ^C, ^V               cut, copy, paste
+  Esc                      end the selection
+
+Files ({Files})
+  ^S, F2                   save
+  ^O, F3                   open
+  ^Q                       quit
+
+Search ({Find}, {Replace})
+  ^F                       find
+  ^L, Ctrl+Shift+L         find next, find previous
+
+Make, Run and debug
+  ^B                       {Make}
+  ^R                       {Run|Running}; continue when stopped
+  ^N                       next message
+  F6                       into the {Message window} and back
+  F5                       the program's screen
+  F7, F8                   step into, step over ({Debugger})
+  F4                       run to the cursor
+  ^P                       program reset
+  ^T                       {Breakpoints}: on or off on this line
+  ^E                       {Evaluate} (or set with x:=value)
+  ^W                       add a watch ({Watches})
+  ^Space                   {Pretty print} every procedure
+
+View
+  ^1, ^2                   single, double {Line spacing}
+
+Menus and help ({Menus})
+  Alt+F E S R C D O H      File Edit Search Run Compile Debug Options
+                           Help
+  in a menu                arrows, Enter or the first letter; Esc
+  F1                       help
+  Esc                      cancel a menu, a dialog or a selection
+
+Keyboards: the K2 has a Home key for the start of the line. The PS/2
+keyboard driver sends only F1 and F2, so F3 to F8 work on the K2 only.
+Every F-key command is also on a Ctrl key or in a menu.
+
+== Menus | Editor menus
+Press Alt and a menu's first letter to open it. In a menu, Up and Down
+move, Left and Right go to the next menu, and Enter or an item's first
+letter runs it. Esc closes the menu. You can also use the {Mouse}.
+
+File
+  New                  start an empty text ({Files})
+  Open...      ^O      open a file ({Files})
+  Save         ^S      save the file ({Files})
+  Save as...           save under a new name ({Files})
+  Quit         ^Q      leave the editor ({Files})
+Edit
+  Undo, Redo   ^Z ^Y   take an edit back, or do it again ({Undo})
+  Cut, Copy, Paste     ^X ^C ^V ({Clipboard})
+  Select all   ^A      select the whole text ({Selection})
+  Delete line  ^D      delete the cursor line
+Search
+  Find...      ^F      find a text ({Find})
+  Find next    ^L      find it again ({Find})
+  Find previous        Ctrl+Shift+L: find it backwards ({Find})
+  Replace...           replace, asking at each match ({Replace})
+  Go to line...  ^G    move to a line number
+Run
+  Run          ^R      Make and run, or continue ({Running})
+  Go to cursor  F4     run to the cursor line ({Debugger})
+  Program reset  ^P    end the stopped program ({Debugger})
+  User screen  F5      show the program's screen ({Running})
+Compile
+  Make         ^B      load the changed procedures ({Make})
+  Next error   ^N      go to the next message ({Message window})
+  Messages     F6      into the message window ({Message window})
+  Pretty print         tidy the procedure at the cursor ({Pretty print})
+  All: pretty print    ^Space: tidy every procedure
+Debug
+  Trace into   F7      step, into called procedures ({Debugger})
+  Step over    F8      step, running calls whole ({Debugger})
+  Until return...      stop on the way back to a procedure
+  Evaluate...  ^E      show or set a value ({Evaluate})
+  Add watch... ^W      add a watch ({Watches})
+  Delete watch...      remove a watch or all of them ({Watches})
+  Breakpoint   ^T      on or off on this line ({Breakpoints})
+  Clear breakpoints    remove them all ({Breakpoints})
+Options
+  Auto indent          Enter indents like the line above, on or off
+  Match case           searches match case, on or off ({Find})
+  Syntax colours       colours on or off ({Syntax colours})
+  Keyword case         lower case or capitals ({Pretty print})
+  Double spacing  ^1/^2  text on every other row ({Line spacing})
+  80x60 screen         switch 80x30 and 80x60 ({Screen size})
+  Memory...            l2b09run's workspace ({Memory})
+Help
+  Keys         F1      help ({Keys})
+  About                the editor's name and edition ({About})
+
+== Files | Open, save and quit
+The File menu opens, saves and closes the text.
+
+The editor edits one file at a time. Its name is in the top border, and
+a * in the bottom border means the text has changed since it was saved.
+
+  New        drops the text and starts an empty one with no name.
+  Open...    (^O, F3) asks for a file name and loads that file.
+  Save       (^S, F2) writes the text to its file. With no name yet it
+             asks for one, as Save as does.
+  Save as... asks for a name, then saves under it. The text keeps the
+             new name.
+  Quit       (^Q) leaves the editor.
+
+New, Open and Quit ask "Save the changes (Y/N)?" when the text has
+changed. Y saves first, N goes on without saving, and Esc cancels.
+
+Open and New clear the {Undo} history, the {Breakpoints} and the
+messages.
+
+You can give a file name when you start the editor. A file that does
+not exist starts empty and is created on the first save.
+
+A file can be far larger than 64K. The editor keeps its text in the
+swap file basic09-l2.swp in the current directory while it runs, and
+deletes it on exit.
+
+== Make | Make: load the changed procedures
+Make (^B, Compile > Make) loads your program into l2b09run.
+
+A line PROCEDURE <name> starts a procedure. It runs to the next
+PROCEDURE line or the next {DEFTYPE} block. Text before the first
+procedure is not sent.
+
+Make sends only what changed since the last Make:
+  - a new procedure, a changed one, or one that had errors last time;
+  - a KILL for a procedure that is no longer in the text.
+Undo an edit and the procedure counts as unchanged again.
+
+The bottom line says "Making..." while l2b09run compiles. A clean Make
+says how many procedures it loaded, or "up to date".
+
+When there are errors, the {Message window} opens and the cursor goes
+to the first one. Press ^N for the next. Each message reads
+
+  Line <n>, <procedure>: Error <code> <text>
+
+If the workspace fills up ({Error 32}), Make grows it by 8K and loads
+again, up to 56K. See {Memory}.
+
+If the program is stopped in the {Debugger} and the text has changed,
+Make asks "reset the program (Y/N)?". Y resets it and loads. N loads
+nothing, so ^R goes on with the old code. Esc does neither.
+
+{Run|Running} makes first, so you seldom need Make on its own.
+
+== Running | Run the program
+Run (^R, Run > Run) makes, then runs the first procedure in the text.
+
+Run does a {Make} first, then runs the first PROCEDURE in the file.
+{DEFTYPE} blocks are never started. While the program runs, its own
+screen is shown. When it ends, the editor's screen comes back.
+
+If the program stops in the {Debugger}, ^R continues it.
+
+A runtime error becomes a message in the {Message window}, and the
+cursor goes to the line. The program stays stopped there, so you can
+{Evaluate} its variables. Press ^P to reset it.
+
+BREAK stops the program in the debugger, even when the editor had the
+keyboard last.
+
+F5 (Run > User screen) shows the program's screen until you press a
+key. With -t=<file> there is no user screen.
+
+If the program ends l2b09run itself (with BYE), the bottom line says
+so, and the next Make starts a new l2b09run.
+
+== Debugger | The debugger
+The debugger stops your program and lets you step through it.
+
+A program stops at a breakpoint ({Breakpoints}), a {PAUSE} statement,
+BREAK, a runtime error, or with Until return. The line it stopped at is
+drawn white on red, and the cursor goes there. The bottom line lists the
+debugger keys.
+
+  F7   Trace into: run one statement. A RUN line stops at the first
+       statement of the called procedure. If the program is not
+       running, F7 makes and starts it, and stops before its first
+       statement.
+  F8   Step over: like F7, but a RUN runs the whole call.
+  F4   Go to cursor: run until the cursor line.
+  ^R   Continue.
+  ^P   Program reset: end the program.
+  ^E   {Evaluate} an expression or set a variable.
+  ^W   Add one of the {Watches}.
+
+Debug > Until return asks for the name of a procedure in the call chain.
+The next ^R runs until the program returns to it. Give the caller's
+name to step out of a procedure.
+
+A stop in a procedure that is not in the text says "Stopped in <proc>
+line <n>".
+
+Step and evaluate use the code that is loaded, even if you have changed
+the text since. Quitting while stopped resets the program first.
+
+== Breakpoints | Breakpoints
+A breakpoint stops the program when it reaches a line.
+
+Press ^T (Debug > Breakpoint) to set or clear one on the cursor line.
+You can also click the left border of the line with the {Mouse}. A line
+with a breakpoint has a mark in the left border. You can have up to 8.
+
+Debug > Clear breakpoints removes them all. Open and New clear them too.
+
+Breakpoints move with the text when you edit. Enter at the start of a
+line moves its breakpoint down with it.
+
+A breakpoint does nothing:
+  - outside a procedure, or on its PROCEDURE line;
+  - on a line that never runs, such as {DIM}, {PARAM} or {TYPE};
+  - in a procedure you changed but did not load again.
+
+F4 (Run > Go to cursor) sets a breakpoint for this run only, on the
+cursor line, then runs or continues the program.
+
+See {Debugger}.
+
+== Watches | Watch expressions
+A watch shows the value of an expression each time the program stops.
+
+Press ^W (Debug > Add watch) and type an expression, for example a
+variable name. You can have up to 6. They appear numbered in the watch
+window under the text:
+
+  1 k: 2
+  2 s: hello
+
+An expression that is not valid where the program stopped shows its
+error, for example "Error 49 Undefined Variable" for a variable of
+another procedure. The values are cleared when the program ends.
+
+Debug > Delete watch asks for a watch's number, or 0 for all of them.
+
+See {Evaluate} and {Debugger}.
+
+== Evaluate | Evaluate an expression
+Evaluate shows the value of an expression while the program is stopped.
+
+Press ^E (Debug > Evaluate). The dialog starts with the word at the
+cursor, or the last expression. Edit it and press Enter. The bottom
+line shows
+
+  <expr> = <value>
+
+To change a variable, type <name>:=<value>, for example
+
+  count:=10
+
+The editor sets it, then shows the new value. An error shows its
+message instead, for example {Error 49}.
+
+Evaluate works in the procedure the program is stopped in. See
+{Debugger} and {Watches}.
+
+== Pretty print | Pretty print
+Pretty print tidies a procedure: spacing, indent and keyword case.
+
+Compile > Pretty print does the procedure at the cursor. Compile > All:
+pretty print (^Space) does every procedure, and stops at the first one
+with errors.
+
+The editor makes the procedure first, then lists it back from the
+loaded code, as Basic09's LIST does. The result replaces the
+procedure's lines:
+  - the body is indented two spaces under PROCEDURE, and two more
+    for each level of FOR, IF, WHILE and so on;
+  - a line number sits in that indent;
+  - numbers are written in standard form (1.50 becomes 1.5);
+  - names come back as they were first typed.
+Comments, strings and the number of lines stay the same, so the cursor
+and the {Breakpoints} stay on their lines.
+
+Keywords come out in lower case. Options > Keyword case switches to
+capitals. Basic09 reads either.
+
+A procedure with errors, or a program stopped in the {Debugger}, is
+refused with a message. One ^Z takes a whole pretty print back.
+
+{USE} lines are kept as you wrote them, and {DEFTYPE} blocks are left
+alone.
+
+== Find | Find
+Find searches the text for a string.
+
+Press ^F (Search > Find) and type the text. The dialog starts with the
+last search; typing a character first replaces it.
+
+The search runs forward from the cursor, and does not wrap round to
+the top. A match becomes the selection, with the cursor at its end, so
+typing replaces it.
+
+  ^L                 find the next match
+  Ctrl+Shift+L       find the previous match (Search > Find previous)
+
+Letters match either case. Turn on Options > Match case to match case
+exactly.
+
+See {Replace}.
+
+== Replace | Replace
+Replace changes each match of a string into another.
+
+Choose Search > Replace. It asks for the text to find, then for the
+text to put in its place. At each match it asks on the bottom line:
+
+  Y      replace this one
+  N      leave this one
+  A      replace this one and all the rest
+  Esc    stop
+
+At the end it says how many it replaced. Replace starts at the cursor
+and does not wrap round. Options > Match case works as for {Find}.
+
+Each replacement is one step for {Undo}.
+
+== Undo | Undo and redo
+Undo takes your last edit back; redo does it again.
+
+  ^Z    undo (Edit > Undo)
+  ^Y    redo (Edit > Redo)
+
+The editor keeps the last 50 steps. Typing, Enter and runs of Delete or
+Backspace make one step together. A paste, a cut, a deleted selection,
+each replacement and a whole {Pretty print} are a step each. After an
+undo or redo the cursor is at the change.
+
+A new edit after an undo drops what you could have redone. Open and New
+clear the history.
+
+Undo shares memory with the text. If the text needs room, the editor
+gives up the undo history first.
+
+== Selection | Selecting text
+A selection marks text to cut, copy or replace.
+
+  Shift+arrows               select a character or a line at a time
+  Ctrl+Shift+Left, Right     select a word at a time
+  ^A                         select all
+  Esc                        end the selection
+
+With the {Mouse}: drag with the left button, or press the right button
+to extend the selection to the pointer.
+
+The selection is drawn black on pale cyan. Typing, Enter or a paste
+replaces it. Backspace and Delete remove it. A plain move ends it.
+
+See {Clipboard}.
+
+== Clipboard | Cut, copy and paste
+The clipboard holds text you cut or copy, to paste somewhere else.
+
+  ^X    cut the selection (Edit > Cut)
+  ^C    copy the selection (Edit > Copy)
+  ^V    paste at the cursor (Edit > Paste)
+
+The clipboard is kept in the swap file, so it can hold any amount of
+text. After a paste the cursor is after the pasted text.
+
+See {Selection}.
+
+== Mouse | Using the mouse
+The editor works with the mouse pointer on the Wildbits.
+
+Left button:
+  In the text       move the cursor there. Drag to select; drag above
+                    or below the window to scroll.
+  Right border      the scroll bar: the arrows scroll a line, the track
+                    a page, and you can drag the thumb.
+  Left border       set or clear a breakpoint on that line.
+  Menu bar          open that menu. Drag down to an item and release
+                    to run it.
+  Message window    select a message. Double-click to go to its line.
+  Dialog            a press outside it cancels. In a Y/N question,
+                    press the Y or the N.
+
+Right button:
+  In the text       extend the selection to the pointer.
+
+A message or help box closes on any press. There is no double-click
+word select.
+
+See {Selection}, {Breakpoints} and {Message window}.
+
+== Message window | The message window
+The message window lists errors from {Make} and {Run|Running}.
+
+It opens at the bottom of the screen when there are errors. Each line
+reads
+
+  Line <n>, <procedure>: Error <code> <text>
+
+The text comes from /dd/sys/errmsg. Up to 32 messages are kept.
+
+  ^N      go to the next message's line
+  F6      move into the window (Compile > Messages), and back
+
+In the window:
+  Up, Down   choose a message
+  Enter      go to its line
+  F6         back to the text
+  Esc        close the window
+
+With the {Mouse}, click a message to select it, and double-click it to
+go to its line. A clean Make closes the window.
+
+See {Errors}.
+
+== Line spacing | Single and double line spacing
+Double spacing draws the text on every other screen row.
+
+The 8x8 font has no space between its rows, so double spacing can be
+easier to read.
+
+  ^2    double spacing
+  ^1    single spacing
+
+Options > Double spacing switches between them. On the 80x30 screen
+double spacing shows 11 lines of text. On 80x60 it shows 30 rows with a
+blank row under each.
+
+Double spacing hides the {Message window} if the text window would get
+too small, and refuses if it still would.
+
+See {Screen size}.
+
+== Screen size | 80x30 and 80x60 screens
+Options > 80x60 screen switches the editor's screen between 80x30 and
+80x60.
+
+80x60 uses half-height characters and shows twice as many lines. It
+works on its own or with double {Line spacing}: 80x60 with double
+spacing gives normal-size characters with a blank row under each.
+
+When you quit, the editor puts back the screen size it started with.
+
+It needs a real terminal; it does not work when the keys come from a
+file.
+
+== Memory | Workspace memory
+Options > Memory sets the size of l2b09run's workspace.
+
+The workspace holds the loaded procedures and their variables, like
+the shell's #<n>k for Basic09. It is 16K by default; you can start the
+editor with -m=<kb> to change it (at most 63).
+
+Options > Memory... asks for a size in KB. If l2b09run is running it
+changes at once; if not, it is used at the next start. You cannot
+change it while a program is stopped in the {Debugger}.
+
+You seldom need it: when a {Make} runs out of memory ({Error 32}), it
+grows the workspace by 8K and loads again, up to 56K.
+
+Programs can use memory beyond 64K too; see {About}.
+
+== Syntax colours | Syntax colours
+The editor colours the text by its parts.
+
+  keywords     white
+  functions    pale cyan
+  strings      green
+  comments     light grey (REM and (* ... *))
+  numbers      orange
+  other text   yellow on blue
+
+The keywords are the compiler's own, plus {DEFTYPE} and {USE}. Case does
+not matter.
+
+The line the program stopped at is white on red, and the selection is
+black on pale cyan.
+
+Options > Syntax colours turns the colours off and on. With colours off
+the editor uses reverse video, and pages through a long file a little
+faster.
+
+== DEFTYPE | DEFTYPE block
+@also END_DEFTYPE
+DEFTYPE ... END DEFTYPE holds TYPE lines that procedures can share.
+
+Basic09 has no global types: each procedure that shares a record must
+repeat its {TYPE} lines. With a DEFTYPE block you write them once, and
+a {USE} line brings them into a procedure.
+
+  DEFTYPE shapes
+  TYPE pt=x,y:REAL           (* a point *)
+  TYPE box=corner:pt; w,h:REAL
+  END DEFTYPE
+
+  PROCEDURE main
+  USE shapes
+  DIM p:pt
+
+A block can go before the first procedure or between procedures. A
+DEFTYPE line ends the procedure before it, as a PROCEDURE line does.
+
+The block is not a procedure. Make does not send it, Run does not start
+it, and pretty print leaves it alone. A TYPE line in it may have a
+comment at the end.
+
+The block's name must not be a procedure's name. When you change a
+block, the next {Make} loads again every procedure that uses it.
+
+Only the editor knows DEFTYPE and USE. l2b09run and stock Basic09 do
+not.
+
+== USE | USE statement
+USE <name> brings the TYPE lines of a {DEFTYPE} block into a procedure.
+
+  PROCEDURE show
+  USE shapes
+  PARAM b:box
+
+Put USE on a line of its own, before the {DIM} and {PARAM} lines that
+need the types. Any case works, and it may be indented.
+
+{Make} sends the USE line as the block's {TYPE} lines, joined by
+backslashes, so the program's line numbers do not change. An error in
+the types shows on the USE line. If no block has that name, the
+compiler reports an error on the line.
+
+The joined TYPE text may be at most 200 characters. Put more types in a
+second block, with a USE line of its own.
+
+{Pretty print} keeps your USE lines as you wrote them.

@@ -43,7 +43,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `L2B09` builds also get `-DLevel=2`.
   - The runtime's direct page is full (1 byte left). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
-- **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `basic09-l2/` is the editor, `basic09-l2` (formerly `l2b09ed`; P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`.
+- **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `basic09-l2/` is the editor, `basic09-l2` (formerly `l2b09ed`; P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`. `l2b09help/` is the help browser (docs/HELP.md); it includes the editor's `term.asm` and `keys.asm`.
+- **`help/`:** the help pages (`*.txt`), compiled by `tools/mkhelp.py` into `build/basic09-l2.hlp`, which checks that every Basic09 keyword and error has a page.
 - **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, `edmodel.py`, a Python model of the editor's commands used to generate expected files, and `mkkw.py`, which regenerates the editor's keyword table `os9/basic09-l2/kwtab.asm` from `KEYTAB`).
 
 ## Gotchas learned the hard way
@@ -68,6 +69,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **Stock Basic09 quirks:**
   - A second PACK fails with 51, because PACK strips the workspace copy.
   - `DATE$` prints 2026 as `<6`.
+- **MAME's `wbjr2` keyboard has no function keys:** F1-F8 can only be sent from key scripts, not from a `lua` test.
 - **The screen snapshot** in `mame.log` puts a `|` at each end of every row, so the row starts one character after `NN: |`. Characters above `$7E` show as `#`.
 - **`SS.FntChar` (Wildbits)** takes the font set from the caller's A register. For `I$SetStt` that is the path number, so path 0 means font set 0.
 - **Hung tests.** A test that hangs (for example an `expect` that never matches) shows up as short or missing output files, because the files are never closed. `run.out` is empty too if any later step hangs. To watch progress, run `l2b09run -t=/term` in a scratch test: `mame.log` ends with a screen snapshot.

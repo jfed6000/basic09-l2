@@ -1,0 +1,17 @@
+# The start page and the help on help
+@category Help
+
+== Help | basic09-l2 help
+Help for the basic09-l2 editor and the Basic09 language.
+
+  {Editor keys|Keys}         moving, editing, files, Make and Run
+  {Menus}                    every menu command
+  {Statements}               PRINT, FOR, DIM, TYPE, RUN ...
+  {Functions}                LEFT$, SIZE, ADDR, SIN ...
+  {Errors}                   what the error numbers mean
+  {Index}                    every topic
+
+F1 in the editor opens the page for the word at the cursor.
+In here: Up/Down scroll, Left/Right pick a link, Enter follows it,
+Backspace goes back, F1 comes here, F2 opens the {Index}, and typing
+a name searches for it.  Esc goes back to the editor.

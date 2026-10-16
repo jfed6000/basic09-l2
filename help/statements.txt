@@ -1,0 +1,768 @@
+@category Statements
+
+== Statements | Basic09 statements
+Every Basic09 statement, by what it is for.  Several statements may share
+a line, separated by a backslash: PRINT a \ PRINT b
+
+Declarations     {PARAM} {DIM} {TYPE} {FAR} {Data types} {DATA}
+Assignment       {LET} ({:=|LET}) {POKE}
+Control flow     {IF} {ELSE|IF} {ENDIF|IF} {FOR} {NEXT|FOR}
+                 {WHILE} {ENDWHILE|WHILE} {REPEAT} {UNTIL|REPEAT}
+                 {LOOP} {ENDLOOP|LOOP} {EXITIF} {ENDEXIT|EXITIF}
+                 {GOTO} {GOSUB} {RETURN|GOSUB} {ON} {ON ERROR}
+                 {ERROR|ON ERROR}
+Procedures       {PROCEDURE} {RUN} {PARAM} {END} {KILL} {STOP}
+Terminal I/O     {PRINT} {PRINT USING} {INPUT}
+Files            {OPEN} {CREATE} {CLOSE} {READ} {WRITE} {GET} {PUT|GET}
+                 {SEEK} {DELETE} {Access modes} {RESTORE}
+Directories, OS  {CHD} {CHX|CHD} {SHELL} {CHAIN}
+Debugging        {PAUSE} {TRON} {TROFF|TRON}
+Other            {BASE} {DEG} {RAD|DEG} {REM} {BYE}
+
+Expressions use the {Operators} and the {Functions}.
+See also {DEFTYPE} and {USE} (the editor's shared TYPE lines).
+
+== PROCEDURE | Procedures
+A program is a set of procedures; each one is compiled on its own.
+
+  PROCEDURE <name>
+  [PARAM <declarations>]
+  [TYPE / DIM <declarations>]
+  <statements>
+  END
+
+In the editor's file a line PROCEDURE <name> starts each procedure.
+{Run} starts one; a procedure calls another with {RUN}.
+- Every variable is local to its procedure: there are no globals.
+  Share data by passing it as a parameter.
+- Variables are passed by reference: the called procedure works on the
+  caller's own variable, so changes come back.  Expressions and
+  constants are passed by value (a copy).
+- The {PARAM} declarations must match the arguments in type and size,
+  or the call fails with {Error 56}.
+- Procedures may call themselves; each call has its own variables.
+
+  PROCEDURE main
+  DIM total:REAL
+  total:=0.
+  RUN addup(total,5.)
+  PRINT total
+
+  PROCEDURE addup
+  PARAM sum,n:REAL
+  sum:=sum+n
+
+== PARAM | PARAM statement
+Declares the parameters a procedure receives from {RUN}.
+
+  PARAM <name>[(<dims>)] [, ...] [:<type>] [; ...]
+
+The syntax is that of {DIM}.  PARAM lines come first in a procedure.
+Each parameter must match its argument in type and size ({Error 56}):
+an INTEGER constant such as 1 does not match a REAL parameter (write
+1. instead), and a STRING[10] parameter needs a STRING[10] argument.
+An array parameter receives the whole array.  Parameters are passed by
+reference (see {PROCEDURE}).  FAR is not allowed in PARAM.
+
+  PROCEDURE swap
+  PARAM a,b:INTEGER
+  DIM t:INTEGER
+  t:=a \ a:=b \ b:=t
+
+== DIM | DIM statement
+Declares variables and arrays, with their type.
+
+  DIM <name>[(<dim>[,<dim>[,<dim>]])] [, ...] [:<type>] [; ...]
+
+- <type> is BYTE, INTEGER, REAL, BOOLEAN, STRING[<n>] or a name made by
+  {TYPE}.  Without a type the names are REAL ({Data types}).
+- The type applies to every name before the colon.  A semicolon starts
+  another group.
+- Arrays have up to three dimensions.  Subscripts start at 1, or at 0
+  after {BASE} 0.  A bad subscript is {Error 55}.
+- A variable that is never declared is REAL, or STRING[32] if its name
+  ends in $.
+- DIM <name>(<dims>):FAR <type> keeps a big array outside 64K: {FAR}.
+
+  DIM i,j:INTEGER; name$:STRING[20]
+  DIM grid(10,10):BYTE
+  DIM x,y,z
+
+== TYPE | TYPE statement
+Defines a record type: a named group of fields.
+
+  TYPE <name> = <field>[(<dims>)] [, ...] :<type> [; ...]
+
+The fields are declared as in {DIM}; a field may be an array or another
+record.  Variables of the type are made with DIM, and fields are reached
+with a dot.  A record can be assigned whole to another of its type.
+Field names share the procedure's names, so a field x makes x unusable
+as a variable ({Error 76}).
+To share TYPE lines between procedures, see {DEFTYPE}.
+
+  TYPE pt = x,y:REAL; label:STRING[8]
+  DIM a,b:pt; path(50):pt
+  a.x:=1.5 \ a.label:="start"
+  b:=a
+  path(2).y:=b.x
+
+== FAR | FAR arrays (l2basic09)
+Declares an array whose elements live outside the program's 64K.
+
+  DIM <name>(<dims>) [, ...] :FAR <type>
+
+FAR goes after the colon and before the type, which must be given.  It
+applies to every array before that colon.  Elements can be any type,
+including a record of at most 7,424 bytes.  Up to three dimensions, each
+up to 32,767, and up to 255 8K blocks per array, so arrays can be far
+bigger than 64K.
+- Use the elements as normal: in expressions, assignments, READ, GET,
+  PUT, SIZE of an element.
+- The memory is taken on first use and freed when the procedure returns
+  or the program stops.  The contents start undefined.
+- Not allowed: the whole array (SIZE(a), passing it to RUN) is
+  {Error 65}; an element by reference or ADDR of one is {Error 67};
+  FAR on a simple variable, a PARAM or a TYPE field is {Error 72}.
+- Work through an array in order: the first subscript varies fastest.
+- Only l2b09run has FAR; PACK refuses procedures that use it.
+
+  DIM img(320,240):FAR BYTE
+  FOR y=1 TO 240
+    FOR x=1 TO 320
+      img(x,y):=MOD(x+y,256)
+    NEXT x
+  NEXT y
+
+== Data types
+@also BYTE INTEGER REAL BOOLEAN STRING
+The five simple types of Basic09.
+
+  BYTE       1 byte, 0 to 255
+  INTEGER    2 bytes, -32768 to 32767
+  REAL       5 bytes, about 9 digits, up to about 1E+38
+  BOOLEAN    1 byte, TRUE or FALSE
+  STRING     STRING[<n>]: up to <n> characters; STRING alone is 32
+
+Types are given in {DIM}, {PARAM} and {TYPE}.  Undeclared variables are
+REAL, or STRING[32] if the name ends in $.
+- A number with a decimal point or exponent (1., 2.5, 1E3) is REAL;
+  a whole number that fits is INTEGER.  $1F is a hexadecimal INTEGER.
+- Numbers of mixed types are converted as needed; an assignment to a
+  BYTE or INTEGER that does not fit is {Error 52}.
+- A string longer than its variable is cut short on assignment.
+- {FIX}, {INT} and {FLOAT} convert; {SIZE} gives a variable's size.
+
+  DIM n:INTEGER; ok:BOOLEAN; s:STRING[80]
+  n:=7 \ ok:=n>5 \ s:="seven"
+
+== DATA | DATA statement
+Holds values for {READ} to assign when it is used without a path.
+
+  DATA <expr> [, <expr> ...]
+
+The values are expressions of any type; they are taken in order, from
+the first DATA statement of the procedure to the last.  {RESTORE} starts
+again.  A value must suit its variable's type ({Error 58}).  READ in a
+procedure with no DATA is {Error 79}.
+
+  DIM name$:STRING[10]; age:INTEGER
+  FOR i=1 TO 2
+    READ name$,age
+    PRINT name$,age
+  NEXT i
+  DATA "Ann",31,"Bob",27
+
+== RESTORE | RESTORE statement
+Sets where the next {READ} from {DATA} begins.
+
+  RESTORE [<line>]
+
+Without a line number, the next READ takes the first value of the
+procedure's first DATA statement.  With one, it starts at the DATA
+statement on that numbered line.
+
+  10 DATA 1,2,3
+  20 DATA 4,5,6
+  RESTORE 20
+  READ a
+
+== LET | Assignment
+Gives a variable a new value.
+
+  [LET] <variable> := <expr>
+  [LET] <variable> = <expr>
+
+LET may be left out, and := and = mean the same here.  The value is
+converted to the variable's numeric type; a string is cut to the
+variable's length.  A whole record may be assigned to another of the
+same type.
+
+  LET count:=count+1
+  total=total+price*qty
+  name$:="Basic09"
+
+== POKE | POKE statement
+Stores a byte at a memory address.
+
+  POKE <address>, <value>
+
+<address> is an address in the program's own 64K; <value> is 0 to 255.
+Use {ADDR} to find a variable's address and {PEEK} to read a byte.
+A wrong address can crash the program or the system.
+
+  DIM buf(4):BYTE
+  POKE ADDR(buf),65
+
+== IF | IF statement
+@also THEN ELSE ENDIF
+Runs statements only when a condition is TRUE.
+
+  IF <condition> THEN <line>
+  IF <condition> THEN <statements>
+    [ELSE <statements>]
+  ENDIF
+
+<condition> is a BOOLEAN expression, usually a comparison ({Operators}).
+The first form jumps to a numbered line, like {GOTO}.  The second runs
+the statements after THEN when the condition is TRUE, and those after
+ELSE (if any) when it is FALSE; it always ends with ENDIF.  Statements
+may follow THEN and ELSE on the same line.  IFs may be nested.
+
+  IF x<0 THEN
+    PRINT "negative"
+  ELSE
+    PRINT "not negative"
+  ENDIF
+  IF done THEN 100
+
+== FOR | FOR ... NEXT loop
+@also NEXT TO STEP
+Repeats statements while a counter steps from one value to another.
+
+  FOR <var> = <start> TO <limit> [STEP <step>]
+    <statements>
+  NEXT <var>
+
+<var> is a simple INTEGER or REAL variable ({Error 70}).  STEP is 1 if
+it is left out, and may be negative to count down.  The loop ends when
+the counter passes <limit>; if <start> is already past it, the
+statements are not run at all.  NEXT names the same variable.
+Leave a loop early with {EXITIF}.
+
+  FOR i=1 TO 10
+    PRINT i;" ";
+  NEXT i
+  FOR x=1. TO 0. STEP -.25
+    PRINT x
+  NEXT x
+
+== WHILE | WHILE ... ENDWHILE loop
+@also DO ENDWHILE
+Repeats statements as long as a condition is TRUE.
+
+  WHILE <condition> DO
+    <statements>
+  ENDWHILE
+
+The condition is tested before each pass, so the statements may not run
+at all.  See also {REPEAT} (tested after) and {LOOP}.
+
+  WHILE NOT(EOF(#path)) DO
+    READ #path,line$
+    PRINT line$
+  ENDWHILE
+
+== REPEAT | REPEAT ... UNTIL loop
+@also UNTIL
+Repeats statements until a condition becomes TRUE.
+
+  REPEAT
+    <statements>
+  UNTIL <condition>
+
+The condition is tested after each pass, so the statements always run at
+least once.  See also {WHILE} and {LOOP}.
+
+  REPEAT
+    INPUT "Number (0 ends)? ",n
+    total:=total+n
+  UNTIL n=0
+
+== LOOP | LOOP ... ENDLOOP
+@also ENDLOOP
+Repeats statements for ever, or until an {EXITIF} leaves the loop.
+
+  LOOP
+    <statements>
+  ENDLOOP
+
+Use EXITIF to test a condition anywhere in the loop.
+
+  LOOP
+    INPUT "Name? ",name$
+    EXITIF name$="" THEN
+    ENDEXIT
+    PRINT "Hello, ";name$
+  ENDLOOP
+
+== EXITIF | EXITIF ... ENDEXIT
+@also ENDEXIT
+Leaves the loop it is in when a condition is TRUE.
+
+  EXITIF <condition> THEN
+    <statements>
+  ENDEXIT
+
+Works in {LOOP}, {WHILE}, {REPEAT} and {FOR} loops.  When the condition
+is TRUE, the statements (if any) run, and the loop ends: the program
+goes on after its ENDLOOP, ENDWHILE, UNTIL or NEXT.  When it is FALSE
+the loop carries on.
+
+  FOR i=1 TO 100
+    EXITIF a(i)=wanted THEN
+      PRINT "found at ";i
+    ENDEXIT
+  NEXT i
+
+== GOTO | GOTO statement
+Jumps to a numbered line in the same procedure.
+
+  GOTO <line>
+
+Line numbers are optional labels at the start of a line (1 to 32767).
+The target must exist in the procedure ({Error 74}).  The structured
+statements ({IF}, {LOOP}, {WHILE}, ...) are usually clearer.
+
+  10 INPUT "Again (y/n)? ",a$
+  IF a$<>"y" AND a$<>"n" THEN 10
+  IF a$="y" THEN
+    GOTO 10
+  ENDIF
+
+== GOSUB | GOSUB and RETURN
+@also RETURN
+Calls a subroutine at a numbered line, and comes back.
+
+  GOSUB <line>
+  RETURN
+
+GOSUB jumps to the line; RETURN goes back to the statement after the
+GOSUB.  Subroutines are part of the procedure and share its variables.
+Too deep a nesting is {Error 53}; RETURN with no GOSUB is {Error 54}.
+For separate code with its own variables, use a {PROCEDURE}.
+
+  GOSUB 100
+  PRINT "back"
+  END
+  100 PRINT "in the subroutine"
+  RETURN
+
+== ON | ON ... GOTO / GOSUB
+Jumps to one of several lines, chosen by a number.
+
+  ON <expr> GOTO <line> [, <line> ...]
+  ON <expr> GOSUB <line> [, <line> ...]
+
+<expr> is an integer: 1 picks the first line, 2 the second, and so on.
+If it is less than 1 or more than the number of lines, the program goes
+on with the next statement.  With GOSUB, a {RETURN|GOSUB} comes back to
+the statement after the ON.  For errors, see {ON ERROR}.
+
+  INPUT "Choice (1-3)? ",c
+  ON c GOSUB 100,200,300
+
+== ON ERROR | ON ERROR GOTO, and ERROR
+@also ERROR
+Catches run-time errors in a procedure.
+
+  ON ERROR GOTO <line>
+  ON ERROR
+  ERROR(<code>)
+
+After ON ERROR GOTO, an error in this procedure jumps to the line
+instead of stopping the program.  There, {ERR} gives the error code
+(and clears it).  The trap stays set until an ON ERROR without GOTO
+turns it off.  It covers only the procedure that set it.
+ERROR(<code>) makes an error happen, as if the system had found it;
+the code is 1 to 255.  See {Errors} for the codes.
+
+  ON ERROR GOTO 100
+  OPEN #path,"data":READ
+  ON ERROR
+  ...
+  100 errnum:=ERR
+  IF errnum=216 THEN PRINT "no file" \ END
+  ENDIF
+  ERROR(errnum)
+
+== RUN | RUN statement
+Calls another procedure.
+
+  RUN <name> [(<arg> [, <arg> ...])]
+  RUN <string variable> [(<arg> [, <arg> ...])]
+
+The procedure runs, then the program goes on after the RUN.  Arguments
+are matched in order with the called procedure's {PARAM}; variables are
+passed by reference, expressions by value (see {PROCEDURE}).
+The name may be held in a STRING variable.  A procedure that is not in
+the workspace is loaded from the execution directory: a packed Basic09
+procedure or a machine-language subroutine module such as syscall or
+inkey.  {KILL} removes it again.  An unknown name is {Error 43}.
+
+  RUN show("Hello",3)
+  DIM which:STRING[20]
+  which:="report" \ RUN which(total)
+
+== KILL | KILL statement
+Removes a procedure that {RUN} loaded from a module.
+
+  KILL <string expr>
+
+The string is the procedure's name.  This frees its memory; a later RUN
+loads it again.
+
+  RUN sort(names,n)
+  KILL "sort"
+
+== END | END statement
+Ends a procedure and returns to its caller.
+
+  END [<output list>]
+
+The output list is printed as by {PRINT}.  In the first procedure, END
+ends the program.  A procedure also ends after its last line; END is
+needed only to leave earlier.  Its local variables (and {FAR} arrays)
+are freed.
+
+  IF n<0 THEN END "n must not be negative"
+  ENDIF
+
+== STOP | STOP statement
+Stops the whole program.
+
+  STOP [<output list>]
+
+The output list is printed as by {PRINT}, then "STOP Encountered".
+Unlike {END}, STOP does not return to the calling procedure.
+
+  IF bad THEN STOP "giving up"
+  ENDIF
+
+== BYE | BYE statement
+Ends the program and leaves Basic09 itself.
+
+  BYE
+
+All files are closed and the workspace is freed.  Use it in programs run
+by RunB or from a script, where nothing should be left waiting.
+
+  PRINT "done"
+  BYE
+
+== PAUSE | PAUSE statement
+Stops the program in the {Debugger}.
+
+  PAUSE [<output list>]
+
+The output list is printed as by {PRINT}.  The program waits in the
+debugger, where variables can be looked at and changed; Continue (or
+cont) carries on after the PAUSE.  A fixed place to stop; see also
+{Breakpoints}.
+
+  PAUSE "after the sort"
+
+== TRON | TRON and TROFF
+@also TROFF
+Turns statement tracing on or off.
+
+  TRON
+  TROFF
+
+While tracing is on, each statement is shown, decompiled, as it runs.
+The debugger has tron and troff commands too.  See also the {Debugger}.
+
+  TRON
+  FOR i=1 TO 3 \ s:=s+i \ NEXT i
+  TROFF
+
+== DEG | DEG and RAD
+@also RAD
+Choose degrees or radians for the trigonometric functions.
+
+  DEG
+  RAD
+
+They set how {SIN}, {COS}, {TAN}, {ASN}, {ACS} and {ATN} measure angles,
+in this procedure only.  Every procedure starts in RAD.
+
+  DEG
+  PRINT SIN(30)
+
+== BASE | BASE statement
+Sets the lowest subscript of arrays to 0 or 1.
+
+  BASE 0
+  BASE 1
+
+Each procedure starts with BASE 1.  BASE 0 lets the first element be
+a(0); the size given in DIM stays the highest subscript, so DIM a(10)
+then has 11 elements.
+
+  BASE 0
+  DIM a(9):INTEGER
+  FOR i=0 TO 9 \ a(i):=i*i \ NEXT i
+
+== REM | Comments
+Notes in the program, ignored when it runs.
+
+  REM <text>
+  (* <text> [*)]
+  ! <text>
+
+The text runs to the end of the line; REM, (* and ! all start a
+comment.  After a backslash, a comment can end a line of statements.
+
+  REM Sorting
+  PRINT total \ (* the grand total *)
+
+== PRINT | PRINT statement
+@also ?
+Writes values to the terminal or to a path.
+
+  PRINT [#<path>,] [<expr> [, | ; <expr> ...]] [, | ;]
+  PRINT [#<path>,] USING <format>, <expr> ...
+
+? is short for PRINT.  Without #<path> the output goes to the standard
+output (path 1).  A comma moves to the next 16-column zone; a semicolon
+adds nothing (no spaces either).  A comma or semicolon at the end keeps
+the line open; otherwise a carriage return ends it.  {TAB}(<n>) moves to
+a column.  For formatted output see {PRINT USING}.
+
+  PRINT "Total: ";total
+  PRINT a,b,c
+  PRINT #2,"error in line ";n
+  PRINT "x";TAB(20);"y"
+
+== PRINT USING | PRINT USING
+@also USING
+Prints values in a set format.
+
+  PRINT [#<path>,] USING <format>, <expr> [, <expr> ...]
+
+<format> is a string expression of items separated by commas; each
+value takes the next item, and the format starts again if it runs out.
+
+  I<w>        integer           R<w>.<f>   real, <f> decimals
+  E<w>.<f>    exponent form     H<w>       hexadecimal
+  S<w>        string            B<w>       boolean
+  T<n>        to column <n>     X<n>       <n> spaces
+  '<text>'    literal text      <n>(...)   repeat the group <n> times
+
+A width may be followed by < (left, the default) or > (right).  ^
+centres a string, puts leading zeros on an integer and a trailing sign
+on a real.  The width of R counts the sign and the point.  A value that
+does not fit prints as asterisks.
+
+  PRINT USING "S10<,R8.2>",item$,price
+  PRINT USING "'Total:',X2,I6>",n
+
+== INPUT | INPUT statement
+Reads values typed by the user (or from a path).
+
+  INPUT [#<path>,] ["<prompt>",] <var> [, <var> ...]
+
+The prompt must be a string literal; without one, "? " is shown.
+Several values are typed on one line, separated by commas.  A value that
+does not suit its variable shows "** Input error - reenter **" and asks
+again.  Without #<path> it reads the standard input (path 0).
+
+  DIM name$:STRING[20]; age:INTEGER
+  INPUT "Name and age? ",name$,age
+
+== READ | READ statement
+Reads values from DATA statements, or text from a file.
+
+  READ <var> [, <var> ...]
+  READ #<path>, <var> [, <var> ...]
+
+Without a path it takes the next values of the procedure's {DATA}
+statements.  With a path it reads a line of text from a file opened in
+READ or UPDATE mode, values separated by commas, as written by {WRITE}.
+At the end of the file it fails with {Error 211}; test with {EOF}.
+READ is also an {access mode|Access modes} for {OPEN}.
+
+  OPEN #path,"scores":READ
+  WHILE NOT(EOF(#path)) DO
+    READ #path,name$,score
+  ENDWHILE
+  CLOSE #path
+
+== WRITE | WRITE statement
+Writes values as a line of text to a file.
+
+  WRITE #<path>, <expr> [, <expr> ...]
+
+The values are written separated by commas, and the line ends with a
+carriage return, so {READ} can read them back.  The path must be open in
+WRITE or UPDATE mode.  WRITE is also an {access mode|Access modes}.
+
+  CREATE #path,"scores":WRITE
+  WRITE #path,"Ann",31
+  CLOSE #path
+
+== GET | GET and PUT
+@also PUT
+Read or write a variable's bytes as they are in memory.
+
+  GET #<path>, <var>
+  PUT #<path>, <var>
+
+The number of bytes is the size of the variable ({SIZE}): a whole
+array or record moves at once.  This binary form is fast and exact; use
+it with {SEEK} for files of fixed-size records.
+
+  TYPE rec = name:STRING[20]; age:INTEGER
+  DIM r:rec
+  SEEK #path,(n-1)*SIZE(r)
+  GET #path,r
+  r.age:=r.age+1
+  SEEK #path,(n-1)*SIZE(r)
+  PUT #path,r
+
+== SEEK | SEEK statement
+Moves a file's position to a byte offset.
+
+  SEEK #<path>, <position>
+
+<position> counts bytes from the start of the file (0 is the start).
+The next {GET}, {PUT}, {READ} or {WRITE} on the path starts there.
+SEEK #path,0 rewinds a file.
+
+  SEEK #path,10*SIZE(r)
+  GET #path,r
+
+== OPEN | OPEN statement
+Opens an existing file or device and gives its path number.
+
+  OPEN #<var>, <pathlist> [:<mode>]
+
+<var> is a BYTE or INTEGER variable that receives the path number, used
+afterwards as #<var>.  <pathlist> is a string expression.  <mode> is
+READ, WRITE, UPDATE, EXEC or DIR, joined with + ({Access modes}); it
+is UPDATE when left out.  A file that does not exist is {Error 216}.
+Close the path with {CLOSE}.
+
+  DIM path:BYTE
+  OPEN #path,"/dd/notes":READ
+  OPEN #prn,"/p":WRITE
+
+== CREATE | CREATE statement
+Creates a new file and opens it.
+
+  CREATE #<var>, <pathlist> [:<mode>]
+
+As {OPEN}, but the file is made new; it must not exist yet
+({Error 218}).  <mode> is usually WRITE or UPDATE ({Access modes});
+it is UPDATE when left out.  The new file can be read and written by its
+owner and read by others.
+
+  DIM out:BYTE
+  CREATE #out,"results":WRITE
+  WRITE #out,n,mean
+  CLOSE #out
+
+== Access modes
+@also UPDATE EXEC DIR
+How {OPEN} and {CREATE} open a path.
+
+  READ     read only
+  WRITE    write only
+  UPDATE   read and write (the same as READ+WRITE; the default)
+  EXEC     the pathlist is relative to the execution directory
+  DIR      open a directory as a file
+
+Modes are joined with +.  An unknown mode is {Error 15}.  {READ} and
+{WRITE} are also statements.
+
+  OPEN #p,"sort":READ+EXEC
+  OPEN #d,".":READ+DIR
+
+== CLOSE | CLOSE statement
+Closes one or more paths.
+
+  CLOSE #<path> [, #<path> ...]
+
+Closing a path frees it and writes out what is still buffered.  Paths
+opened by the program should be closed before it ends.
+
+  CLOSE #in,#out
+
+== DELETE | DELETE statement
+Deletes a file.
+
+  DELETE <pathlist>
+
+<pathlist> is a string expression.  A file that does not exist is
+{Error 216}.
+
+  DELETE "temp.dat"
+  DELETE dir$+"/old"
+
+== CHD | CHD and CHX
+@also CHX
+Change the data or the execution directory.
+
+  CHD <pathlist>
+  CHX <pathlist>
+
+CHD sets the data directory, where files are opened and created.  CHX
+sets the execution directory, where commands and modules are looked
+for (and the EXEC {mode|Access modes} opens).
+
+  CHD "/dd/work"
+  CHX "/dd/cmds"
+
+== SHELL | SHELL statement
+Runs an OS-9 shell command and waits for it.
+
+  SHELL <string expr>
+
+The string is a command line, as typed to the shell.  The program goes
+on when the command ends; if it fails, its error code becomes an error
+in the program (see {ON ERROR}).
+
+  SHELL "dir -e /dd"
+  SHELL "copy "+old$+" "+new$
+
+== CHAIN | CHAIN statement
+Ends Basic09 and runs a shell command in its place.
+
+  CHAIN <string expr>
+
+The string is a command line for the shell, which replaces the Basic09
+process: the program does not come back.  Open paths stay open for the
+new program; {FAR} arrays are freed.  If the chain fails, the program
+gets the error.
+
+  CHAIN "dir -e"
+
+== Operators
+@also NOT AND OR XOR
+The operators in expressions, from highest priority to lowest.
+
+  - NOT          negation, logical not
+  ^  **          power
+  *  /           multiply, divide
+  +  -           add, subtract; + also joins strings
+  < <= = <> >= > compare
+  AND            logical and
+  OR  XOR        logical or, exclusive or
+
+Parentheses change the order.  Comparisons give a BOOLEAN and work on
+numbers and on strings (compared character by character).  NOT, AND,
+OR and XOR take BOOLEAN values; for bits of an integer use {LAND},
+{LOR}, {LXOR} and {LNOT}.  INTEGER / INTEGER gives an INTEGER.
+
+  ok:=x>0 AND NOT(done)
+  name$:=first$+" "+last$
+  area:=PI*r^2

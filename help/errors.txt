@@ -1,0 +1,722 @@
+# Error pages: one per entry of /dd/sys/errmsg, plus the overview
+@category Errors
+
+== Errors | Error messages
+How errors are reported, and what each number means.
+
+In the editor:
+  Make sends the program to l2b09run.  Each compile error (%CERR),
+  bind error (%BERR) and run-time error (%ERROR) becomes a line in the
+  message window: "Line <n>, <proc>: Error <code> <text>", and the
+  cursor goes to the first one.  ^N goes to the next; F6 moves into the
+  window, Enter jumps to the selected line.  A run-time error leaves
+  the program stopped in the {Debugger} at that line.
+
+In l2b09run (and stock Basic09):
+  ERROR #nnn is printed, with the source line and a ^ under the place
+  for a compile error.  The editor protocol adds
+    %CERR <code> <proc> <line>   compile error while loading
+    %BERR <code> <proc> <line>   bind error (line numbers, ENDIF ...)
+    %ERROR <code> <proc> <line>  run-time error
+
+In a program:
+  {ON ERROR} GOTO <line> traps run-time errors; {ERR} gives the number.
+  Unhandled errors stop the program.  ERROR(n) raises error n itself.
+
+Basic09 control: {Error 1}  {Error 2}  {Error 3}
+
+Basic09 errors (10-79):
+  {10|Error 10} {11|Error 11} {12|Error 12} {13|Error 13}
+  {14|Error 14} {15|Error 15} {16|Error 16} {17|Error 17}
+  {18|Error 18} {19|Error 19} {20|Error 20} {21|Error 21}
+  {22|Error 22} {23|Error 23} {24|Error 24} {25|Error 25}
+  {26|Error 26} {27|Error 27} {28|Error 28} {29|Error 29}
+  {30|Error 30} {31|Error 31} {32|Error 32} {33|Error 33}
+  {34|Error 34} {35|Error 35} {36|Error 36} {37|Error 37}
+  {38|Error 38} {39|Error 39} {40|Error 40} {41|Error 41}
+  {42|Error 42} {43|Error 43} {44|Error 44} {45|Error 45}
+  {46|Error 46} {47|Error 47} {48|Error 48} {49|Error 49}
+  {50|Error 50} {51|Error 51} {52|Error 52} {53|Error 53}
+  {54|Error 54} {55|Error 55} {56|Error 56} {57|Error 57}
+  {58|Error 58} {59|Error 59} {60|Error 60} {61|Error 61}
+  {62|Error 62} {63|Error 63} {64|Error 64} {65|Error 65}
+  {66|Error 66} {67|Error 67} {68|Error 68} {69|Error 69}
+  {70|Error 70} {71|Error 71} {72|Error 72} {73|Error 73}
+  {74|Error 74} {75|Error 75} {76|Error 76} {77|Error 77}
+  {78|Error 78} {79|Error 79}
+  (Error 80, I/O buffer overflow, has no text in errmsg: an input or
+  output line longer than the I/O buffer.)
+
+OS-9 system errors (183-254):
+  {183|Error 183} {184|Error 184} {185|Error 185} {186|Error 186}
+  {187|Error 187} {188|Error 188} {189|Error 189} {190|Error 190}
+  {191|Error 191} {192|Error 192} {193|Error 193} {194|Error 194}
+  {195|Error 195} {196|Error 196} {197|Error 197} {198|Error 198}
+  {199|Error 199} {200|Error 200} {201|Error 201} {202|Error 202}
+  {203|Error 203} {204|Error 204} {205|Error 205} {206|Error 206}
+  {207|Error 207} {208|Error 208} {209|Error 209} {210|Error 210}
+  {211|Error 211} {212|Error 212} {213|Error 213} {214|Error 214}
+  {215|Error 215} {216|Error 216} {217|Error 217} {218|Error 218}
+  {219|Error 219} {220|Error 220} {221|Error 221} {223|Error 223}
+  {224|Error 224} {226|Error 226} {227|Error 227} {228|Error 228}
+  {229|Error 229} {230|Error 230} {231|Error 231} {232|Error 232}
+  {233|Error 233} {234|Error 234} {235|Error 235} {236|Error 236}
+  {237|Error 237} {238|Error 238} {239|Error 239} {240|Error 240}
+  {241|Error 241} {242|Error 242} {243|Error 243} {244|Error 244}
+  {245|Error 245} {246|Error 246} {247|Error 247} {248|Error 248}
+  {249|Error 249} {250|Error 250} {251|Error 251} {252|Error 252}
+  {253|Error 253} {254|Error 254}
+
+# ---------------------------------------------------------------- signals
+
+== Error 1 | Error 1: Unconditional Abort
+The process was killed by signal 1 (S$Kill), for example by the shell's
+KILL command or by another process.  It cannot be trapped.
+
+== Error 2 | Error 2: Keyboard Abort
+The user pressed the abort key (^E on most terminals), which sends
+signal 2 (S$Abort).  In a running program it stops the program;
+{ON ERROR} can trap it.
+
+== Error 3 | Error 3: Keyboard Interrupt
+The user pressed the interrupt key (^C), signal 3 (S$Intrpt).  Basic09
+stops the program in the {Debugger}.  A pipe read that is waiting when
+the signal arrives ends with {Error 211} instead.
+
+# ---------------------------------------------------------- Basic09 errors
+
+== Error 10 | Error 10: Unrecognized Symbol
+The compiler met a character or word it cannot use here, such as a
+stray @ or a misspelled keyword.
+
+  PRNT "hi"       <- not a keyword, read as a variable: error
+Check the spelling at the ^.
+
+== Error 11 | Error 11: Excessive Verbage
+The line has extra text after a complete statement.  Separate
+statements with a backslash (\), or start a comment with (* or REM.
+
+  x:=1 y:=2       <- write x:=1 \ y:=2
+
+== Error 12 | Error 12: Illegal Statement Construction
+The statement does not have the form its keyword needs: a word is
+missing, in the wrong order, or not allowed here.
+
+  FOR i 1 TO 10   <- missing =
+Compare the line with the statement's page in {Statements}.
+
+== Error 13 | Error 13: I-code Overflow
+The line compiles to more I-code than fits in the compiler's buffer.
+Split the line into several shorter statements.
+
+== Error 14 | Error 14: Illegal Channel Reference
+A path number is not given correctly after #.  The path must be a
+number or a BYTE/INTEGER variable or expression:
+
+  PRINT #path, "text"
+  GET #1, rec
+
+== Error 15 | Error 15: Illegal Mode (read/write/update)
+The access mode in {OPEN} or {CREATE} is not a valid mode.  Use
+READ, WRITE, UPDATE, EXEC or DIR, joined with +:
+
+  OPEN #path, "data": READ
+  CREATE #path, "out": WRITE
+
+== Error 16 | Error 16: Illegal Number
+A numeric constant is badly formed or too large for its type, such
+as 1.2.3, an exponent with no digits, or $ with no hex digits.
+
+== Error 17 | Error 17: Illegal Prefix
+A sign or other prefix appears where it is not allowed in front of an
+operand.  Check the expression near the ^.
+
+== Error 18 | Error 18: Illegal Operand
+An operand (constant, variable or function) is of a kind that cannot be
+used here, for example a statement keyword inside an expression.
+
+== Error 19 | Error 19: Illegal Operator
+An operator is in a place where it makes no sense, or two operators
+stand next to each other.
+
+  x:=a * / b
+
+== Error 20 | Error 20: Illegal Record Field Name
+A name after the dot is not a field of that record type, or the field
+syntax is wrong.
+
+  TYPE pt=x,y:REAL
+  DIM p:pt
+  p.z:=1          <- pt has no field z
+See {TYPE}.
+
+== Error 21 | Error 21: Illegal Dimension
+An array bound in {DIM} or {PARAM} is not a valid constant: it must be
+a positive integer number.
+
+  DIM a(n)        <- n is a variable: not allowed
+  DIM a(100)
+
+== Error 22 | Error 22: Illegal Literal
+A constant is badly written, for example a string literal where a
+number is required, or a malformed hex constant.
+
+== Error 23 | Error 23: Illegal Relational
+A comparison operator is badly formed, e.g. => instead of >=, or a
+relation is used where it is not allowed.
+
+== Error 24 | Error 24: Illegal Type Suffix
+A type name is not valid.  The types are BYTE, INTEGER, REAL, BOOLEAN,
+STRING (with an optional [length]) and types made with {TYPE}.
+See {Data types}.
+
+== Error 25 | Error 25: Too-large Dimension
+An array bound, or a string length in STRING[n], is larger than allowed
+(the limit is 32767 elements).
+
+== Error 26 | Error 26: Too-large Line Number
+A line number is greater than 32767.
+
+== Error 27 | Error 27: Missing Assignment Statement
+The line looks like an assignment but has no := (or =), or the left
+side is not something that can be assigned to.
+
+  x 5             <- write x:=5
+
+== Error 28 | Error 28: Missing Path Number
+A statement that needs #<path> does not have one.
+
+  GET rec         <- write GET #path, rec
+
+== Error 29 | Error 29: Missing Comma
+A comma is needed between two items.
+
+  PRINT #path "x" <- write PRINT #path, "x"
+
+== Error 30 | Error 30: Missing Dimension
+The parentheses after an array name in {DIM} or {PARAM} are empty, or
+a bound is missing after a comma.
+
+  DIM a()
+
+== Error 31 | Error 31: Missing DO Statement
+{WHILE} needs DO at the end of its condition.
+
+  WHILE i<10 DO
+
+== Error 32 | Error 32: Memory Full
+There is no room left in the workspace for the procedure being
+compiled, or for a program's variables when it runs.
+
+Make in the editor asks l2b09run for 8K more and loads again, up to
+56K.  In l2b09run use MEM to make the workspace larger, or KILL
+procedures you do not need.  See {Memory}.
+
+== Error 33 | Error 33: Missing GOTO
+{ON} needs GOTO or GOSUB after the expression, and {ON ERROR} needs
+GOTO (or nothing).
+
+  ON n GOTO 100,200,300
+
+== Error 34 | Error 34: Missing Left Parenthesis
+A function or array needs ( here.
+
+  x:=SQR 2        <- write SQR(2)
+
+== Error 35 | Error 35: Missing Line Reference
+{GOTO}, {GOSUB}, {ON} or {ON ERROR} GOTO needs a line number.
+
+  GOTO 100
+
+== Error 36 | Error 36: Missing Operand
+An operator has nothing on one side, or a value is missing.
+
+  x:=a+           <- what is added?
+
+== Error 37 | Error 37: Missing Right Parenthesis
+A ( has no matching ).  Count the parentheses near the ^.
+
+== Error 38 | Error 38: Missing THEN statement
+{IF} needs THEN after its condition.
+
+  IF a>b THEN
+    PRINT a
+  ENDIF
+
+== Error 39 | Error 39: Missing TO
+{FOR} needs TO after the start value.
+
+  FOR i=1 TO 10
+
+== Error 40 | Error 40: Missing Variable Reference
+A statement needs a variable here: {FOR}, {NEXT}, {INPUT}, {READ},
+{GET}, {PUT} and the left side of an assignment.
+
+  NEXT            <- write NEXT i
+
+== Error 41 | Error 41: No Ending Quote
+A string literal has no closing ".  A literal must end on its line;
+to put a quote inside a string, write it twice ("").
+
+== Error 42 | Error 42: Too Many Subscripts
+An array is declared or used with more than three dimensions.  Basic09
+arrays have at most three.
+
+== Error 43 | Error 43: Unknown Procedure
+{RUN} names a procedure that is not in the workspace and cannot be
+found as a module or file, or a command names a missing procedure.
+
+Check the spelling, load the procedure, or put its module in the
+execution directory.  OS-9 may report {Error 216} instead.
+
+== Error 44 | Error 44: Multiply-defined Procedure
+Two procedures with the same name were loaded.  Rename one, or KILL the
+old one first.  In the editor every PROCEDURE name in the file must be
+different.
+
+== Error 45 | Error 45: Divide by Zero
+A division, MOD or similar operation had 0 as its divisor.
+
+  IF n<>0 THEN
+    avg:=total/n
+  ENDIF
+
+== Error 46 | Error 46: Operand Type Mismatch
+The two sides of an operator or assignment have types that cannot be
+mixed, such as a string with a number or BOOLEAN with REAL.
+
+  s$:=5           <- write s$:=STR$(5)
+See {STR$}, {VAL}.
+
+== Error 47 | Error 47: String Stack Overflow
+A string expression built a temporary string larger than the string
+stack.  Shorten the expression, or split it over several statements.
+In l2basic09, assigning a very large far record also goes through the
+string stack and can fail this way in a small workspace.
+
+== Error 48 | Error 48: Unimplemented Routine
+The I-code calls a function or statement that this Basic09 does not
+have.  It usually means a procedure was compiled or packed for a
+different version.
+
+== Error 49 | Error 49: Undefined Variable
+A variable is used but never given a type and value, or (in the
+{Debugger}) the name belongs to another procedure.
+
+== Error 50 | Error 50: Floating Overflow
+A REAL result is too large to represent (above about 1E+38), for
+example from EXP of a large number or from a huge product.
+
+== Error 51 | Error 51: Line with Compiler Error
+The program reached a line that did not compile.  Fix the compile
+errors (the message window lists them) before running.
+
+PACK also fails with 51 if a procedure has errors, uses far arrays, or
+was already packed (PACK strips the workspace copy: load it again).
+
+== Error 52 | Error 52: Value out of Range for Destination
+A value is too large or too small for the variable it goes into, for
+example 300 into a BYTE or 40000 into an INTEGER, or a bad argument to
+{CHR$}.
+
+  DIM b:BYTE
+  b:=300          <- error 52
+
+== Error 53 | Error 53: Subroutine Stack Overflow
+Too many {GOSUB} calls are active at once, usually a GOSUB that never
+reaches its {RETURN} and is called again.
+
+== Error 54 | Error 54: Subroutine Stack Underflow
+A {RETURN} was executed with no active {GOSUB}, usually because the
+program fell into a subroutine.  Put an END or {GOTO} before it.
+
+== Error 55 | Error 55: Subscript out of Range
+An array subscript is below 1 (or the base set by {BASE}) or above the
+size given in {DIM}.
+
+  DIM a(10)
+  a(11):=1        <- error 55
+
+== Error 56 | Error 56: Parameter Error
+A {RUN} call does not match the called procedure's {PARAM} list: the
+wrong number of parameters, or a parameter of the wrong type or size.
+
+== Error 57 | Error 57: System Stack Overflow
+The 6809 stack ran out, usually from very deep recursion or a very
+complex expression.  Make the workspace larger (see {Memory}) or reduce
+the nesting.
+
+== Error 58 | Error 58: I/O Type Mismatch
+{GET} or {PUT} on a variable whose size does not suit the record, or
+{READ} of a {DATA} item of the wrong type (a string into a number).
+
+== Error 59 | Error 59: I/O Numeric Input Format Bad
+{INPUT} or {READ} from a file got text that is not a number where a
+number was wanted.  At the terminal, INPUT asks again instead.
+
+== Error 60 | Error 60: I/O Conversion: Number out of Range
+A number read with {INPUT} or {READ} is too large for its variable
+(e.g. 70000 into an INTEGER).
+
+== Error 61 | Error 61: Illegal Input Format
+The input line does not match what {INPUT} expected, for example too
+few items, or a wrong separator.
+
+== Error 62 | Error 62: I/O Format Repeat Error
+A repeat group in a {PRINT USING|USING} format is badly written: missing
+parentheses or a bad repeat count.
+
+  PRINT USING "2(I5,X1)", a, b
+
+== Error 63 | Error 63: I/O Format Syntax Error
+A {PRINT USING|USING} format item is not valid, or does not suit the value
+(for example a string printed with an I format).
+
+== Error 64 | Error 64: Illegal Path Number
+The path number is not one this program has open: the file was never
+opened, or was already closed.  OS-9 may report {Error 201}.
+
+== Error 65 | Error 65: Wrong Number of Subscripts
+An array is used with a different number of subscripts than its {DIM}
+gave, or an array is used where a single value is wanted.
+
+  DIM m(5,5)
+  m(1):=0         <- needs two subscripts
+
+l2basic09: a far array must always be subscripted.  {SIZE} of the whole
+far array, or passing it whole to {RUN}, fails with 65 at run time.
+
+== Error 66 | Error 66: Non-record-type Operand
+A field name (.name) follows a variable that is not a record.
+
+  DIM n:INTEGER
+  n.x:=1          <- n is not a record
+See {TYPE}.
+
+== Error 67 | Error 67: Illegal Argument
+A function got an argument it cannot use, for example a negative number
+for {SQR} or {LOG}, or a bad position for {MID$}.
+
+l2basic09: {ADDR} of a far array element, or passing a far element to
+{RUN} by reference, fails with 67.  Pass it by value instead:
+  RUN p(big(1)+0.)        RUN p(s(1)+"")
+
+== Error 68 | Error 68: Illegal Control Structure
+A control statement is in a place where it cannot be: for example
+{EXITIF} outside a loop, or {ELSE} without {IF}.
+
+== Error 69 | Error 69: Unmatched Control Structure
+A loop or {IF} is not closed, or a closing word has nothing to close:
+{FOR} without {NEXT}, {WHILE} without ENDWHILE, {REPEAT} without
+{UNTIL}, {LOOP} without ENDLOOP, {IF} without ENDIF.  Reported when
+the procedure is bound (%BERR).
+
+== Error 70 | Error 70: Illegal FOR Variable
+The {FOR} variable must be a simple INTEGER or REAL variable, not an
+array element, a record field or a string.  {NEXT} must name the same
+variable.
+
+== Error 71 | Error 71: Illegal Expression Type
+The expression has the wrong type here: {IF}, {WHILE} and {UNTIL} need
+a BOOLEAN, subscripts must be numeric, and some items cannot be
+printed.
+
+  IF n THEN       <- write IF n<>0 THEN
+
+== Error 72 | Error 72: Illegal Declarative Statement
+A {DIM}, {PARAM} or {TYPE} statement is not valid where it is: for
+example a {PARAM} after executable statements.
+
+l2basic09: FAR is only allowed on arrays in {DIM}, not on simple
+variables or in {PARAM}.
+
+== Error 73 | Error 73: Array Size Overflow
+An array, or all of a procedure's variables together, are too large to
+fit in the 64K address space.
+
+l2basic09: put big arrays in far memory, DIM a(n):FAR REAL.  A far
+array needing more than 255 8K blocks also gives 73; too little free
+RAM gives {Error 237}.
+
+== Error 74 | Error 74: Undefined Line Number
+{GOTO}, {GOSUB}, {ON} or {ON ERROR} names a line number that does not
+exist in the procedure.  Reported when the procedure is bound.
+
+== Error 75 | Error 75: Multiply-defined Line Number
+Two lines of the same procedure have the same line number.
+
+== Error 76 | Error 76: Multiply-defined Variable
+A name is declared twice in one procedure, in {DIM} or {PARAM}, or is
+also used as a record field name: field names share the symbol table.
+
+  TYPE pt=x,y:REAL
+  DIM x:INTEGER   <- x is already a field
+
+== Error 77 | Error 77: Illegal Input Variable
+{INPUT}, {READ} or {GET} has a target that cannot receive a value, such
+as a constant or an expression.
+
+== Error 78 | Error 78: Seek Out of Range
+{SEEK} was given a negative position or one that the file system cannot
+reach.
+
+== Error 79 | Error 79: Missing Data Statement
+{READ} ran out of {DATA} items.  Add DATA, or use {RESTORE} to read
+them again.
+
+# ---------------------------------------------------- OS-9 system errors
+
+== Error 183 | Error 183: Illegal window type
+A window-system call (a SetStat or a DWSet escape code) asked for a
+screen type this system does not support.
+
+== Error 184 | Error 184: Window already defined
+The window device is already set up.  Use it as it is, or close it
+first.
+
+== Error 185 | Error 185: Font Not found
+A window or font call named a font that is not loaded.
+
+== Error 186 | Error 186: Stack Overflow
+A system routine ran out of stack.  Report it with what the program
+was doing.
+
+== Error 187 | Error 187: Illegal Argument
+A system call (often a window or graphics call) got a bad argument.
+
+== Error 188 | Error 188: unused
+Not used by NitrOS-9.
+
+== Error 189 | Error 189: Illegal Coordinates
+A graphics or window call got coordinates outside the window.
+
+== Error 190 | Error 190: Internal Integrity check
+An internal check of the window system failed.
+
+== Error 191 | Error 191: Buffer size is too small
+A get/put buffer is too small for the graphics data asked for.
+
+== Error 192 | Error 192: Illegal Command
+A window or device was sent a command it does not know.
+
+== Error 193 | Error 193: Screen or Window Table is Full
+No more screens or windows can be opened.  Close some first.
+
+== Error 194 | Error 194: Bad/Undefined buffer number
+A get/put buffer number was used that was never defined.
+
+== Error 195 | Error 195: Illegal window definition
+The window's size or position is not valid for its screen.
+
+== Error 196 | Error 196: Window undefined
+The window has not been set up (no DWSet yet).
+
+== Error 197 | Error 197: unused
+Not used by NitrOS-9.
+
+== Error 198 | Error 198: unused
+Not used by NitrOS-9.
+
+== Error 199 | Error 199: unused
+Not used by NitrOS-9.
+
+== Error 200 | Error 200: Path Table Full
+The system cannot open more paths.  Close files you no longer need with
+{CLOSE}; each process may have 16 open paths.
+
+== Error 201 | Error 201: Illegal Path Number
+The path number is not open: never opened, already closed, or a wrong
+variable.  See {Error 64}.
+
+== Error 202 | Error 202: Interrupt Polling Table Full
+No room for another device interrupt handler.  A system setup problem.
+
+== Error 203 | Error 203: Illegal Mode
+A path was used in a way its mode does not allow: writing to a file
+opened for READ, reading one opened for WRITE, or opening a directory
+without DIR.  Check the mode in {OPEN}.
+
+== Error 204 | Error 204: Device Table Full
+No more devices can be in use at once.  A system setup problem.
+
+== Error 205 | Error 205: Illegal Module Header
+A module (for example one loaded for {RUN}) has a bad header: the file
+is not a valid OS-9 module.
+
+== Error 206 | Error 206: Module Directory Full
+The system's module directory has no free entry.  Unlink modules you
+no longer need.
+
+== Error 207 | Error 207: Memory Full
+The process has no room left in its 64K address space.
+
+l2basic09: far arrays and the farmem module map RAM through an 8K
+window, so they need one free 8K slot.  With a large workspace
+(#32k), -b code banking, or big modules linked in, no slot may be left
+and the first far access fails with 207.  Use a smaller workspace
+(l2b09run #24k ...).  See {Memory}.
+
+== Error 208 | Error 208: Illegal Service Request
+A system call number that does not exist was used, for example through
+the syscall module.
+
+== Error 209 | Error 209: Module Busy
+The module is in use and cannot be changed or unlinked now.
+
+== Error 210 | Error 210: Boundary Error
+A memory request had a bad address or size.
+
+== Error 211 | Error 211: End of File
+A read went past the end of the file or pipe.  Test with {EOF} before
+reading, or trap it with {ON ERROR}:
+
+  WHILE NOT(EOF(#path)) DO
+    READ #path, line$
+  ENDWHILE
+
+A signal (such as ^C) during a waiting pipe read also ends it with 211.
+
+== Error 212 | Error 212: Returning non-allocated memory
+Memory was given back that was never allocated.  A system or module
+bug.
+
+== Error 213 | Error 213: Non-existing Segment
+The disk's file structure is damaged.  Check the disk.
+
+== Error 214 | Error 214: No Permission
+The file's attributes do not allow this access: writing a read-only
+file, deleting a directory that is not empty, or running a file that is
+not executable.
+
+== Error 215 | Error 215: Bad Path Name
+The path name is not valid: bad characters, or a device name that is
+wrong.  Path names look like /dd/work/data.txt.
+
+== Error 216 | Error 216: Path Name Not Found
+The file or directory does not exist.  On {OPEN}, check the name and
+the current directory; on {RUN} or {CHAIN}, the module was not in
+memory or in the execution directory.
+
+l2b09run gives 216 for PACK, DIR, RENAME and MEM when its overlay
+l2b09ovl is missing from /dd/CMDS.
+
+== Error 217 | Error 217: Segment List Full
+The file is too fragmented to grow.  Copy it to a fresh disk.
+
+== Error 218 | Error 218: File Already Exists
+{CREATE} names a file that already exists.  Delete it first, or
+{OPEN} it for WRITE instead.
+
+  SHELL "del out.txt"
+
+== Error 219 | Error 219: Illegal Block Address
+A disk block number is out of range: a damaged or wrong-sized disk.
+
+== Error 220 | Error 220: Phone Hangup-Data Carrier Detect lost
+A serial line lost its carrier (the modem hung up).
+
+== Error 221 | Error 221: Module Not Found
+A module named in a link or {RUN} is not in memory.  Load it first, or
+put it in the execution directory.  See also {Error 216}.
+
+== Error 223 | Error 223: Suicide Attempt
+A process tried to send itself a fatal signal in a way OS-9 refuses.
+
+== Error 224 | Error 224: Illegal Process Number
+A process number that does not exist was given (for example to a
+signal call).
+
+== Error 226 | Error 226: No Children
+A wait call was made, but the process has no child processes.
+
+== Error 227 | Error 227: Illegal SWI Code
+A bad software interrupt code was used.
+
+== Error 228 | Error 228: Process Aborted
+The process was ended by a signal or a fatal error.
+
+== Error 229 | Error 229: Process Table Full
+No more processes can be started.  {SHELL} fails until others end.
+
+== Error 230 | Error 230: Illegal Parameter Area
+The parameter area passed to a new process is not valid.
+
+== Error 231 | Error 231: Known module
+The module is already in memory; it was not loaded again.
+
+== Error 232 | Error 232: Incorrect Module CRC
+The module's checksum is wrong: the file is damaged, or was changed
+without updating the CRC.
+
+== Error 233 | Error 233: Signal Error
+A signal could not be sent: the target already has one waiting.
+
+== Error 234 | Error 234: Non-existent Module
+A module could not be found where it was expected.
+
+== Error 235 | Error 235: Bad Name
+A name has bad characters or is too long (file names have at most 29
+characters).
+
+== Error 236 | Error 236: Bad Module Header
+The module's header is damaged.
+
+== Error 237 | Error 237: RAM Full
+There is not enough free physical RAM: far array or farmem allocations
+too large, or too many processes.
+
+Pipe modules loaded at run time also fail with 237: Pipe, PipeMan and
+Piper must be in OS9Boot.
+
+== Error 238 | Error 238: Unknown Process ID
+The process ID given does not belong to a process.
+
+== Error 239 | Error 239: No task number available
+The system has no free task (memory map) number.  Too many processes.
+
+== Error 240 | Error 240: Unit Error
+The device unit does not exist (e.g. a drive that is not there).
+
+== Error 241 | Error 241: Sector Error
+A bad sector number on the disk.
+
+== Error 242 | Error 242: Write Protect
+The disk is write-protected.
+
+== Error 243 | Error 243: CRC Error
+The data read from the disk failed its checksum.  The disk may be bad.
+
+== Error 244 | Error 244: Read Error
+The device could not read the data.
+
+== Error 245 | Error 245: Write Error
+The device could not write the data.
+
+== Error 246 | Error 246: Not Ready
+The device is not ready: no disk, or the drive is off.
+
+== Error 247 | Error 247: Seek Error
+The drive could not find the track.
+
+== Error 248 | Error 248: Media Full
+The disk is full.  Delete files or use another disk.
+
+== Error 249 | Error 249: Wrong Type
+The disk or device is the wrong type for this operation (e.g. wrong
+density or format).
+
+== Error 250 | Error 250: Device Busy
+The device is in use by another process and cannot be shared.
+
+== Error 251 | Error 251: Disk ID Change
+The disk was changed while files on it were open.
+
+== Error 252 | Error 252: Record is locked-out
+Another process holds a lock on that part of the file.  Try again
+later.
+
+== Error 253 | Error 253: Non-sharable file busy
+The file is open by another process, and it is not sharable.
+
+== Error 254 | Error 254: I/O Deadlock Error
+Two processes are each waiting for a record the other has locked.

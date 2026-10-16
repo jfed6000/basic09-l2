@@ -47,7 +47,7 @@ STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
 L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl
 OS9DIR = os9
-TOOLS = $(BUILD)/l2b09ctl $(BUILD)/basic09-l2
+TOOLS = $(BUILD)/l2b09ctl $(BUILD)/basic09-l2 $(BUILD)/l2b09help $(BUILD)/basic09-l2.hlp
 
 # Test platform (Wildbits Jr2 under MAME for now; see tools/emu-wildbits.sh)
 PLATDIR  = $(NITROS9DIR)/recipes/wildbits/l2
@@ -109,6 +109,17 @@ EDAS  = lwasm --no-warn=ifp1 --format=os9 \
 $(BUILD)/basic09-l2: $(EDSRC) $(OS9DIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(EDAS) $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) \
 	    --includedir=$(CURDIR)/$(OS9DIR)/basic09-l2 $(CURDIR)/$(OS9DIR)/basic09-l2/basic09-l2.asm -o$(CURDIR)/$@
+
+# The help browser (docs/HELP.md): the editor's screen and key code, with
+# branch lengths left to lwasm (its size does not matter as the editor's does)
+HVSRC = $(wildcard $(OS9DIR)/l2b09help/*.asm) $(OS9DIR)/basic09-l2/term.asm $(OS9DIR)/basic09-l2/keys.asm
+$(BUILD)/l2b09help: $(HVSRC) $(OS9DIR)/defsfile | $(BUILD)
+	cd $(BUILD) && $(EDAS) --pragma=autobranchlength $(AFLAGS) --includedir=$(CURDIR)/$(OS9DIR) \
+	    --includedir=$(CURDIR)/$(OS9DIR)/basic09-l2 $(CURDIR)/$(OS9DIR)/l2b09help/l2b09help.asm -o$(CURDIR)/$@
+
+# The help file: every KEYTAB word and every error in errmsg must have a page
+$(BUILD)/basic09-l2.hlp: $(wildcard help/*.txt) tools/mkhelp.py src/comand.asm | $(BUILD)
+	tools/mkhelp.py --errmsg $(NITROS9DIR)/level1/sys/errmsg -o $@
 
 # Pipe modules are not in the stock Wildbits SD boot; tests load them at runtime
 pipes: $(PIPEMODS)
@@ -201,8 +212,9 @@ loadtime: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/loadtime
 
 # SD card images for trying the editor on a Wildbits K2 or Jr2: the stock
-# image with the pipe modules added to OS9Boot, basic09-l2, l2b09run and the
-# subroutine modules in CMDS, and examples/ in /dd/l2b09
+# image with the pipe modules added to OS9Boot, basic09-l2, l2b09run,
+# l2b09help and the subroutine modules in CMDS, the help file in SYS, and
+# examples/ in /dd/l2b09
 K2IMG  = $(BUILD)/l2b09_k2.dsk
 JR2IMG = $(BUILD)/l2b09_jr2.dsk
 k2img: $(K2IMG)
@@ -214,9 +226,10 @@ $(BUILD)/l2b09_%.dsk: $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk $(TOOLS) $(L2B09)
 	tools/bootfile-add.py $(BUILD)/$*boot.orig $(BUILD)/$*boot \
 	    $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe
 	os9 copy -r $(BUILD)/$*boot $@.tmp,OS9Boot
-	for m in basic09-l2 l2b09run l2b09ovl syscall inkey farmem; do \
+	for m in basic09-l2 l2b09run l2b09ovl l2b09help syscall inkey farmem; do \
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
+	os9 copy -r $(BUILD)/basic09-l2.hlp $@.tmp,SYS/basic09-l2.hlp
 	os9 makdir $@.tmp,L2B09
 	for f in examples/*; do case $$f in *.b09) l=-l ;; *) l= ;; esac; \
 	    os9 copy $$l -r $$f $@.tmp,L2B09/$$(basename $$f) || exit 1; done

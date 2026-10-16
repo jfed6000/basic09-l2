@@ -1,0 +1,522 @@
+# Basic09 functions: one page per function (or per close group)
+@category Functions
+
+== Functions | Basic09 functions
+Every function, by kind.  Types: see {Data types}.
+
+Numbers:
+  {ABS}  {SGN}  {INT}  {FIX}  {MOD}  {SQ}  {SQRT}  {SQR|SQRT}  {EXP}
+  {LOG}  {LOG10}  {RND}  {PI}
+Trigonometry (radians, or degrees after {DEG}):
+  {SIN}  {COS}  {TAN}  {ASN}  {ACS}  {ATN}
+Strings:
+  {LEN}  {LEFT$}  {RIGHT$}  {MID$}  {SUBSTR}  {TRIM$}  {DATE$}
+Conversion:
+  {FLOAT}  {FIX}  {VAL}  {STR$}  {ASC}  {CHR$}
+Logic and bits:
+  {TRUE}  {FALSE|TRUE}  {LAND}  {LOR|LAND}  {LXOR|LAND}  {LNOT|LAND}
+Memory and system:
+  {ADDR}  {SIZE}  {PEEK}  {ERR}
+I/O:
+  {EOF}  {POS}  {TAB}
+
+Functions with no argument (PI, POS, ERR, DATE$, TRUE, FALSE) are
+written without parentheses.  See also {Operators}, {Statements}.
+
+== ABS | ABS function
+Returns the absolute value of a number.
+
+  ABS(<number>)
+
+Argument INTEGER or REAL; the result has the same type.
+
+  PRINT ABS(-5); " "; ABS(-2.5)
+  5 2.5
+
+See also {SGN}.
+
+== SGN | SGN function
+Returns the sign of a number: -1, 0 or 1.
+
+  SGN(<number>)
+
+Argument INTEGER or REAL; the result is always INTEGER.
+
+  PRINT SGN(-3.2); " "; SGN(0); " "; SGN(7)
+  -1 0 1
+
+See also {ABS}.
+
+== INT | INT function
+Returns the whole part of a number, dropping the fraction.
+
+  INT(<number>)
+
+Argument INTEGER or REAL; the result is always REAL.
+INT truncates toward zero: INT(-2.5) is -2, not -3.
+To get an INTEGER, use {FIX} (which rounds).
+
+  PRINT INT(2.7); " "; INT(-2.5)
+  2. -2.
+
+== FIX | FIX function
+Returns a REAL rounded to the nearest INTEGER.
+
+  FIX(<number>)
+
+Argument REAL (an INTEGER comes back unchanged); the result is INTEGER.
+Halves round away from zero: FIX(2.5) is 3, FIX(-2.5) is -3.
+Values beyond 65535 (or below -32768) stop with {Error 52}; values
+from 32768 to 65535 come back as negative numbers (unsigned 16 bits).
+For truncation use {INT}; the opposite conversion is {FLOAT}.
+
+  PRINT FIX(2.4); " "; FIX(2.5); " "; FIX(-2.5)
+  2 3 -3
+
+== FLOAT | FLOAT function
+Returns a number converted to REAL.
+
+  FLOAT(<number>)
+
+Argument BYTE or INTEGER (a REAL comes back unchanged); the result
+is REAL.  Use it to force real arithmetic: 7/2 is the INTEGER 3.
+
+  PRINT 7/2; " "; FLOAT(7)/2
+  3 3.5
+
+See also {FIX}, {INT}.
+
+== MOD | MOD function
+Returns the remainder of a division.
+
+  MOD(<dividend>, <divisor>)
+
+Arguments INTEGER or REAL; the result is INTEGER if both are INTEGER,
+otherwise REAL.  A zero divisor is {Error 45}.
+REAL: the result is a - b * INT(a/b), so it takes the sign of a.
+INTEGER: the result is negative when exactly one argument is.
+
+  PRINT MOD(7,3); " "; MOD(-7,3); " "; MOD(7,-3); " "; MOD(7.5,2)
+  1 -1 -1 1.5
+
+== SQ | SQ function
+Returns a number squared (multiplied by itself).
+
+  SQ(<number>)
+
+Argument INTEGER or REAL; the result has the same type, so SQ of an
+INTEGER must fit in 16 bits.
+
+  PRINT SQ(12); " "; SQ(1.5)
+  144 2.25
+
+See also {SQRT}.
+
+== SQRT | SQRT function
+@also SQR
+Returns the square root of a number.  SQR is the same function.
+
+  SQRT(<number>)
+  SQR(<number>)
+
+Argument INTEGER or REAL; the result is REAL.
+A negative argument is {Error 67}.
+
+  PRINT SQRT(2); " "; SQR(16)
+  1.41421356 4.
+
+See also {SQ}.
+
+== EXP | EXP function
+Returns e (2.71828183) raised to a power.
+
+  EXP(<number>)
+
+Argument and result REAL.  Keep the argument below about 88: larger
+values overflow and give a wrong result without an error.
+EXP is the inverse of {LOG}.
+
+  PRINT EXP(1)
+  2.71828183
+
+== LOG | LOG function
+Returns the natural logarithm (base e) of a number.
+
+  LOG(<number>)
+
+Argument and result REAL.  Zero or a negative argument is {Error 67}.
+For base 10 use {LOG10}; the inverse is {EXP}.
+
+  PRINT LOG(10)
+  2.30258509
+
+== LOG10 | LOG10 function
+Returns the base 10 logarithm of a number.
+
+  LOG10(<number>)
+
+Argument and result REAL.  Zero or a negative argument is {Error 67}.
+For the natural logarithm use {LOG}.
+
+  PRINT LOG10(1000)
+  3.
+
+== RND | RND function
+Returns a pseudo-random REAL number.
+
+  RND(<number>)
+
+Argument and result REAL.
+  RND(0)      a number from 0 up to (not including) 1
+  RND(x)      x > 0: a number from 0 up to (not including) x
+  RND(x)      x < 0: restarts the sequence from a seed made of x,
+              then returns a number from 0 up to 1
+The same negative argument always restarts the same sequence.
+
+  r=RND(-5)          (* repeatable sequence *)
+  die=FIX(INT(RND(6)))+1
+  PRINT RND(-1); " "; RND(-1)
+  .711324865 .711324865
+
+== PI | PI function
+Returns the constant pi, 3.14159265.
+
+  PI
+
+No argument; the result is REAL.  PI is always in radians, even
+after {DEG}.
+
+  PRINT PI; " "; PI/2
+  3.14159265 1.57079633
+
+== SIN | SIN function
+@also COS TAN
+Returns the sine, cosine or tangent of an angle.
+
+  SIN(<angle>)
+  COS(<angle>)
+  TAN(<angle>)
+
+Argument and result REAL.  The angle is in radians, or in degrees
+after {DEG} in the same procedure ({RAD} switches back).
+
+  DEG
+  PRINT SIN(30); " "; COS(60); " "; TAN(45)
+  .5 .5 1.
+
+See also {ASN}, {PI}.
+
+== ASN | ASN function
+@also ACS ATN
+Returns the arcsine, arccosine or arctangent: the angle whose sine,
+cosine or tangent is the argument.
+
+  ASN(<number>)
+  ACS(<number>)
+  ATN(<number>)
+
+Argument and result REAL.  The result is in radians, or in degrees
+after {DEG}.  ASN and ACS need an argument from -1 to 1; anything
+else is {Error 67}.
+
+  PRINT ASN(1); " "; ATN(1)*4
+  1.57079633 3.14159265
+  DEG
+  PRINT ACS(0); " "; ATN(1)
+  90. 45.
+
+See also {SIN}.
+
+== LEN | LEN function
+Returns the length of a string.
+
+  LEN(<string>)
+
+Argument STRING; the result is INTEGER.  LEN gives the current
+length, not the size the variable was declared with (that is {SIZE}).
+
+  name$="hello"
+  PRINT LEN(name$); " "; LEN("")
+  5 0
+
+== LEFT$ | LEFT$ function
+Returns the first characters of a string.
+
+  LEFT$(<string>, <count>)
+
+String STRING, count INTEGER; the result is STRING.
+A count of 0 or less gives an empty string; a count larger than the
+string gives the whole string.
+
+  PRINT LEFT$("hello",2); "|"; LEFT$("hi",9)
+  he|hi
+
+See also {RIGHT$}, {MID$}.
+
+== RIGHT$ | RIGHT$ function
+Returns the last characters of a string.
+
+  RIGHT$(<string>, <count>)
+
+String STRING, count INTEGER; the result is STRING.
+A count of 0 or less gives an empty string; a count larger than the
+string gives the whole string.
+
+  PRINT RIGHT$("hello",3)
+  llo
+
+See also {LEFT$}, {MID$}.
+
+== MID$ | MID$ function
+Returns part of a string.
+
+  MID$(<string>, <start>, <count>)
+
+String STRING, start and count INTEGER; the result is STRING.
+The part begins at character <start> (the first is 1) and is <count>
+characters long, or less at the end of the string.  A start past the
+end gives an empty string; a start of 0 or less acts like 1.
+
+  PRINT MID$("hello",2,3); "|"; MID$("hello",4,9); "|"
+  ell|lo|
+
+See also {LEFT$}, {RIGHT$}, {SUBSTR}.
+
+== SUBSTR | SUBSTR function
+Returns where one string first occurs in another.
+
+  SUBSTR(<search for>, <search in>)
+
+Arguments STRING; the result is INTEGER: the position of the first
+match (the first character is 1), or 0 if there is none.
+Note the order: the string to find comes first.
+
+  PRINT SUBSTR("lo","hello"); " "; SUBSTR("x","hello")
+  4 0
+
+See also {MID$}.
+
+== TRIM$ | TRIM$ function
+Returns a string without its trailing spaces.
+
+  TRIM$(<string>)
+
+Argument and result STRING.  Only spaces at the end are removed;
+leading spaces stay.
+
+  PRINT TRIM$("  ab  "); "|"
+    ab|
+
+== DATE$ | DATE$ function
+Returns the system date and time as a string.
+
+  DATE$
+
+No argument; the result is STRING, "yy/mm/dd hh:mm:ss" (17
+characters), from the system clock.
+The year is two digits counted from 1900, so from 2000 on the tens
+digit is past "9": 2026 shows as "<6".  Take the time with
+RIGHT$(DATE$,8) and the month and day with MID$(DATE$,4,5).
+
+  PRINT DATE$
+  <6/10/15 21:26:01
+
+== VAL | VAL function
+Returns the number written in a string.
+
+  VAL(<string>)
+
+Argument STRING; the result is REAL.  Leading spaces are allowed and
+an exponent may follow ("1E3").  A string that is not a number is
+{Error 67}.
+
+  PRINT VAL("3.25")*2; " "; VAL(" 12"); " "; VAL("1E3")
+  6.5 12. 1000.
+
+See also {STR$}.
+
+== STR$ | STR$ function
+Returns a number written as a string, as {PRINT} would show it.
+
+  STR$(<number>)
+
+Argument BYTE, INTEGER or REAL; the result is STRING.  No spaces
+are added.  A REAL keeps its decimal point and has no zero before
+it: STR$(3.0) is "3." and STR$(0.25) is ".25".
+
+  PRINT STR$(42); "|"; STR$(2.5); "|"; STR$(-7)
+  42|2.5|-7
+
+See also {VAL}.
+
+== ASC | ASC function
+Returns the character code of the first character of a string.
+
+  ASC(<string>)
+
+Argument STRING; the result is INTEGER (0 to 255).  An empty string
+gives 255 (the string end marker).
+
+  PRINT ASC("A"); " "; ASC("abc")
+  65 97
+
+See also {CHR$}.
+
+== CHR$ | CHR$ function
+Returns a one-character string with the given character code.
+
+  CHR$(<code>)
+
+Argument INTEGER from 0 to 255 (anything else is {Error 67}); the
+result is STRING.
+
+  PRINT CHR$(65); CHR$(66)
+  AB
+  PRINT "line"; CHR$(13); "next"   (* CHR$(13) is a carriage return *)
+
+See also {ASC}.
+
+== TRUE | TRUE function
+@also FALSE
+The BOOLEAN constants true and false.
+
+  TRUE
+  FALSE
+
+No argument; the result is BOOLEAN.  {PRINT} shows them as True and
+False.  For the logical operators AND, OR, XOR and NOT see
+{Operators}; for bits in numbers see {LAND}.
+
+  DIM done:BOOLEAN
+  done=FALSE
+  PRINT done; " "; NOT(done)
+  False True
+
+== LAND | LAND function
+@also LOR LXOR LNOT
+Bitwise AND, OR, exclusive OR and NOT of 16-bit numbers.
+
+  LAND(<number>, <number>)
+  LOR(<number>, <number>)
+  LXOR(<number>, <number>)
+  LNOT(<number>)
+
+Arguments and result INTEGER, worked on bit by bit.  (AND, OR, XOR
+and NOT are for BOOLEAN values; see {Operators}.)
+
+  PRINT LAND(12,10); " "; LOR(12,10); " "; LXOR(12,10); " "; LNOT(5)
+  8 14 6 -6
+  PRINT LAND($FF00,-1)
+  -256
+
+== ADDR | ADDR function
+Returns the address in memory of a variable.
+
+  ADDR(<variable>)
+
+The variable can be of any type, an array element, a whole array or
+a record.  The result is INTEGER; addresses above 32767 come out
+negative.  Use it with {PEEK}, {POKE} and machine-code subroutines.
+l2basic09: ADDR of an element of a far array is {Error 67} (the
+element has no fixed address); copy it to a normal variable first.
+
+  DIM a(10):INTEGER
+  PRINT ADDR(a(2))-ADDR(a(1))
+  2
+
+See also {SIZE}.
+
+== SIZE | SIZE function
+Returns the number of bytes a variable takes in memory.
+
+  SIZE(<variable>)
+
+The result is INTEGER.  BYTE and BOOLEAN are 1, INTEGER 2, REAL 5,
+a STRING its declared length (32 if not given), a record the sum of
+its fields.  An array name without subscripts gives the whole array;
+with subscripts, one element.
+
+  DIM a(10):INTEGER; s:STRING; n:STRING[10]
+  TYPE pt=x,y:REAL
+  DIM p:pt
+  PRINT SIZE(a); " "; SIZE(a(1)); " "; SIZE(s); " "; SIZE(n); " "; SIZE(p)
+  20 2 32 10 10
+
+See also {ADDR}, {LEN}.
+
+== PEEK | PEEK function
+Returns the byte stored at an address.
+
+  PEEK(<address>)
+
+Argument INTEGER (addresses above 32767 can be written as negative
+numbers or as hex, e.g. $C000); the result is INTEGER, 0 to 255.
+The address is in the process's own 64K address space.
+
+  DIM b:BYTE
+  b=200
+  PRINT PEEK(ADDR(b))
+  200
+
+See also {POKE}, {ADDR}.
+
+== ERR | ERR function
+Returns the number of the last error, and then resets it to 0.
+
+  ERR
+
+No argument; the result is INTEGER.  Read it once, in the handler
+that {ON ERROR} jumps to, and keep it in a variable if needed again:
+a second ERR returns 0.  See {Errors} for the numbers.
+
+  DIM e:INTEGER
+  ON ERROR GOTO 10
+  r=LOG(-1)
+  10 e=ERR
+  PRINT e; " "; ERR
+  67 0
+
+== EOF | EOF function
+Returns TRUE when a path is at its end of file.
+
+  EOF(#<path>)
+
+Path INTEGER or BYTE (as given by {OPEN}); the result is BOOLEAN.
+Test it before each {READ} or {GET}, since reading past the end is
+an error.
+
+  OPEN #p,"data":READ
+  WHILE NOT(EOF(#p)) DO
+    READ #p,line$
+    PRINT line$
+  ENDWHILE
+  CLOSE #p
+
+== POS | POS function
+Returns the column where the next character printed will go.
+
+  POS
+
+No argument; the result is INTEGER.  The first column is 1; a
+carriage return sets it back to 1.  It counts what {PRINT} has
+written, to the terminal or to any path.
+
+  PRINT "abc"; POS
+  abc4
+
+See also {TAB}.
+
+== TAB | TAB function
+Moves the {PRINT} position to a column, by printing spaces.
+
+  TAB(<column>)
+
+Argument INTEGER; the result is a STRING of spaces.  The column
+counts from 1 at the start of the line, as {POS} does.  If the line
+is already at or past that column, TAB gives nothing (it does not
+start a new line).  A negative column is {Error 67}.
+
+  PRINT "N"; TAB(5); "x"
+  N   x
+  PRINT "1234567890"; TAB(5); "y"
+  1234567890y
