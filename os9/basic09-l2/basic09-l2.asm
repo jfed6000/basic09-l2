@@ -323,6 +323,11 @@ ppcc                rmb       2                   window's top line, before
 pptl                rmb       2
 bpsave              rmb       MAXBP*2             the breakpoints' lines, before
 pprec               rmb       UR.SIZE             the new text's chain (a scratch record)
+ppuse               rmb       1                   the procedure has #use lines (rt.asm):
+ppmid               rmb       1                   the last read had no CR
+ppskip              rmb       1                   and it was a #use line's
+usep                rmb       4                   #use: a line of the procedure
+hdrp                rmb       4                   #use: a line of the procedure it names
 wtab                rmb       MAXWATCH*WT.SIZE      watches
 ptab                rmb       MAXPROC*PR.SIZE     procedures l2b09run holds
 mtab                rmb       MAXMSG*MS.SIZE      messages

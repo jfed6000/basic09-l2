@@ -29,6 +29,7 @@ It is written in 6809 assembly (`os9/basic09-l2/`, built as `build/basic09-l2`).
 | P5.5 | Line breakpoints, run to cursor, step over (`l2b09run` and the editor) | done |
 | P5.6 | Syntax colours and pretty print | done |
 | P5.7 | Mouse: click, drag select, right-click extend, menus, dialogs, message window, breakpoint border | done |
+| — | Global TYPE lines: `(* #use <procedure> *)` (2026-10-15) | done |
 
 ## Keys
 
@@ -243,6 +244,17 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **Workspace size:** when a load prints `ERROR #032` (memory full, at any point: Basic09 reports it from the compiler as a bare error, or from the binder as `%BERR 32`), Make sends `mem <8K more>` and loads again; every procedure it sent is sent again. It stops when `mem` gets less than it asked for (it prints the size it has) or at 56K. A procedure cut short by memory full also brings error-74 "Undefined Line Number" noise for the lines past the cut; the retry clears it. Options ▸ Memory... asks for a size in KB and sends `mem` too, or keeps it for the next start if `l2b09run` is not running; not while a program is stopped (`mem` moves the workspace's top). `mem` runs from the overlay `l2b09ovl`.
 - **User screen:** F5 (Run ▸ User screen) shows the program's terminal until a key is pressed there.
 
+## Global TYPE lines
+
+Basic09 has no global variables, and every procedure that shares a record (a context record passed as `PARAM g:ctx`) has to repeat its `TYPE` by hand. The editor can supply the TYPE lines from one place instead. `l2b09run` is unchanged.
+
+- **The header:** an ordinary procedure holding the shared `TYPE` lines, for example `PROCEDURE globals`. It is loaded like any other, so it must compile. Basic09 wants a backslash before a comment after a `TYPE` (`TYPE pt=x,y:REAL \ (* a point *)`).
+- **Using it:** a line `(* #use globals *)` (any case, spaces allowed before the words) in a procedure that needs the types, before its `DIM` and `PARAM` lines. It is a comment, so the file stays valid Basic09; stock Basic09 just does not get the types.
+- **What Make sends:** each `#use` line goes to `l2b09run` with every `TYPE` line of the named procedure in front of it on the same line, joined by backslashes, without their comments: `TYPE pt=x,y:REAL \ (* #use globals *)`. The comment has to come last, because a `(*` comment runs to the end of the line. One line keeps every source line one I-code line, so error lines, breakpoints, debugger stops and pretty print stay right. The TYPE text is cut at 200 characters (`TYMAX`) so that the line fits `l2b09run`'s 256; a header with more goes in two, each with its own `#use` line.
+- **Changes:** Make notes which procedures have a `#use` line (`PF.USE`). When the procedure a `#use` line names is sent (changed, new, or with errors) or is gone, the procedures that use it are sent too (`mk_uses`), so a change to the header alone reloads them.
+- **Pretty print:** `LIST` shows the joined line, so for a procedure with `#use` lines pretty print follows the text line by line and puts the user's `#use` line back in place of `LIST`'s, indented like the body (`pp_use`).
+- **Not handled:** a `#use` line in the header itself is not expanded (only its `TYPE` lines are taken), and `l2b09ctl` or stock Basic09 loading the file do not expand anything.
+
 ## The debugger
 
 - **Stops:** a program stops in the debugger at a breakpoint, a `PAUSE` statement, a BREAK, a runtime error, or (with Until return) on its way back to a procedure. `l2b09run` then sends `%DEBUG <proc> <line>`, and the editor stays in the debugger until the program ends or is reset:
@@ -290,6 +302,7 @@ The text is paged, so a file can be far larger than the editor's 64K.
 - **`make p5ltest` (P5.7):** `test/p5l`, the real keyboard and mouse on `/term`, driven by the MAME script `test/p5l/lua`. It types after clicks on two lines, sets a breakpoint on the left border, and runs the program from the Run menu by pressing on its title, dragging down and releasing on Run. The snapshot must show the edits and the stop on the breakpoint's line.
 - **`make p5qtest` (P5.7):** `test/p5q`, the workspace size. A generated procedure too big for 8K, with `-m=8`: Make's load runs out of memory twice, the editor grows the workspace to 16K and then 24K and the load succeeds; then Options ▸ Memory... sets 24K. The protocol log must show the `mem` commands and what they got.
 - **`make p5rtest`:** `test/p5r`, the F1 help box from a key script (`-h`): the snapshot must show the keys at column 3 and what they do at column 29, as before the help text lost its padding.
+- **`make p5stest`:** `test/p5s`, global TYPE lines. `main` and `show` use `globals` (one with `#USE` indented). Make and Run print the record's size, 10; a field is added to `globals` alone, and the next Make sends all three and Run prints 15. Then pretty print keeps both `#use` lines, and a last Make sends nothing. The protocol log (with the joined lines in `LIST`) and the saved file must match.
 - **`make p5ptest` (P5.7):** `test/p5p`, the screen switch live in MAME. The script counts the grey pixel rows down one column (menu bar, its gap row, hint line), which tell 80×30 from 80×60 and single from double spacing, through four switches; then quits on 80×60 and checks the shell is back on 80×30.
 - **`make p5otest` (P5.7):** `test/p5o`, double spacing from a key script on the 80×30 screen. The snapshot must show the text on the even rows, the borders and the scroll bar's track on the gap rows, the gap rows clean after a dialog, and a press on logical row 5 typing on line 4.
 - **`make p5ntest` (P5.7):** `test/p5n`, the scroll bar from a key script (drawn in ASCII: `^` `v` arrows, `:` track, `#` thumb). Two clicks on ▼, a click on the track, the thumb dragged to the bottom and a click on ▲, each followed by a letter typed; the saved file shows where the cursor went, and the snapshot the window and thumb.

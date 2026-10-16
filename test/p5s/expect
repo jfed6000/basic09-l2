@@ -1,0 +1,6 @@
+term.out  size=10
+term.out  x=1.5 y=2
+term.out  size=15
+run.out   == done
+same ed.log log.exp
+same prog.b09 prog.exp

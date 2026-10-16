@@ -118,6 +118,8 @@ pp_one              lda       PR.FLAG,y
                     leax      pperms,pcr
                     lbra      po_msg
 po1                 pshs      y
+                    lbsr      pp_usei             (#use lines stay as they are)
+                    ldy       ,s
                     lbsr      a_rline             "list <name>"
                     leay      listcm,pcr
                     lbsr      s_str
@@ -183,7 +185,16 @@ listcm              fcn       "list "
 
 * pp_clean: turn the LIST line in rline (Y bytes) into source and add it
 * to the new text; carry if the pages ran out
-pp_clean            tfr       y,d
+pp_clean            ldu       <base
+                    tst       ppuse,u
+                    beq       ppc0
+                    pshs      y
+                    lbsr      pp_use
+                    puls      y
+                    bcs       ppc0a               (carry: no pages)
+                    beq       ppc0                ..not a #use line
+ppc0a               rts
+ppc0                tfr       y,d
                     lbsr      a_rline
                     leau      d,x                 U = the end of what was read
                     pshs      u
@@ -418,6 +429,90 @@ pp_isend            pshs      d
                     puls      d,pc
 pie8                andcc     #^Zero
                     puls      d,pc
+
+* pp_usei: for entry Y: if it has #use lines, usep = its PROCEDURE line,
+* so that pp_use can follow the LIST lines in the text
+pp_usei             ldu       <base
+                    clr       ppmid,u
+                    clr       ppskip,u
+                    clr       ppuse,u
+                    lda       PR.FLAG,y
+                    bita      #PF.USE
+                    beq       pui9
+                    inc       ppuse,u
+                    ldd       PR.LINE,y
+                    lbsr      goto_line           cpos
+                    ldu       <base
+                    ldd       <cpos
+                    std       usep,u
+                    ldd       <cpos+2
+                    std       usep+2,u
+pui9                rts
+
+* pp_use: LIST printed the TYPE text a #use line brought in (mk_types)
+* in front of the comment, so the line in the text goes in instead.
+* For the LIST line in rline (Y bytes): NE if it was such a line (or
+* the rest of one), carry if the pages ran out
+pp_use              tfr       y,d
+                    lbsr      a_rline
+                    leax      d,x
+                    lda       -1,x                its last character
+                    suba      #C$CR               (not 0: the line goes on)
+                    pshs      a
+                    ldu       <base
+                    tst       ppmid,u             the start of a line?
+                    beq       pus2
+                    tst       ppskip,u            ..no: drop the rest of a #use line
+                    beq       pus_no
+                    bra       pus_yes
+pus2                clr       ppskip,u
+                    lbsr      us_xu
+                    lbsr      ln_use
+                    bcc       pus3a
+                    lbsr      us_xu               ..not one: on to the next line
+                    lbsr      p_nextln
+                    bra       pus_no
+pus3a               lbsr      us_xu               ..one: copy it from the text,
+                    lbsr      p_char              indented as the body is
+                    bcs       pus4
+                    cmpa      #C$SPAC
+                    bne       pus3b
+                    lbsr      p_next
+                    bra       pus3a
+pus3b               ldd       #C$SPAC*256+PPIND
+pus3c               bsr       pus_app
+                    bcs       pus_err
+                    decb
+                    bne       pus3c
+pus3                lbsr      us_xu
+                    lbsr      p_char
+                    bcs       pus4
+                    lbsr      p_next
+                    bsr       pus_app
+                    bcs       pus_err
+                    cmpa      #C$CR
+                    bne       pus3
+                    bra       pus5
+pus4                lda       #C$CR               (the last line of the text)
+                    bsr       pus_app
+                    bcs       pus_err
+pus5                ldu       <base
+                    inc       ppskip,u
+pus_yes             lda       #1
+                    bra       pus8
+pus_no              clra
+pus8                ldu       <base
+                    ldb       ,s+
+                    stb       ppmid,u
+                    tsta
+                    andcc     #^Carry
+                    rts
+pus_err             puls      a,pc
+pus_app             pshs      d,x                 A to the new text
+                    ldx       <base
+                    leax      pprec,x
+                    lbsr      chain_app
+                    puls      d,x,pc
 
 * pp_put: the new text in place of the lines of the procedure of entry
 * Y (from the line after PROCEDURE up to the next PROCEDURE line or the

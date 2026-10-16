@@ -27,6 +27,7 @@ PR.SIZE             equ       NAMEMAX+13
 PF.SEEN             equ       $01                 found by this Make
 PF.SEND             equ       $02                 to be loaded
 PF.ERR              equ       $04                 the runtime reported an error in it
+PF.USE              equ       $08                 it has a #use line
 
 pipenm              fcc       "/pipe"
                     fcb       C$CR
@@ -980,7 +981,7 @@ lderms              fcn       "Load: Error "
 
 * mk_scan: find the procedures in the text and their signatures; mark
 * those to send.  Carry if the table is full.
-mk_scan             lda       #PF.SEEN+PF.SEND
+mk_scan             lda       #PF.SEEN+PF.SEND+PF.USE
                     lbsr      pt_flags
                     ldd       <first
                     std       <mkp
@@ -1014,13 +1015,23 @@ mks1a               lda       PR.FLAG,y
                     std       <h1
                     std       <h2
                     std       <hlen
-mks2                lbsr      mk_line
+mks2                ldx       <base               a #use line?
+                    leax      mkp,x
+                    lbsr      ln_use
+                    bcs       mks2a
+                    ldy       <curp
+                    beq       mks2a
+                    lda       PR.FLAG,y
+                    ora       #PF.USE
+                    sta       PR.FLAG,y
+mks2a               lbsr      mk_line
                     bcs       mks8
                     ldd       <mkln
                     addd      #1
                     std       <mkln
                     bra       mks1
 mks8                bsr       mk_close
+                    bsr       mk_uses
                     andcc     #^Carry
 mks9                rts
 
@@ -1052,60 +1063,153 @@ mc1                 ldd       <h1
                     sta       PR.FLAG,y
 mc9                 rts
 
+* mk_uses: a procedure with a "(* #use <name> *)" line is sent too when
+* the procedure it names is sent, or is not there
+mk_uses             clrb
+mu1                 cmpb      <nproc
+                    bhs       mu9
+                    lbsr      pt_at
+                    lda       PR.FLAG,x
+                    anda      #PF.USE+PF.SEND
+                    cmpa      #PF.USE
+                    bne       mu8
+                    pshs      b,x
+                    bsr       us_set
+mu2                 bsr       us_xu               its lines, after PROCEDURE
+                    bsr       ln_next
+                    bcs       mu7
+                    bsr       us_xu
+                    bsr       ln_use
+                    bcs       mu2
+                    ldy       <base
+                    leay      nbuf,y
+                    lbsr      pt_find
+                    bcs       mu6                 ..not there
+                    lda       PR.FLAG,y
+                    bita      #PF.SEND
+                    beq       mu2
+mu6                 ldx       1,s
+                    lda       PR.FLAG,x
+                    ora       #PF.SEND
+                    sta       PR.FLAG,x
+mu7                 puls      b,x
+mu8                 incb
+                    bra       mu1
+mu9                 rts
+
+* us_set: usep = where entry X starts (its PROCEDURE line)
+us_set              ldd       PR.PG,x
+                    ldu       <base
+                    std       usep,u
+                    ldd       PR.OFF,x
+                    std       usep+2,u
+                    rts
+
+* ln_next: position X to the next line of its procedure; carry at the
+* end of the text or at the next PROCEDURE line.  Keeps X and Y.
+ln_next             pshs      x,y
+                    leau      ,x
+                    lbsr      p_nextln
+                    bcs       lnx9
+                    ldx       ,s
+                    bsr       ln_proc
+                    tfr       cc,a                carry the other way round
+                    eora      #Carry
+                    tfr       a,cc
+lnx9                puls      x,y,pc
+
+* us_xu: X = U = usep
+us_xu               ldx       <base
+                    leax      usep,x
+                    leau      ,x
+                    rts
+
 * mk_isproc: if the line at mkp is "PROCEDURE <name>" (any case, spaces
 * before it), the name to nbuf; carry if it is not
-mk_isproc           ldu       <base
+mk_isproc           ldx       <base
+                    leax      mkp,x
+* ln_proc: the same for the line at position X
+ln_proc             bsr       ln_at
+                    leay      prockw,pcr
+                    bsr       ln_word
+                    bcc       ln_name
+                    rts
+
+* ln_use: if the line at position X is "(* #use <name>" (any case,
+* spaces before the words), the name to nbuf; carry if it is not
+ln_use              bsr       ln_at
+                    leay      usekw,pcr
+                    bsr       ln_word             "(*"
+                    bcs       lnw9
+                    bsr       ln_word             "#USE"
+                    bcc       ln_name
+lnw9                rts
+
+* ln_at: U = wp = a copy of the position at X
+ln_at               ldu       <base
                     leau      wp,u
-                    ldd       <mkp
+                    ldd       ,x
                     std       ,u
-                    ldd       <mkp+2
+                    ldd       2,x
                     std       2,u
-mip1                 lbsr      p_char
-                    bcs       mip_no
+                    rts
+
+* ln_word: past spaces at position U, then past the word at Y (ending
+* in 0, letters in capitals; Y after its 0); carry if it is not there
+ln_word             lbsr      p_char
+                    bcs       lnw_no
                     cmpa      #C$SPAC
-                    bne       mip2
+                    bne       lnw1
                     lbsr      p_next
-                    bra       mip1
-mip2                 leay      prockw,pcr
-mip3                 lda       ,y+
-                    beq       mip4
+                    bra       ln_word
+lnw1                lda       ,y+
+                    beq       lnw8
+                    anda      #$DF
                     pshs      a
                     lbsr      p_char
-                    bcs       mip_no1
+                    bcs       lnw_no1
                     anda      #$DF
                     cmpa      ,s+
-                    bne       mip_no
+                    bne       lnw_no
                     lbsr      p_next
-                    bra       mip3
-mip_no1              leas      1,s
-mip_no               orcc      #Carry
+                    bra       lnw1
+lnw8                andcc     #^Carry
                     rts
-mip4                 lbsr      p_char
-                    bcs       mip_no
+lnw_no1             leas      1,s
+lnw_no              orcc      #Carry
+                    rts
+
+* ln_name: spaces at position U, then a name: to nbuf; carry if there
+* is none
+ln_name             lbsr      p_char
+                    bcs       lnw_no
                     cmpa      #C$SPAC
-                    bne       mip_no
-mip5                 lbsr      p_next
+                    bne       lnw_no
+lnn1                lbsr      p_next
                     lbsr      p_char
-                    bcs       mip_no
+                    bcs       lnw_no
                     cmpa      #C$SPAC
-                    beq       mip5
+                    beq       lnn1
                     ldx       <base
                     leax      nbuf,x
                     ldb       #NAMEMAX-1
-mip6                 lbsr      p_char
-                    bcs       mip7
+lnn2                lbsr      p_char
+                    bcs       lnn3
                     lbsr      is_word
-                    bcc       mip7
+                    bcc       lnn3
                     sta       ,x+
                     lbsr      p_next
                     decb
-                    bne       mip6
-mip7                 clr       ,x
+                    bne       lnn2
+lnn3                clr       ,x
                     cmpb      #NAMEMAX-1
-                    beq       mip_no               no name
+                    beq       lnw_no              no name
                     andcc     #^Carry
                     rts
 prockw              fcn       "PROCEDURE"
+usekw               fcn       "(*"
+                    fcn       "#USE"
+typekw              fcn       "TYPE"
 
 * mk_line: add the line at mkp to the signature (h1 = sum of the bytes,
 * h2 = sum of the h1s, hlen = length) and move mkp past its carriage
@@ -1253,7 +1357,10 @@ mw_err              leas      1,s
                     rts
 
 * mk_wproc: write the text of entry X, ending it with a carriage return
-mk_wproc            ldd       PR.LEN,x
+mk_wproc            lda       PR.FLAG,x
+                    bita      #PF.USE
+                    bne       mk_wuse
+                    ldd       PR.LEN,x
                     std       <tmpc
                     ldd       PR.PG,x
                     std       <wp
@@ -1310,6 +1417,136 @@ mwp9                andcc     #^Carry
 mwp_err             leas      1,s
                     rts
 crbyte              fcb       C$CR
+
+* mk_wuse: write the text of entry X a line at a time, with the TYPE
+* lines of the procedure each "(* #use <name> *)" line names in front
+* of it, joined by backslashes, so that every line stays one line
+mk_wuse             ldd       PR.LEN,x
+                    std       <tmpc
+                    lbsr      us_set
+mwu1                ldd       <tmpc
+                    beq       mwu9
+                    lbsr      us_xu
+                    lbsr      ln_use
+                    lbsr      a_rline
+                    leay      ,x                  Y = where the line goes
+                    bcs       mwu2
+                    bsr       mk_types
+mwu2                ldd       <tmpc               the line itself
+                    beq       mwu4
+                    lbsr      us_xu
+                    lbsr      p_char
+                    bcs       mwu4
+                    lbsr      p_next
+                    sta       ,y+
+                    ldd       <tmpc
+                    subd      #1
+                    std       <tmpc
+                    lda       -1,y
+                    cmpa      #C$CR
+                    beq       mwu5
+                    lbsr      a_rline
+                    leax      256,x
+                    pshs      x
+                    cmpy      ,s++
+                    blo       mwu2
+                    bsr       mwu_out             (too long for one line anyway)
+                    bcs       mwu8
+                    lbsr      a_rline
+                    leay      ,x
+                    bra       mwu2
+mwu4                lda       #C$CR               the text ended without one
+                    sta       ,y+
+                    clr       <tmpc
+                    clr       <tmpc+1
+mwu5                bsr       mwu_out
+                    bcc       mwu1
+mwu8                rts
+mwu9                andcc     #^Carry
+                    rts
+mwu_out             lbsr      a_rline             write rline up to Y
+                    tfr       y,d
+                    pshs      x
+                    subd      ,s++
+                    tfr       d,y
+                    lda       <flpath
+                    os9       I$Write
+                    rts
+
+* mk_types: the TYPE lines of the procedure named by nbuf to Y, each
+* without its comment (and the backslash in front of it) and followed
+* by " \ "; Y after them.  At most TYMAX bytes go, so that the
+* line stays under l2b09run's 256.
+TYMAX               equ       200
+mk_types            pshs      y
+                    ldy       <base
+                    leay      nbuf,y
+                    lbsr      pt_find
+                    tfr       y,x
+                    puls      y
+                    bcs       mty9                ..not there: nothing
+                    ldd       PR.PG,x
+                    ldu       <base
+                    std       hdrp,u
+                    ldd       PR.OFF,x
+                    std       hdrp+2,u
+mty1                bsr       hd_x                its lines, after PROCEDURE
+                    lbsr      ln_next
+                    bcs       mty9
+                    lbsr      ln_at               "TYPE" and a space?
+                    pshs      y
+                    leay      typekw,pcr
+                    lbsr      ln_word
+                    puls      y
+                    bcs       mty1
+                    lbsr      p_char
+                    cmpa      #C$SPAC
+                    bne       mty1
+                    leax      typekw,pcr
+mty2                lda       ,x+
+                    beq       mty3
+                    bsr       ty_put
+                    bra       mty2
+mty3                lbsr      p_char              the rest of the line (U = wp),
+                    bcs       mty4                up to a comment: it would hide
+                    cmpa      #C$CR               the rest of the joined line
+                    beq       mty4
+                    lbsr      p_next
+                    cmpa      #'(
+                    bne       mty3a
+                    lbsr      p_char
+                    cmpa      #'*
+                    beq       mty4
+                    lda       #'(
+mty3a               bsr       ty_put
+                    bra       mty3
+mty4                lda       -1,y                drop the spaces and the backslash
+                    cmpa      #C$SPAC             in front of a comment
+                    beq       mty4a
+                    cmpa      #$5C
+                    bne       mty4b
+mty4a               leay      -1,y
+                    bra       mty4
+mty4b               lda       #C$SPAC
+                    bsr       ty_put
+                    lda       #$5C                backslash
+                    bsr       ty_put
+                    lda       #C$SPAC
+                    bsr       ty_put
+                    bra       mty1
+mty9                rts
+ty_put              pshs      x                   A to Y, while there is room
+                    lbsr      a_rline
+                    leax      TYMAX,x
+                    pshs      x
+                    cmpy      ,s++
+                    puls      x
+                    bhs       typ9
+                    sta       ,y+
+typ9                rts
+hd_x                ldx       <base               X = hdrp
+                    leax      hdrp,x
+                    rts
 
 * rt_send: send command X (ending in CR); carry if the runtime has gone
 rt_send             ldy       <base
