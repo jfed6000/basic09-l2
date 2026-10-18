@@ -56,7 +56,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p6test p7test loadtime clean k2main jr2main main mainsrc
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p6test p7test loadtime clean k2main jr2main main mainsrc
 
 all: stock subs l2b09 tools
 
@@ -203,6 +203,9 @@ p5stest: tools l2b09 pipes $(BASEIMG)
 
 p5ttest: tools l2b09 pipes $(BASEIMG)
 	EMU_SECONDS=40 tools/emu-wildbits.sh test/p5t
+
+p5utest: tools l2b09 pipes $(BASEIMG)
+	EMU_SECONDS=60 tools/emu-wildbits.sh test/p5u
 
 p6test: l2b09 $(BASEIMG)
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6

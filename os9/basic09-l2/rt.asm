@@ -1643,7 +1643,8 @@ c_run               lbsr      c_make
                     lbra      dbg_cmd
 crn0                leax      runcm,pcr
 * run_first: "<command X> <the first procedure in the text>" (run, or
-* step to stop at its first statement), then as dbg_go
+* step to stop at its first statement), then as dbg_go.  A new run
+* starts on a clear screen (what an earlier one left is gone).
 run_first           pshs      x
                     lbsr      bp_sync
                     bcs       crn8
@@ -1671,7 +1672,8 @@ crn3                cmpy      #0
                     stx       <msgp
 crn8                puls      x
 crn9                rts
-crn3a               lbsr      a_rline             "run <name>"
+crn3a               bsr       u_cls
+                    lbsr      a_rline             "run <name>"
                     exg       x,y
                     pshs      x
                     ldx       2,s
@@ -1695,6 +1697,18 @@ u_show              tst       <uterm
                     lda       <upath
                     os9       I$Write
 ush9                rts
+
+* u_cls: clear the program's terminal; keeps all registers
+u_cls               tst       <uterm
+                    beq       ucl9
+                    pshs      d,x,y
+                    leax      clsch,pcr
+                    ldy       #1
+                    lda       <upath
+                    os9       I$Write
+                    puls      d,x,y
+ucl9                rts
+clsch               fcb       $0C
 
 * u_back: show ours again
 u_back              tst       <uterm

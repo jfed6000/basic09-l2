@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""Each Run clears the program's terminal first.  The program prints
+"it"; after two Runs, F5 shows that terminal (and -h keeps it): "it" is
+on the top row once, and the row under it is empty.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+with open(os.path.join(out, 'cl.b09'), 'w', newline='') as f:
+    f.write('PROCEDURE cl\rPRINT "it"\rEND\r')
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys('^r ^r f5'))
