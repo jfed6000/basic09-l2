@@ -86,7 +86,7 @@ The pointer is the hardware one that `mousedrv_ps2` moves. The editor reads it w
 | Where | Left button | Right button |
 |---|---|---|
 | Text | Press: the cursor there (ends a selection). Drag: select to the pointer; above or below the window it scrolls a line, and again every 4 ticks while held there. | Press: extend the selection to the pointer (Shift+click cannot be seen: `SS.KySns` is buffered with the keys) |
-| Right border (the scroll bar) | ▲ / ▼: scroll a line (the cursor moves with the window). The track above or below the thumb: a page towards the pointer. Both repeat every 4 ticks while held. Dragging the thumb moves the window through the text, with the cursor on its top line. | — |
+| Right border (the scroll bar; when it scrolls, only the thumb's old and new cells are drawn) | ▲ / ▼: scroll a line (the cursor moves with the window). The track above or below the thumb: a page towards the pointer. Both repeat every 4 ticks while held. Dragging the thumb moves the window through the text, with the cursor on its top line. | — |
 | Left border | Press: breakpoint on that line, on or off (^T) | — |
 | Menu bar | Press: open that menu | — |
 | Open menu | Press or drag over a title: that menu; a press on its own title closes it. Over an item: select it; release on it: run it. A press anywhere else closes the menu. | — |

@@ -45,8 +45,8 @@ vf2a                clra
                     ldd       <curline
                     subd      <tmp
                     std       <topline
-vf2b                lda       <redraw
-                    ora       #RD.ALL
+vf2b                lda       <redraw             (a scroll: the text only)
+                    ora       #RD.TEXT
                     sta       <redraw
 vf3                 ldd       <curcol             left of the window?
                     cmpd      <leftcol
@@ -67,7 +67,7 @@ vf4                 ldd       <leftcol            right of it?
                     addd      #TABW
                     std       <leftcol
 vf5                 lda       <redraw
-                    ora       #RD.ALL
+                    ora       #RD.TEXT
                     sta       <redraw
 vf9                 rts
 
@@ -92,12 +92,12 @@ vc1                 ldx       <topline
                     stx       <topline
                     decb
                     bne       vc1
-vc9                 lbra      rd_all
+vc9                 lbra      rd_text
 
 * v_draw: redraw what the flags ask for, the status line and the cursor
 v_draw              lbsr      t_curoff
                     lda       <redraw
-                    bita      #RD.ALL+RD.BELOW    lines may have moved
+                    bita      #RD.ALL+RD.TEXT+RD.BELOW lines may have moved
                     beq       vd00
                     lbsr      bp_lines
 vd00                equ       *
@@ -105,8 +105,10 @@ vd00                equ       *
                     beq       vd0
                     lbsr      sel_bounds
 vd0                 lda       <redraw             (bp_lines and sel_bounds use A)
-                    bita      #RD.ALL
+                    bita      #RD.ALL+RD.TEXT
                     beq       vd1
+                    bita      #RD.ALL             a scroll leaves the frame alone
+                    beq       vd0a
                     lbsr      v_frame
                     ldx       <base               (a partial redraw is above them)
                     tst       rdlim,x

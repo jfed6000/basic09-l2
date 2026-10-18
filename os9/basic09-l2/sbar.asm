@@ -3,9 +3,10 @@
 *
 * The text window's right border is its scroll bar, as in Turbo C, so
 * no column of text is given up: an arrow at each end, a track between
-* them and a thumb in it for where the window is in the text.  It is
-* drawn only when the thumb moves (or after the frame was), and needs a
-* window of 4 rows or more.  The mouse: an arrow scrolls a line, the
+* them and a thumb in it for where the window is in the text.  When the
+* thumb moves only its old and new cells are drawn (a scroll redraws the
+* text, not the frame: RD.TEXT); the whole bar after the frame was.  It
+* needs a window of 4 rows or more.  The mouse: an arrow scrolls a line, the
 * track a window's worth towards the pointer, both again while the
 * button is held; dragging the thumb moves through the text.
 
@@ -60,16 +61,31 @@ sbp_end             leas      2,s
 sbp_no              leas      2,s
                     rts
 
-* sb_upd: draw the bar if the thumb moved (v_frame forgets where it was)
+sbu_x               rts                           (sb_upd's early exit, in reach)
+
+* sb_upd: if the thumb moved, move it: its old cell becomes track and
+* the new one thumb.  After v_frame (which forgets where it was) the
+* whole bar is drawn.
 sb_upd              ldd       <topline
                     bsr       sb_pos
-                    bcs       sbu9
+                    bcs       sbu_x
                     ldx       <base
                     cmpb      sbpos,x
-                    beq       sbu9
+                    beq       sbu_x
+                    lda       sbpos,x
                     stb       sbpos,x
                     lbsr      fr_on
-                    clr       ,-s                 ,s = the row in the window
+                    cmpa      #$FF
+                    beq       sbu0
+                    pshs      b                   the bar is there: two cells
+                    tfr       a,b
+                    lda       #SB.TRK
+                    bsr       sb_cell
+                    puls      b
+                    lda       #SB.THM
+                    bsr       sb_cell
+                    lbra      hl_norm
+sbu0                clr       ,-s                 ,s = the row in the window
 sbu1                lda       <scrw
                     deca
                     ldb       ,s
@@ -118,7 +134,31 @@ sbu3                inc       ,s
                     blo       sbu1
                     leas      1,s
                     lbra      hl_norm
-sbu9                rts
+
+* sb_cell: glyph A at track place B (and in the gap under it with
+* double spacing, as the full bar has it)
+sb_cell             pshs      d
+                    lda       <scrw
+                    deca
+                    ldb       1,s
+                    addb      <wtop
+                    incb
+                    lbsr      t_xy
+                    lda       ,s
+                    bsr       sb_gl
+                    lbsr      t_ch
+                    tst       <dblsp
+                    beq       sbc9
+                    lda       <scrw
+                    deca
+                    ldb       1,s
+                    addb      <wtop
+                    incb
+                    lbsr      t_xyg
+                    lda       ,s
+                    bsr       sb_gl
+                    lbsr      t_ch
+sbc9                puls      d,pc
 
 * sb_gl: A = the character for scroll bar glyph A
 sb_gl               tst       <glyok
@@ -259,5 +299,5 @@ csd2                ldb       ,s
                     std       <tpos+2
                     ldd       <curline
                     std       <topline
-                    lbra      rd_all
+                    lbra      rd_text
 csd9                rts

@@ -156,6 +156,8 @@ cmdtab              fcb       C$CR
 * Redraw requests
 rd_all              lda       #RD.ALL
                     bra       rd
+rd_text             lda       #RD.TEXT
+                    bra       rd
 rd_below            lda       #RD.BELOW
                     bra       rd
 rd_line             lda       #RD.LINE
@@ -349,7 +351,7 @@ cpu2                lbsr      c_up
                     puls      b
                     decb
                     bne       cpu1
-                    lbra      rd_all
+                    lbra      rd_text
 
 c_pgdn              ldb       <wrows
                     decb
@@ -373,7 +375,7 @@ cpd2                lbsr      c_down
                     puls      b
                     decb
                     bne       cpd1
-                    lbra      rd_all
+                    lbra      rd_text
 
 * c_wheel: the mouse wheel: 3 lines a step (at most a window's worth),
 * the cursor with them, as the scroll bar's arrows; a step away from the
@@ -385,10 +387,10 @@ c_wheel             ldx       <base
                     comb
                     addd      #1
                     bsr       cwh_n
-                    lbra      cpu1
+                    bra       cpu1
 cwh1                beq       cwh9
                     bsr       cwh_n
-                    lbra      cpd1
+                    bra       cpd1
 cwh9                rts
 * cwh_n: B = the lines for D steps (D at least 1)
 cwh_n               tsta

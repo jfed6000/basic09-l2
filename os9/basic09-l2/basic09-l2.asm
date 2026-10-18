@@ -99,6 +99,7 @@ RD.ALL              equ       $01                 the whole text window
 RD.BELOW            equ       $02                 the cursor line and everything below it
 RD.LINE             equ       $04                 the cursor line
 RD.PREV             equ       $08                 with RD.BELOW: from the line above it
+RD.TEXT             equ       $10                 every text row, not the frame (a scroll)
 
 * Data area.  The first 256 bytes are the direct page; everything else
 * is reached through the pointers set up at start.
