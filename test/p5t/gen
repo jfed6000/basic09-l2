@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""The mouse wheel, sent as $FD <steps> (tools/keys.py wheel:N).  In the
+help browser two steps down scroll the Errors page six lines, which
+brings in line 33 (error 33).  In the editor, on a 60-line text, two
+steps down and one up leave line 4 at the top of the window and the
+cursor on it (3 lines a step, the cursor with them).
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+text = 'PROCEDURE wh\n' + ''.join('a%d=%d\n' % (n, n) for n in range(1, 59)) + 'END\n'
+with open(os.path.join(out, 'wh.b09'), 'w', newline='') as f:
+    f.write(text.replace('\n', '\r'))
+for name, keys in (('keys1.bin', 'wheel:2 esc'),
+                   ('keys.bin', 'wheel:2 wheel:-1')):
+    with open(os.path.join(out, name), 'wb') as f:
+        f.write(compile_keys(keys))

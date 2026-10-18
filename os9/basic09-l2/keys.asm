@@ -42,6 +42,7 @@ EK.MOUSE            equ       $95                 a mouse event (mouse.asm)
 EK.FPREV            equ       $96                 Ctrl+Shift+L find previous
 EK.SP1              equ       $97                 Ctrl+1 single spacing
 EK.SP2              equ       $98                 Ctrl+2 double spacing
+EK.WHEEL            equ       $99                 the mouse wheel: muwst steps (mouse.asm)
 EK.F1               equ       $A1                 F1-F8 are $A1-$A8
 EK.F2               equ       $A2
 EK.SF1              equ       $A9                 Shift+F1 (PS/2)
@@ -51,11 +52,21 @@ EK.EOF              equ       $FF                 end of the key input
 
 * getkey: A = the next key (EK.EOF at the end of the input)
 getkey              pshs      b,x,y
-gk0                 lbsr      mu_wait
-                    bcs       gk_mouse
+gk0                 lbsr      mu_wait             (A = EK.MOUSE or EK.WHEEL)
+                    bcs       gk3
                     bsr       k_byte
                     bcs       gk_eof
-                    cmpa      #$FE                script mouse: $FE <buttons> <col> <row>
+                    cmpa      #$FD                script wheel: $FD <steps, signed>
+                    bne       gk0w
+                    bsr       k_byte
+                    bcs       gk_eof
+                    tfr       a,b
+                    sex
+                    ldx       <base
+                    std       muwst,x
+                    lda       #EK.WHEEL
+                    bra       gk3
+gk0w                cmpa      #$FE                script mouse: $FE <buttons> <col> <row>
                     bne       gk0a
                     leas      -3,s
                     leax      ,s

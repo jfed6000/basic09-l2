@@ -1,0 +1,8 @@
+* l2basic09: the mouse wheel (key script $FD <steps>), in the help
+* browser (screen to a file) and in the editor (-h snapshot)
+-x
+chd /dd/l2b09
+l2b09help errors <keys1.bin >v1.out
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -h -t=/dd/l2b09/term.out wh.b09 <keys.bin >/term

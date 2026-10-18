@@ -147,6 +147,8 @@ cmdtab              fcb       C$CR
                     fdb       c_swright-cmdtab
                     fcb       EK.ESC
                     fdb       c_esc-cmdtab
+                    fcb       EK.WHEEL
+                    fdb       c_wheel-cmdtab
                     fcb       EK.MOUSE
                     fdb       c_mouse-cmdtab
                     fcb       0
@@ -372,6 +374,40 @@ cpd2                lbsr      c_down
                     decb
                     bne       cpd1
                     lbra      rd_all
+
+* c_wheel: the mouse wheel: 3 lines a step (at most a window's worth),
+* the cursor with them, as the scroll bar's arrows; a step away from the
+* user scrolls up
+c_wheel             ldx       <base
+                    ldd       muwst,x
+                    bpl       cwh1
+                    coma
+                    comb
+                    addd      #1
+                    bsr       cwh_n
+                    lbra      cpu1
+cwh1                beq       cwh9
+                    bsr       cwh_n
+                    lbra      cpd1
+cwh9                rts
+* cwh_n: B = the lines for D steps (D at least 1)
+cwh_n               tsta
+                    bne       cwn1
+                    cmpb      #85
+                    bhi       cwn1
+                    lda       #3
+                    mul
+                    pshs      b                   ,s = 3 a step
+                    ldb       <wrows
+                    decb
+                    cmpb      ,s
+                    bls       cwn2
+                    ldb       ,s
+cwn2                leas      1,s
+                    rts
+cwn1                ldb       <wrows
+                    decb
+                    rts
 
 * Words are letters, digits and underscores
 is_word             cmpa      #'0

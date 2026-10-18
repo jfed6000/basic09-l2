@@ -50,6 +50,7 @@ OUTSZ               equ       256                 screen output buffer
 STKSZ               equ       768
 C$TAB               equ       $09
 SS.FntChar          equ       $C2                 Wildbits grfdrv256: get/set a font character
+SS.MsWheel          equ       $E8                 Wildbits grfdrv256: wheel steps since the last call
 GLYPH0              equ       $ED                 frame glyphs go here (te uses $F2-$FF)
 
 * Frame glyphs (see term.asm)
@@ -290,6 +291,8 @@ mbox                rmb       1                   a menu's drop-down is on the s
 otype               rmb       1                   the screen type at start (DWSet: 1-4)
 stype               rmb       1                   the screen type now
 memful              rmb       1                   Make's load ran out of memory (rt_wait)
+muwh                rmb       1                   SS.MsWheel answers (mouse.asm)
+muwst               rmb       2                   EK.WHEEL: its steps (signed)
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

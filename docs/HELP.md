@@ -58,12 +58,12 @@ Big-endian, as the 6809 reads it.
 ## The viewer (`os9/l2b09help/l2b09help.asm`)
 
 - **Screen:** a double frame with the page's title in the top border, the page inside it, and the hint line under it in the menu bar's grey. Links are pale cyan and the selected link black on pale cyan; with colours off (`-n`) the selected link is in reverse video. Lines are cut at the window's width.
-- **Keys:** Up/Down scroll a line, Ctrl+Up/Ctrl+Down a page, Ctrl+Shift+Up/Down to the top and the end. Left/Right select the previous/next link (the page scrolls to it), and Enter follows it. Backspace goes back. F1 opens the contents (`Help`) and F2 the index. Esc or Ctrl+Q leaves.
+- **Keys:** Up/Down scroll a line, Ctrl+Up/Ctrl+Down a page, Ctrl+Shift+Up/Down to the top and the end. Left/Right select the previous/next link (the page scrolls to it), and Enter follows it. Backspace goes back. F1 opens the contents (`Help`) and F2 the index. The mouse wheel scrolls 3 lines a step (`SS.MsWheel`, polled while it waits for a key; clicks are not used). Esc or Ctrl+Q leaves.
 - **Search:** typing a printable character starts a search (the page shown is remembered). The hint line shows `Search: ` and what was typed; the page lists every name that starts with it, as links, the first one selected. Backspace takes a character off (with none left the search ends), Enter opens the selected name, and Esc goes back to where the search started. Names are matched in capitals.
 - **Context help:** `l2b09help <word>` opens the page of that name; if there is none, the search for it; if nothing starts with it either, the contents.
 - **History:** Back remembers 16 pages (the oldest goes first).
 - **Memory:** its own process: the name table (up to 6K), a page (up to 12K), the line and link tables. The file is opened once; a page is one `I$Seek` and one `I$Read`.
-- **Code:** it includes the editor's `term.asm` and `keys.asm` and declares the variables they use, so the frames, the screen size, both keyboards and the key scripts work the same way. Its own colour routines replace `hl.asm`'s: run from the editor (`-e`) it leaves the palette alone on exit. `mu_wait`/`mu_new` are stubs (no mouse yet). It is assembled with `autobranchlength`, since its size does not matter the way the editor's does (3.5K).
+- **Code:** it includes the editor's `term.asm` and `keys.asm` and declares the variables they use, so the frames, the screen size, both keyboards and the key scripts work the same way. Its own colour routines replace `hl.asm`'s: run from the editor (`-e`) it leaves the palette alone on exit. `mu_wait` polls only the wheel, and `mu_new` is a stub (no clicks). It is assembled with `autobranchlength`, since its size does not matter the way the editor's does (3.5K).
 
 ## The editor's side
 

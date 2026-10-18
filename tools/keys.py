@@ -24,10 +24,13 @@ comment):
     press:C,R  drag:C,R  release:C,R   the left button: down, moved
                   with it held, up
     click:C,R  rclick:C,R              press and release (left, right)
+    wheel:N       the mouse wheel: N steps (negative: away from the user,
+                  which scrolls up)
 
 When the editor's key input is not a terminal it cannot ask for the key
 sense bits (SS.KySns), so keys that need them are sent as
-$FF <kysns> <char>, and the mouse as $FE <buttons> <column> <row>.
+$FF <kysns> <char>, the mouse as $FE <buttons> <column> <row>, and the
+wheel as $FD <steps> (signed).
 
 usage: keys.py <script> <out.bin>   (or import compile_keys)
 """
@@ -76,6 +79,8 @@ def key(name):
     if ':' in name:
         what, arg = name.split(':')
         nums = [int(v) for v in arg.split(',')]
+        if what == 'wheel':
+            return bytes([0xFD, nums[0] & 0xFF])
         if what not in MOUSE:
             raise ValueError('unknown key: ' + name)
         if MOUSE[what] is None:

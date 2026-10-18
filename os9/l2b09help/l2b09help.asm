@@ -5,7 +5,7 @@
 * tools/mkhelp.py): a page fills the screen in a frame, its links can
 * be followed and gone back from, F2 shows the index, and typing a
 * name searches for it.  The editor runs it on F1 with the word at the
-* cursor; it also runs on its own.
+* cursor; it also runs on its own.  The mouse wheel scrolls.
 *
 * usage: l2b09help [-e] [-n] [-h] [-f=<file>] [<topic>]
 *
@@ -46,6 +46,7 @@ HE.SIZE             equ       9                   history entry: offset (3), len
 *                                                 top line, selected link
 SMAX                equ       24                  search text
 SS.FntChar          equ       $C2                 (term.asm) Wildbits: font characters
+SS.MsWheel          equ       $E8                 Wildbits: wheel steps since the last call
 GLYPH0              equ       $ED
 NGL1                equ       15
 NGLYPH              equ       19
@@ -111,6 +112,8 @@ slen                rmb       1                   search text length
 tmp                 rmb       2
 cnt                 rmb       2
 nmatch              rmb       1                   names the search found
+muwh                rmb       1                   SS.MsWheel answers
+muwst               rmb       2                   EK.WHEEL: its steps (keys.asm)
 dpend               equ       .
 
                     org       256
@@ -168,6 +171,16 @@ st1                 clr       ,y+
                     ldb       <scrh
                     subb      #3
                     stb       <wrows
+                    ifeq      coco3
+                    tst       <kbterm             a wheel?
+                    beq       st4
+                    lda       <kbpath
+                    ldb       #SS.MsWheel
+                    os9       I$GetStt
+                    bcs       st4
+                    inc       <muwh
+st4                 equ       *
+                    endc
                     lbsr      go_topic
 ml1                 lbsr      v_draw
                     lbsr      getkey
@@ -562,7 +575,19 @@ k_do                tst       <srch
                     lbsr      sr_key              searching: text keys first
                     bcc       kd_ok
                     lda       <key
-kd1                 cmpa      #EK.ESC
+kd1                 cmpa      #EK.WHEEL           the wheel: 3 lines a step
+                    bne       kd1a
+                    ldd       <muwst
+                    pshs      d
+                    lslb
+                    rola
+                    addd      ,s++
+                    addd      <top
+                    lbpl      kd_lim
+                    clra
+                    clrb
+                    lbra      kd_top
+kd1a                cmpa      #EK.ESC
                     beq       kd_quit
                     cmpa      #EK.EOF
                     beq       kd_quit
@@ -1216,8 +1241,30 @@ cb1                 ldd       #CL.MBFG*256+CL.MBBG
                     bsr       c_pair
                     puls      d,pc
 
-* The mouse is not used yet (keys.asm calls these)
-mu_wait             andcc     #^Carry
+* mu_wait (keys.asm): wait for a key; if there is a wheel, poll it
+* meanwhile.  Carry and A = EK.WHEEL if it turned.  Clicks are not used.
+mu_wait             tst       <muwh
+                    beq       muw9
+muw1                lda       <kbpath
+                    ldb       #SS.Ready
+                    os9       I$GetStt
+                    bcc       muw9                a key
+                    cmpb      #E$NotRdy
+                    bne       muw9
+                    lda       <kbpath
+                    ldb       #SS.MsWheel
+                    os9       I$GetStt            X = steps
+                    bcs       muw9
+                    leax      ,x
+                    bne       muw2
+                    ldx       #1
+                    os9       F$Sleep
+                    bra       muw1
+muw2                stx       <muwst
+                    lda       #EK.WHEEL
+                    orcc      #Carry
+                    rts
+muw9                andcc     #^Carry
                     rts
 mu_new              andcc     #^Carry
                     rts

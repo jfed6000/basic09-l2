@@ -13,6 +13,13 @@
 * A key script (keys not from a terminal) sends the mouse as
 * $FE <buttons> <column> <row>, in cells.  Its clock does not run, so
 * a second press on the same cell is always a double click there.
+*
+* The wheel: grfdrv's SS.MsWheel GetStat returns the steps since the
+* last call (signed, negative away from the user).  It is asked after
+* SS.Mouse in the same poll, if it answered at start; steps are the key
+* EK.WHEEL with the count in muwst, not a mouse event, so the menus,
+* dialogs and windows that do not scroll ignore it.  A script sends
+* $FD <steps>.
 
 MV.DOWN             equ       1                   left button pressed
 MV.DRAG             equ       2                   moved to another cell with it held (or a repeat)
@@ -35,6 +42,13 @@ mu_init             ldu       <base
                     os9       I$GetStt            A = buttons
                     bcs       mui9                no mouse
                     sta       mubtn,u             held now: not a press
+                    lda       <kbpath             a wheel?  (this also drops steps
+                    ldb       #SS.MsWheel         from before)
+                    os9       I$GetStt
+                    bcs       mui1
+                    ldu       <base
+                    inc       muwh,u
+mui1                ldu       <base
                     ldx       #640                pixels per cell, as shifts
                     ldb       <scrw
                     bsr       mu_shift
@@ -69,7 +83,8 @@ msh3                lsrb
 msh4                leas      2,s
                     rts
 
-* mu_wait: wait for a key or a mouse event; carry = a mouse event
+* mu_wait: wait for a key or a mouse event; carry = a mouse event or the
+* wheel (A = EK.MOUSE or EK.WHEEL)
 mu_wait             ldx       <base
                     tst       muon,x
                     beq       muw9
@@ -80,6 +95,9 @@ muw1                lda       <kbpath
                     cmpb      #E$NotRdy
                     bne       muw9                (the read reports it)
                     bsr       mu_poll
+                    lda       #EK.MOUSE
+                    bcs       muw8
+                    bsr       mu_wheel
                     bcs       muw8
                     ldx       #1
                     os9       F$Sleep
@@ -90,6 +108,27 @@ muw1                lda       <kbpath
                     bra       muw1
 muw8                rts
 muw9                andcc     #^Carry
+                    rts
+
+* mu_wheel: carry and A = EK.WHEEL if the wheel turned (muwst = steps)
+mu_wheel            equ       *
+                    ifeq      coco3               (no SS.MsWheel there)
+                    ldu       <base
+                    tst       muwh,u
+                    beq       muh9
+                    lda       <kbpath
+                    ldb       #SS.MsWheel
+                    os9       I$GetStt            X = steps
+                    bcs       muh9
+                    leax      ,x
+                    beq       muh9
+                    ldu       <base
+                    stx       muwst,u
+                    lda       #EK.WHEEL
+                    orcc      #Carry
+                    rts
+                    endc
+muh9                andcc     #^Carry
                     rts
 
 * mu_poll: read the mouse; carry = an event
