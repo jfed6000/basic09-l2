@@ -70,6 +70,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - A second PACK fails with 51, because PACK strips the workspace copy.
   - `DATE$` prints 2026 as `<6`.
 - **MAME's `wbjr2` keyboard has no function keys, and its mouse no wheel:** F1-F8 and the wheel can only be sent from key scripts (`f1`, `wheel:N`), not from a `lua` test.
+- **`WILD("BMStatus")` unmaps a stray block (NitrOS-9's `wild.asm`, 2026-10-18):** it starts with an `F$ClrBlk` on an uninitialised scratch word (`mapaddr`), so it unmaps whatever block a leftover stack value points at. With `l2b09run`'s 16K workspace (the editor's default) that is a live block: Basic09's `samples/paint` crashes the machine on `q`. `-m=8` (Options > Memory) avoids it until `WILD` is fixed. MAME cannot run `paint` (it hangs in `BMLoad`, stock `basic09` too), so this was found on hardware with crossed images (`build/bisect/`).
 - **The screen snapshot** in `mame.log` puts a `|` at each end of every row, so the row starts one character after `NN: |`. Characters above `$7E` show as `#`.
 - **`SS.FntChar` (Wildbits)** takes the font set from the caller's A register. For `I$SetStt` that is the path number, so path 0 means font set 0.
 - **Hung tests.** A test that hangs (for example an `expect` that never matches) shows up as short or missing output files, because the files are never closed. `run.out` is empty too if any later step hangs. To watch progress, run `l2b09run -t=/term` in a scratch test: `mame.log` ends with a screen snapshot.
