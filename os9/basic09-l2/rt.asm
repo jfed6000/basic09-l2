@@ -1721,23 +1721,43 @@ u_pause             tst       <uterm
                     ldy       #PAUSLN
                     lda       <upath
                     os9       I$Write
-                    tst       <kbterm
-                    beq       ups3
-ups1                clr       <gotsig             the key goes to that terminal
-                    ldx       <base
-                    leax      kraw,x
-                    ldy       #1
-                    lda       <upath
-                    os9       I$Read
-                    bcc       ups9
-                    tst       <gotsig             a signal (BREAK): again
-                    bne       ups1
-                    rts
-ups3                lbra      getkey              (a key script)
+                    bra       u_key
 ups9                rts
 pausms              fcb       C$CR,C$LF
                     fcc       "Press any key"
 PAUSLN              equ       *-pausms
+
+* u_key: wait for a key while the program's terminal is shown.  Keys
+* already waiting there (typed during the run, or a repeat of F5) are
+* dropped first; then a key on either terminal will do (one pressed as
+* the screens switch can land on ours).  From a key script: getkey.
+u_key               tst       <kbterm
+                    lbeq      getkey
+uk0                 lda       <upath              drop what is waiting
+                    ldb       #SS.Ready
+                    os9       I$GetStt
+                    bcs       uk1
+                    bsr       uk_rd
+                    bra       uk0
+uk1                 lda       <upath              wait for one
+                    ldb       #SS.Ready
+                    os9       I$GetStt
+                    bcc       uk_rd
+                    lda       <kbpath
+                    ldb       #SS.Ready
+                    os9       I$GetStt
+                    bcc       uk2
+                    ldx       #1                  (a signal ends the sleep early)
+                    os9       F$Sleep
+                    bra       uk1
+uk2                 lda       <kbpath
+                    fcb       $8C                 cmpx #: skip the lda
+uk_rd               lda       <upath
+                    ldx       <base               read the key at path A
+                    leax      kraw,x
+                    ldy       #1
+                    os9       I$Read
+                    rts
 
 * u_back: show ours again
 u_back              tst       <uterm
@@ -1759,18 +1779,6 @@ c_user              tst       <uterm
                     rts
 cus1                lbsr      t_flush
                     lbsr      u_show
-                    tst       <kbterm
-                    beq       cus3
-cus2                clr       <gotsig             the key goes to that terminal
-                    ldx       <base
-                    leax      kraw,x
-                    ldy       #1
-                    lda       <upath
-                    os9       I$Read
-                    bcc       cus4
-                    tst       <gotsig             a signal (BREAK): again
-                    bne       cus2
-                    bra       cus4
-cus3                lbsr      getkey
-cus4                bra       u_back
+                    bsr       u_key
+                    bra       u_back
 nousms              fcn       "No user screen"
