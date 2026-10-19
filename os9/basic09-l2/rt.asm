@@ -1710,6 +1710,35 @@ u_cls               tst       <uterm
 ucl9                rts
 clsch               fcb       $0C
 
+* u_pause: after a run that ended, "Press any key" on the program's
+* terminal and wait for one there (unless Options turned it off)
+u_pause             tst       <uterm
+                    beq       ups9
+                    ldx       <base
+                    tst       nopaus,x
+                    bne       ups9
+                    leax      pausms,pcr
+                    ldy       #PAUSLN
+                    lda       <upath
+                    os9       I$Write
+                    tst       <kbterm
+                    beq       ups3
+ups1                clr       <gotsig             the key goes to that terminal
+                    ldx       <base
+                    leax      kraw,x
+                    ldy       #1
+                    lda       <upath
+                    os9       I$Read
+                    bcc       ups9
+                    tst       <gotsig             a signal (BREAK): again
+                    bne       ups1
+                    rts
+ups3                lbra      getkey              (a key script)
+ups9                rts
+pausms              fcb       C$CR,C$LF
+                    fcc       "Press any key"
+PAUSLN              equ       *-pausms
+
 * u_back: show ours again
 u_back              tst       <uterm
                     beq       ubk9
@@ -1729,7 +1758,7 @@ c_user              tst       <uterm
                     stx       <msgp
                     rts
 cus1                lbsr      t_flush
-                    bsr       u_show
+                    lbsr      u_show
                     tst       <kbterm
                     beq       cus3
 cus2                clr       <gotsig             the key goes to that terminal

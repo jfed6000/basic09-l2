@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Options > Pause after run turned off: a run that ends goes straight
+back to the editor, with no prompt on the program's terminal.  Two
+Runs, then F5 (and -h): "it" once on the top row, the row under it
+empty.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+with open(os.path.join(out, 'cl.b09'), 'w', newline='') as f:
+    f.write('PROCEDURE cl\rPRINT "it"\rEND\r')
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys('alt-o "p" ^r ^r f5'))

@@ -1,0 +1,7 @@
+* l2basic09: Options > Pause after run off: no pause, no prompt (a /vt terminal;
+* -h snapshot of the user screen after the second Run)
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+load vt
+/dd/l2b09/basic09-l2 -h cl.b09 <keys.bin >/term

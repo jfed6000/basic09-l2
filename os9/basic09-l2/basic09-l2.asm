@@ -294,6 +294,7 @@ stype               rmb       1                   the screen type now
 memful              rmb       1                   Make's load ran out of memory (rt_wait)
 muwh                rmb       1                   SS.MsWheel answers (mouse.asm)
 muwst               rmb       2                   EK.WHEEL: its steps (signed)
+nopaus              rmb       1                   Options: no pause after a run (0 = pause)
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

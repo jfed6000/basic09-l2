@@ -165,6 +165,9 @@ scrm60              fcn       "80x60 screen"      also lspace.asm's message
                     fdb       c_memory-cmdtab
                     fcn       "Memory..."
                     fcn       ""
+                    fdb       c_pause-cmdtab
+                    fcn       "Pause after run"
+                    fcn       ""
                     fdb       $FFFF
 mhelp               fdb       c_help-cmdtab
                     fcn       "Topic at cursor"
@@ -832,6 +835,19 @@ c_indent            com       <noindt
                     leax      indoff,pcr
 cin1                stx       <msgp
                     rts
+* c_pause: wait for a key on the program's screen when a run ends, or
+* not (Options)
+c_pause             ldx       <base
+                    com       nopaus,x
+                    leax      pauson,pcr
+                    ldy       <base
+                    tst       nopaus,y
+                    beq       cpa1
+                    leax      pausof,pcr
+cpa1                stx       <msgp
+                    rts
+pauson              fcn       "Pause after a run on"
+pausof              fcn       "Pause after a run off"
 indon               fcn       "Auto indent on"
 indoff              fcn       "Auto indent off"
 

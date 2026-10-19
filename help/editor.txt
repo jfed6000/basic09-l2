@@ -137,6 +137,7 @@ Options
   Double spacing    ^1/^2   text on every other row ({Line spacing})
   80x60 screen              switch 80x30 and 80x60 ({Screen size})
   Memory...                 l2b09run's workspace ({Memory})
+  Pause after run           wait for a key when a program ends ({Running})
 Help
   Topic at cursor   F1      the help page for the word at the cursor
   Contents                  the first help page ({Help})
@@ -203,8 +204,11 @@ nothing, so ^R goes on with the old code. Esc does neither.
 Run (^R, Run > Run) makes, then runs the first procedure in the text.
 
 Run does a {Make} first, then runs the first PROCEDURE in the file.
-{DEFTYPE} blocks are never started. While the program runs, its own
-screen is shown. When it ends, the editor's screen comes back.
+{DEFTYPE} blocks are never started. Each run starts on a clear
+screen of its own, which is shown while the program runs. When it
+ends, "Press any key" appears under its output; a key brings the
+editor's screen back (Options > Pause after run turns the pause off).
+A stop in the debugger comes back at once.
 
 If the program stops in the {Debugger}, ^R continues it.
 

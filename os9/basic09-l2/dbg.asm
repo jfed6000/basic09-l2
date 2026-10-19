@@ -82,7 +82,11 @@ dg1                 lbsr      rt_cmd
                     lbsr      rt_wait
                     pshs      cc
                     clr       <running
-                    lbsr      u_back
+                    bcs       dg2                 (the runtime has gone)
+                    tst       <dbgon              it ended, not stopped: wait for a
+                    bne       dg2                 key on its screen first
+                    lbsr      u_pause
+dg2                 lbsr      u_back
                     puls      cc
                     bcs       dg9
                     lbsr      bp_tmpclr
