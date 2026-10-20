@@ -6,3 +6,8 @@ term.out  args: 3 4. ab
 r.err     %ERROR 56 p8args
 # INPUT on the program's terminal: %INPUT first
 i.err     %INPUT
+# statements on one line: the 2nd, 3rd and 4th (a comment) get a number
+s.err     %DEBUG p8dms 2 1
+s.err     %DEBUG p8dms 2 2
+s.err     %DEBUG p8dms 2 3
+s.err     %DEBUG p8dms 3

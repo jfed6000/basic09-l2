@@ -1,0 +1,7 @@
+* l2basic09: the debugger shows the statement it stopped at, on a line
+* with several (%DEBUG <proc> <line> <n>); colours read off the screen
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -t=/dd/l2b09/term.out ms.b09 </term >/term

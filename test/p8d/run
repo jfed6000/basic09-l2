@@ -13,3 +13,6 @@ unlink p8main p8args
 * show the program's screen
 echo >tin.txt
 /dd/l2b09/l2b09run -t=/dd/l2b09/tin.txt <i.cmds >i.out >>i.err
+* statements on one line: %DEBUG <proc> <line> <n> for the n+1th
+echo >ts.txt
+/dd/l2b09/l2b09run -t=/dd/l2b09/ts.txt <s.cmds >s.out >>s.err

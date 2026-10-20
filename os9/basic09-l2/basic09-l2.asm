@@ -236,6 +236,8 @@ gotsig              rmb       1                   a signal came (rt_icpt)
 dbgon               rmb       1                   the program is stopped in the debugger
 dbline              rmb       2                   where: line in the procedure dbname
 dbfl                rmb       2                   the file line ($FFFF = not in the text)
+dbstm               rmb       1                   the statement on it it stopped at (0 = the first)
+vstat               rmb       1                   v_line, on that line: VS.* (vs_char)
 vexec               rmb       1                   v_line: this is the line it stopped at
 quiet               rmb       1                   rt_wait: %ERROR is a result, not a message
 nwatch              rmb       1                   watches
@@ -296,6 +298,9 @@ muwh                rmb       1                   SS.MsWheel answers (mouse.asm)
 muwst               rmb       2                   EK.WHEEL: its steps (signed)
 nopaus              rmb       1                   Options: no pause after a run (0 = pause)
 ushown              rmb       1                   dbg_go: the program's terminal is shown
+evstm               rmb       1                   event: statement on the line (%DEBUG's 3rd number)
+vseg                rmb       1                   vs_char: the statement drawn now on the stopped line
+vlast               rmb       1                   vs_char: the character before
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

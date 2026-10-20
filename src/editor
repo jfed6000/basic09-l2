@@ -1038,16 +1038,35 @@ ACTLIN pshs Y
 * Passed: (Y)=I-Code ptr
 * Returns: (D)=Line number (1 = first line of procedure)
 
-L2LINE pshs X,Y,U
+L2LINE pshs X
+ bsr L2LINS
+ puls X,PC
+
+* L2LINS: L2LINE, and (X)=Statements on that line before the one at (Y)
+*   (0: the first; the debugger stops at each statement of a line
+*   like "PRINT \ PRINT", and the editor shows which)
+L2LINS pshs X,Y,U
  ldx #0
  ldy I.ICBG
 L2LIN1 leax 1,X line (X) starts at (Y)
+ leau  ,Y
  lbsr NXTONE (Y)=start of next line
  cmpy 2,S the target
  bhi L2LIN2 ..target is on line (X)
  cmpy I.ICLM
  blo L2LIN1
-L2LIN2 tfr X,D
+L2LIN2 pshs X the line number
+ leay  ,U its first statement
+ ldx #0
+L2LIN3 lbsr NXTSTM (Y)=the next statement
+ bcs L2LIN4
+ cmpy 4,S past the target?
+ bhi L2LIN4
+ leax 1,X
+ cmpy 4,S
+ blo L2LIN3
+L2LIN4 stx 2,S
+ puls D
  puls X,Y,U,PC
 
 ***************
@@ -1082,8 +1101,17 @@ L2EV10 ldy L2EVSZ+4,S icode ptr
  bsr L2ECPY procedure name
  lda #V$SPAC
  sta ,U+
- bsr L2LINE
+ bsr L2LINS
+ pshs X statements before it on the line
  bsr L2EDEC line number
+ puls D
+ cmpd #0
+ beq L2EV20 ..the first: no more (as before)
+ pshs D
+ lda #V$SPAC
+ sta ,U+
+ puls D
+ bsr L2EDEC "<line> <n>": the n+1th statement on it
 L2EV20 lda #V$CR
  sta ,U+
  leax ,S
@@ -1134,7 +1162,7 @@ L2DPMT pshs B,Y
  leax <L2DBGE,PCR
  clrb
  ldy I.ICPT
- bsr L2EVNT
+ lbsr L2EVNT
  ldx #0
  puls B,Y,PC
 

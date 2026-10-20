@@ -36,7 +36,7 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 | Event | Meaning |
 |---|---|
 | `%READY` | Command mode; waiting for a command. |
-| `%DEBUG <proc> <line>` | Debugger; stopped before the statement on `<line>` of `<proc>`, waiting for a debugger command. |
+| `%DEBUG <proc> <line> [<n>]` | Debugger; stopped before the statement on `<line>` of `<proc>`, waiting for a debugger command. On a line with several statements (`a \ b \ c`), `<n>` says which: it is there only for the second and later (1 for the second), so the first looks as before. `%ERROR` and the compile errors carry it the same way. |
 | `%ERROR <code> <proc> <line>` | Runtime error. It is followed by `%DEBUG`. |
 | `%CERR <code> <proc> <line>` | Compile error while loading. The line is kept as an error line, and loading continues. |
 | `%BERR <code> <proc> <line>` | Bind error when a procedure finishes loading, for example an undefined line number or unmatched control structure. |

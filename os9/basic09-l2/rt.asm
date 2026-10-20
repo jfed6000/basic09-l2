@@ -496,7 +496,16 @@ evw1                lda       ,x+
 evw2                clr       -1,x
                     lbsr      getnum
                     std       <evline
-                    rts
+                    ldy       <base               "<line> <n>": the n+1th statement
+                    clr       evstm,y             on the line (none: the first)
+                    lda       ,x
+                    cmpa      #C$SPAC
+                    bne       evw9
+                    leax      1,x
+                    lbsr      getnum
+                    ldy       <base
+                    stb       evstm,y
+evw9                rts
 
 
 ********************************************************************

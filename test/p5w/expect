@@ -1,0 +1,15 @@
+# red FF880000 = the statement it stopped at; FF000050 = text
+mame.log p5w: s0 first FF880000
+mame.log p5w: s0 print FF000050
+mame.log p5w: s1 first FF000050
+mame.log p5w: s1 print FF880000
+mame.log p5w: s1 string FF880000
+mame.log p5w: s1 k+1 FF000050
+mame.log p5w: s2 print FF000050
+mame.log p5w: s2 k+1 FF880000
+mame.log p5w: s2 comment FF000050
+mame.log p5w: s3 k+1 FF000050
+mame.log p5w: s3 comment FF880000
+mame.log p5w: s3 y FF880000
+mame.log p5w: s3 end FF880000
+mame.log p5w: s3 next line FF000050

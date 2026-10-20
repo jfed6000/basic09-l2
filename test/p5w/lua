@@ -1,0 +1,95 @@
+-- The highlights are colours, which the text snapshot does not show, so
+-- this script reads them off the screen: the top pixel row of a cell is
+-- its background (the font leaves it blank).  Cells are 8x16 pixels.
+-- Each check prints "p5m: <what> <ARGB>" for the expect file.
+local ports = manager.machine.ioport.ports
+local function key(name)
+    for _, p in pairs(ports) do if p.fields[name] then return p.fields[name] end end
+end
+local function field(tag) for _, f in pairs(ports[tag].fields) do return f end end
+local fx, fy = field(":MOUSEX"), field(":MOUSEY")
+local fb = ports[":MOUSE_BUTTONS"].fields["Left Button"]
+local shift, right, down = key("LShift"), key("Right"), key("Down")
+local ctrl, esc, kf = key("Ctrl"), key("Escape"), key("f  F")
+local scr = manager.machine.screens[":screen"]
+local steps = {}
+local cx, cy = 30000, 30000
+local function add(f) steps[#steps + 1] = f end
+local function wait(n) for _ = 1, n do add(function() end) end end
+local function hold(f, v) add(function() f:set_value(v) end); wait(6) end
+local function tap(f) hold(f, 1); hold(f, 0) end
+local function bg(c, r)          -- a cell's background: its commonest colour
+    local n, best, bn = {}, 0, 0
+    for y = 0, 15 do for x = 0, 7 do
+        local p = scr:pixel(c * 8 + x, r * 16 + y)
+        n[p] = (n[p] or 0) + 1
+        if n[p] > bn then best, bn = p, n[p] end
+    end end
+    return best
+end
+local function check(what, c, r)
+    add(function() print(string.format("p5w: %s %08X", what, bg(c, r))) end)
+end
+local function ink(what, c, r)  -- pixels unlike the cell's background
+    add(function()
+        local bg, n = scr:pixel(c * 8, r * 16), 0
+        for y = 0, 15 do for x = 0, 7 do
+            if scr:pixel(c * 8 + x, r * 16 + y) ~= bg then n = n + 1 end
+        end end
+        print(string.format("p5w: %s %s", what, n > 0 and "ink" or "blank"))
+    end)
+end
+local function moveto(px, py)   -- as in p5l
+    while cx ~= px or cy ~= py do
+        cx = cx + math.max(-100, math.min(100, px - cx))
+        cy = cy + math.max(-100, math.min(100, py - cy))
+        local nx, ny = cx, cy
+        add(function() fx:set_value(nx); fy:set_value(ny) end); wait(2)
+    end
+end
+local function over(c, r)
+    local hx, hy = cx - 1000, cy - 1000
+    moveto(hx, hy)
+    moveto(hx + c * 8 + 4, hy + r * 16 + 8)
+    wait(10)
+end
+local function button(v) add(function() fb:set_value(v) end); wait(10) end
+local function click(c, r) over(c, r); button(1); button(0); wait(10) end
+
+wait(60 * 50)                   -- the editor is up by then
+add(function() fx:set_value(cx); fy:set_value(cy) end); wait(5)
+-- line 3 (row 4): k=1 \ PRINT "a\b" \ k=k+1 \ (* x \ y *); text column c is
+-- screen column c+1
+click(5, 4)                     -- the cursor on it, Run > Go to cursor
+over(23, 0) button(1) moveto(cx, cy + 48) wait(10) button(0)
+wait(60 * 20)
+-- columns on line 3 (text column c is screen column c+1), on spaces (a
+-- letter can have more ink than background): 4 in k=1, 12 in PRINT,
+-- 15 the \ inside the string, 26 in k=k+1, 31 and 36 in the comment
+check("s0 first", 4, 4)         -- the first statement only
+check("s0 print", 12, 4)
+local function trace()          -- Debug > Trace into (F7)
+    over(38, 0) button(1) moveto(cx, cy + 32) wait(10) button(0)
+    wait(60 * 8)
+end
+trace()
+check("s1 first", 4, 4)
+check("s1 print", 12, 4)
+check("s1 string", 15, 4)       -- its \ in a string is not a separator
+check("s1 k+1", 26, 4)
+trace()
+check("s2 print", 12, 4)
+check("s2 k+1", 26, 4)
+check("s2 comment", 31, 4)
+trace()
+check("s3 k+1", 26, 4)
+check("s3 comment", 31, 4)
+check("s3 y", 36, 4)            -- after the \ in the comment: still red
+check("s3 end", 60, 4)          -- the rest of the row too
+check("s3 next line", 6, 5)
+local i = 0
+p5w_sub = emu.add_machine_frame_notifier(function()   -- global: kept alive
+    i = i + 1
+    if steps[i] then steps[i]() end
+    if i == #steps then print("p5w: input done at frame " .. i) end
+end)

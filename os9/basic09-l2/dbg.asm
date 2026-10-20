@@ -26,6 +26,9 @@ dat1                lda       ,x+
                     decb
                     bne       dat1
 dat2                clr       ,y
+                    ldx       <base
+                    lda       evstm,x
+                    sta       <dbstm
                     ldd       <evline
                     std       <dbline
                     ldd       #$FFFF              the file line, if it is ours
@@ -155,9 +158,11 @@ dbg_show            lbsr      sel_off
                     bhs       dsh1
                     ldd       <dbfl
                     lbsr      goto_line
+                    lbsr      vs_cur
                     lbra      rd_all
 dsh1                ldd       <dbfl
                     lbsr      goto_line
+                    lbsr      vs_cur
                     lbra      v_center
 
 * c_step: one statement, into a called procedure (F7).  If the program

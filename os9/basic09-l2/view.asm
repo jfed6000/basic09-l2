@@ -257,12 +257,13 @@ vl00                lbsr      t_ch
                     clr       <vcnt
                     clr       <vrev
                     clr       <vexec              the line the program stopped at?
+                    clr       <vstat
                     tst       <dbgon
                     beq       vl0
                     ldd       <vline
                     cmpd      <dbfl
                     bne       vl0
-                    inc       <vexec
+                    lbsr      vs_init             only its statement dbstm is red
 vl0                 clr       <hlst               syntax colours start afresh
                     clr       <hlrun
                     ldu       <base
@@ -272,7 +273,10 @@ vl1                 lbsr      p_char
                     bcs       vl_eof
                     cmpa      #C$CR
                     beq       vl_eol
-                    tst       <nocolr
+                    tst       <vstat              the stopped line: which statement?
+                    beq       vl1v
+                    lbsr      vs_char
+vl1v                tst       <nocolr
                     bne       vl1a
                     lbsr      hl_cls              B = its colour
 vl1a                cmpa      #C$TAB
@@ -648,3 +652,145 @@ hintms              fcc       "F1 Help  ^S Save  ^O Open  ^G Go to  ^B Make  ^R 
                     fcb       0
 dbghint             fcc       "Stopped:  F7 Step  F8 Over  ^R Continue  ^P Reset  ^E Evaluate  ^W Watch"
                     fcb       0
+
+* The line the program stopped at: only the statement it stopped at
+* (dbstm, from %DEBUG's third number) is drawn red.  vs_char follows
+* the line a character at a time: a "\" outside strings starts the
+* next statement (it is part of it); a statement that starts with
+* REM or "(*" is a comment to the end of the line, as the compiler
+* has it.
+VS.EXL              equ       $01                 this is the stopped line
+VS.INQ              equ       $02                 in a string
+VS.COM              equ       $04                 in a comment, to the end
+VS.ST               equ       $08                 at a statement's start (spaces, line number)
+VS.REM              equ       $30                 REM so far: $10 R, $20 RE, $30 REM
+* vs_init: start the stopped line (vexec: its first statement?)
+vs_init             pshs      x
+                    lda       #VS.EXL+VS.ST
+                    sta       <vstat
+                    ldx       <base
+                    clr       vseg,x
+                    clr       vlast,x
+                    clr       <vexec
+                    tst       <dbstm
+                    bne       vsi9
+                    inc       <vexec
+vsi9                puls      x,pc
+* vs_char: character A of the stopped line; keeps all registers
+vs_char             pshs      d,x
+                    ldx       <base
+                    ldb       <vstat
+                    bitb      #VS.COM
+                    lbne      vsc9
+                    bitb      #VS.INQ
+                    beq       vsc1
+                    cmpa      #'"
+                    lbne      vsc9
+                    andb      #^VS.INQ            the string ends
+                    lbra      vsc8
+vsc1                pshs      b                   "REM" and then?
+                    andb      #VS.REM
+                    cmpb      #VS.REM
+                    puls      b
+                    bne       vsc2
+                    andb      #^(VS.REM+VS.ST)
+                    lbsr      vs_word             a name goes on: not REM
+                    bcc       vsc2
+                    orb       #VS.COM
+                    bra       vsc8
+vsc2                cmpa      #'"
+                    bne       vsc3
+                    orb       #VS.INQ
+                    andb      #^(VS.ST+VS.REM)
+                    bra       vsc8
+vsc3                cmpa      #'\
+                    bne       vsc4
+                    inc       vseg,x              the next statement
+                    lda       vseg,x
+                    clr       <vexec
+                    cmpa      <dbstm
+                    bne       vsc3a
+                    inc       <vexec
+vsc3a               andb      #^VS.REM
+                    orb       #VS.ST
+                    bra       vsc8
+vsc4                cmpa      #'*
+                    bne       vsc5
+                    lda       vlast,x
+                    cmpa      #'(
+                    bne       vsc7
+                    orb       #VS.COM             "(*"
+                    bra       vsc8
+vsc5                bitb      #VS.ST
+                    beq       vsc8
+                    cmpa      #C$SPAC             spaces and a line number keep it
+                    beq       vsc8
+                    cmpa      #'0
+                    blo       vsc6
+                    cmpa      #'9
+                    bhi       vsc6
+                    bitb      #VS.REM
+                    beq       vsc8
+vsc6                anda      #$DF                upper case
+                    pshs      b
+                    andb      #VS.REM
+                    cmpb      #$00
+                    bne       vsc6a
+                    cmpa      #'R
+                    beq       vsc6r
+                    bra       vsc6n
+vsc6a               cmpb      #$10
+                    bne       vsc6b
+                    cmpa      #'E
+                    beq       vsc6r
+                    bra       vsc6n
+vsc6b               cmpa      #'M
+                    bne       vsc6n
+vsc6r               puls      b                   one more letter of REM
+                    addb      #$10
+                    bra       vsc8
+vsc6n               puls      b                   not REM: the statement has begun
+vsc7                andb      #^(VS.ST+VS.REM)
+vsc8                stb       <vstat
+vsc9                lda       ,s
+                    sta       vlast,x
+                    puls      d,x,pc
+* vs_word: carry clear if A goes on a name (a letter, digit, _ or $)
+vs_word             pshs      a
+                    cmpa      #'_
+                    beq       vsw8
+                    cmpa      #'$
+                    beq       vsw8
+                    cmpa      #'0
+                    blo       vsw9
+                    cmpa      #'9
+                    bls       vsw8
+                    anda      #$DF
+                    cmpa      #'A
+                    blo       vsw9
+                    cmpa      #'Z
+                    bhi       vsw9
+vsw8                andcc     #^Carry
+                    puls      a,pc
+vsw9                orcc      #Carry
+                    puls      a,pc
+
+* vs_cur: the cursor, at the start of the stopped line, to the start of
+* its statement dbstm (on its "\")
+vs_cur              tst       <dbstm
+                    beq       vsu9
+                    lbsr      vs_init
+vsu1                lbsr      a_cpos
+                    lbsr      p_char
+                    bcs       vsu8
+                    cmpa      #C$CR
+                    beq       vsu8
+                    lbsr      vs_char
+                    ldx       <base
+                    lda       vseg,x
+                    cmpa      <dbstm
+                    beq       vsu8
+                    lbsr      c_right
+                    bra       vsu1
+vsu8                clr       <vstat
+vsu9                rts
