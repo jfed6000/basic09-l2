@@ -97,14 +97,10 @@ O.COMAND fdb ENTRYPT offset of self
  fdb 0 end of table
 
  ifne INCLUDED&EDITOR
- ifne L2B09
  ifne L2B09CC
 B09NAM fcs "l2b09cc"
  else
 B09NAM fcs "l2b09run"
- endc
- else
-B09NAM fcs "Basic09"
  endc
  else
 B09NAM fcs "RunB"
@@ -120,57 +116,7 @@ B09NAM fcs "RunB"
 * and Terry Ritter at Motorola.
 
 CPYRIT
- ifne L2B09
 * (l2b09run's banner is in l2b09ovl: L2OPTS prints it at start-up)
- else
- ifne wildbits
- fcb V$LF
- fcb V$LF+$80
- else
- ifne Tandy-0
- ifne dragon-0
- fcb $0C Clear Screen
- fcc "            BASIC09"
- fcb V$LF
- fcc "COPYRIGHT 1980 BY MOTOROLA INC."
- fcb V$LF
- fcc "  AND MICROWARE SYSTEMS CORP."
- fcb V$LF
- fcc "   REPRODUCED UNDER LICENSE"
- fcb V$LF
- fcc "     TO DRAGON DATA LTD."
- fcb V$LF
- fcc "    ALL RIGHTS RESERVED."
- fcb V$LF+$80
- else
- fcb $0C Clear Screen
- fcc "            BASIC09"
- fcb V$LF
- fcc "      RS VERSION 01.00.00"
- fcb V$LF
- fcc "COPYRIGHT 1980 BY MOTOROLA INC."
- fcb V$LF
- fcc "  AND MICROWARE SYSTEMS CORP."
- fcb V$LF
- fcc "   REPRODUCED UNDER LICENSE"
- fcb V$LF
- fcc "       TO TANDY CORP."
- fcb V$LF
- fcc "    ALL RIGHTS RESERVED."
- fcb V$LF+$80
- endc
- else
- fcc "Copyright 1980 by Motorola and Microware."
- fcb V$LF
- fcc "Reproduced under license"
- endc
- ifeq INCLUDED&MATHPAK
- fcb V$LF
- fcc "(no trig functions)"
- fcb V$LF+$80
- endc
- endc
- endc
 
 ***************
 
@@ -198,7 +144,6 @@ CMDENT equ *
  fdb DEBUG-CMDENT  Enter debug mode
  fdb TRCEXP-CMDENT Trace expression
  fdb PRTEXP-CMDENT Print (opstack) expression
- ifne L2B09
  fdb L2EVNT-CMDENT Write a protocol event line
 * for the overlay module l2b09ovl (PACK)
  fdb L2BPZ-CMDENT  Clear all breakpoints
@@ -210,7 +155,6 @@ CMDENT equ *
 * (the banner)
  fdb NEWLIN-CMDENT Reset the I/O buffer
  fdb STREOL-CMDENT Put a string in it and print it
- endc
  endc
 
 ***************
@@ -244,24 +188,18 @@ J$PHEX jsr M.BINDER
  fcb X$PHEX Print hex number
 J$BSTM jsr M.BINDER
  fcb X$BSTM Bind statement
- ifeq L2B09 unused
-J$TRON jsr M.STMTS
- fcb X$TRON  turn on trace mode
- endc
 J$TROF jsr M.STMTS
  fcb X$TROF  turn off trace mode
 J$ISTM jsr M.STMTS
  fcb X$ISTM  interpret single statement
 J$ASNM jsr M.CNVIO
  fcb X$ASNM  cnv ASCII > numeric
- ifne L2B09
 J$L2RS jsr M.STMTS
  fcb X$L2RS resolve procedure ptr
 J$L2MW jsr M.STMTS
  fcb X$L2MW map far block into the code window
 J$FALL jsr M.STMTS
  fcb X$FALL free all far arrays
- endc
 
  ttl KEYWORD Table
  pag
@@ -293,19 +231,11 @@ EXP equ *
 LOG equ *
 LOG10 equ *
  fcs "???"
- ifne L2B09
  fdb 103 Number of entries, when trig functions aren't used
- else
- fdb 102 Number of entries, when trig functions aren't used
- endc
  fcb 2
 
  else
- ifne L2B09
  fdb 115 Number of entries in keytab (with FAR)
- else
- fdb 114 Number of entries in keytab
- endc
  fcb 2 number of skip bytes per entry
  endc
 
@@ -546,10 +476,8 @@ UPDATE fcs "UPDATE"
 EXEC fcs "EXEC"
  fcb T.DIR,RESRVD
 DIRECT fcs "DIR"
- ifne L2B09
  fcb T.FAR,RESRVD
 FARKW fcs "FAR"
- endc
 
  ttl DECOMPILE Table
  pag
@@ -763,10 +691,8 @@ DCMTBL equ *
  fdb '#*256 Cnum '#'
  fcb Z$SUB
  fdb SK2-* Lbne invisible goto
- ifne L2B09
  fcb Z$SUB
  fdb DCFAR-* Far
- endc
 
 * Operand Tokens
 
@@ -1033,21 +959,13 @@ ARROW equ *+1
 CMDVRB equ *
  fdb INVOKE-*
  fcs "$"
- ifne L2B09
  fdb CMDNOP-* an empty line: nothing (no DIR)
- else
- fdb DIR05-*
- endc
  fcb V$CR+$80
 
- ifne L2B09
  ifne L2B09CC
  fdb 15 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP, CCPRM, CCSTM)
  else
  fdb 13 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP)
- endc
- else
- fdb 14 number of alphabetic entries
  endc
  fcb 2 number of skip bytes per entry
  fdb BYEBYE-*
@@ -1057,16 +975,6 @@ CMDVRB equ *
  fcs "CCPRM"
  fdb CCSTM-*
  fcs "CCSTM"
- endc
- ifeq L2B09
- fdb DIR-*
- fcs "DIR"
- endc
- ifeq L2B09
- fdb EDIT-*
- fcs "EDIT"
- fdb EDIT-*
- fcs "E"
  endc
  fdb LIST-*
  fcs "LIST"
@@ -1082,10 +990,6 @@ CMDVRB equ *
  fcs "SAVE"
  fdb LOAD-*
  fcs "LOAD"
- ifeq L2B09
- fdb RENAME-*
- fcs "RENAME"
- endc
  fdb DUMP-*
  fcs "PACK"
  ifne L2B09RT (done here, then passed on to l2b09cc)
@@ -1106,14 +1010,12 @@ CMDVRB equ *
  fdb CHXDIR-*
  endc
  fcs "CHX"
- ifne L2B09
  fdb BPSET-*
  fcs "BP"
  fdb BPCLR-*
  fcs "BC"
  fdb STEPRN-*
  fcs "STEP"
- endc
 
 ***************
 * Debug Mode Commands
@@ -1126,18 +1028,10 @@ DBGVRB equ *
  fdb STEP0-*
  fcb V$CR+$80
 
- ifne L2B09
  fdb 16 number of alphabetic debug commands (BP, BC, OVER; no DIR)
- else
- fdb 14 number of alphabetic debug commands
- endc
  fcb 2 number of skip bytes per entry
  fdb CONTIN-*
  fcs "CONT"
- ifeq L2B09
- fdb DIR-*
- fcs "DIR"
- endc
  fdb HALT-*
  fcs "Q"
  fdb LSTBND-*
@@ -1160,49 +1054,13 @@ DBGVRB equ *
  fcs "STEP"
  fdb BREAK-*
  fcs "BREAK"
- ifne L2B09
  fdb BPSET-*
  fcs "BP"
  fdb BPCLR-*
  fcs "BC"
  fdb OVER-*
  fcs "OVER"
- endc
 
- ifeq L2B09
-***************
-* Editor Commands
-*
- fdb 8 number of symbol entries in editor command tbl
- fcb 2 number of skip bytes per entry
-EDTVRB fdb ELIST-*
- fcs "L"
- fdb ELIST-*
- fcs "l"
- fdb EDELET-*
- fcs "D"
- fdb EDELET-*
- fcs "d"
- fdb EMOVE-*
- fcs "+" foreward
- fdb EMOVE-*
- fcs "-" backward
- fdb EMOVE-*
- fcb V$CR+$80 Move one
- fdb EINSRT-*
- fcs " " space: insert
-
- fdb 4 number of alphabetic editor commands
- fcb 2 number of skip bytes per entry
- fdb SEARCH-*
- fcs "S"
- fdb CHANGE-*
- fcs "C"
- fdb ERESEQ-*
- fcs "R"
- fdb EQUIT-*
- fcs "Q"
- endc
  endc
 
  ttl CHARACTER String constants
@@ -1213,30 +1071,12 @@ READY equ *
  endc
  fcs "Ready"
 WHAT fcs "What?"
- ifeq L2B09
-FREE fcs " free"
- endc
 DEFNAM fcs "Program"
 PRCEDR fcs "PROCEDURE"
- ifeq L2B09 unused
-CR.RET fcb V$CR
- endc
- ifeq L2B09
-DIRHDR fcb $A
- fcs "  Name      Proc-Size  Data-Size"
- endc
 
- ifne L2B09
 OVWRIT fcc "%ASK Rewrite?"
  fcb V$CR
- else
-OVWRIT fcc "Rewrite?: "
- endc
 OVWLEN equ *-OVWRIT
- ifeq L2B09 only the line editor uses it
-RNGERR fcc "RANGE"
- fcb $87
- endc
 DBGMSG equ *
  ifne Tandy-0
  fcb C$Alpha change to alpha screen
@@ -1244,14 +1084,7 @@ DBGMSG equ *
  fcs "BREAK: "
 CALLBY fcs "called by"
 OKMSG fcs "ok"
- ifne L2B09
 CMDPMT fcs "%READY"
- else
-DBGPMT fcs "D:"
-EDTPMT fcs "E:"
-CMDPMT fcs "B:"
-NOTFND fcs "can't find:"
- endc
 
  ttl Basic09 Command module
  pag
@@ -1261,12 +1094,10 @@ NOTFND fcs "can't find:"
 
 INTCPT lda R$DP,S
  tfr A,DP reset Basic09's direct page
- ifne L2B09
  cmpb #S$Abort keyboard abort (RUN/STOP on the K2): a break,
  bne INTCP1 as ^C, so the program stops in the debugger
  ldb #S$Intrpt (^P in the editor, Q here, ends it)
 INTCP1 equ *
- endc
  stb G.SIGN Save signal
  ifne H6309
  oim #$80,I.RUNM Set high bit (flag signal was received)
@@ -1308,9 +1139,7 @@ START0 std ,--U clear DP Globals
  tfr D,S
  std G.DIRA
  inca
- ifne L2B09
  addd #L2BPSZ breakpoint table between directory and procedures
- endc
  std G.PRCA
  std I.STBG
  tfr U,D
@@ -1378,7 +1207,6 @@ START15 lda #$7E JMP Opcode
  lbsr J$INTI Initialize interpreter
  puls Y get initial shell params
 
- ifne L2B09
  lbsr L2OPTS Parse l2b09run options
  lbsr L2GARD keep the data window out of the top slot
  ifne L2B09RT
@@ -1388,7 +1216,6 @@ START15 lda #$7E JMP Opcode
  endc
  lda CMDIN
  sta BASINP Command input from home path
- endc
  ifne INCLUDED&EDITOR
  leax KEYTAB,PCR
  stx KEYWORDS save Keyword Table addr for compiler
@@ -1408,12 +1235,10 @@ START15 lda #$7E JMP Opcode
  bra EXIT cleanup stack
 
 START2 puls Y get shell param ptr
- ifne L2B09
 START25 lda ,Y+ skip the file name; a procedure name may follow
  cmpa #V$SPAC
  bhi START25
  leay -1,Y
- endc
  endc
 
  bsr SETUP
@@ -1474,26 +1299,16 @@ SETEXT ldd SP.ERR previous exit ptr
 *   with carriage-return.
 
 COMAND equ *
- ifeq L2B09
- leax CPYRIT,PCR
- bsr CMDER1 print copyright msg
- endc
  ifeq L2B09CC (l2b09cc: its stderr is the editor's)
  leax B09NAM,PCR Basic09 message
  bsr CMDER1 print "Basic09"
  endc
 COMAN0 equ *
- ifne L2B09
  lbsr J$FALL no program is running any more
  ifne L2B09CC
  lbsr L2DONE ready for a command: %DONE on stdout
  endc
- endc
  bsr SETUP
- ifeq L2B09
- leax READY,PCR Ready message
- bsr CMDER1 (prtlin) print message
- endc
  ifne L2B09CC
  ldx #0 no prompt: %DONE is on stdout
  else
@@ -1527,36 +1342,24 @@ COMAN0 bsr SETUP reserve opstack
 
 RUNCMD pshs X,Y Save regs
  clr G.SIGN any signal now is ignored
- ifne L2B09
  leax ,X no prompt (caller wrote an event line)?
  beq RUNCMD02
  lbsr PRTLIN prompt is a whole line
 RUNCMD02 equ *
- else
- lbsr PRTSTR print prompt
- endc
  bsr EXNLIN reset I/O buffer
  lda BASINP get working path number
- ifne L2B09
  cmpa CMDIN home command path?
- endc
  beq RUNCMD05
  OS9 I$Close Close input path
- ifne L2B09
 RUNCMD05 lda CMDIN Default back to home command input
  sta BASINP
- else
-RUNCMD05 clr BASINP Default back to standard input
- endc
  lbsr INLINE read input line
  bcc RUNC10 ..continue if no error
  cmpb #E$EOF End of file?
  bne RUNC90 ..no; reprompt
- ifne L2B09
  leax DBGVRB,PCR
  cmpx 2,S in the debugger?
  lbeq HALT ..yes; quit to command mode (where EOF means BYE)
- endc
  ifne H6309
  ldq #'b*$1000000+'y*$10000+'e*$100+V$CR default to "BYE" command
  stq  ,Y
@@ -1585,9 +1388,6 @@ RUNC90 coma return carry set
  puls X,Y,PC
 
  use mem
- ifeq L2B09
- use dir
- endc
 
 ***************
 * Subroutine ItoA
@@ -1667,15 +1467,9 @@ CHXD10 leax  ,Y (x)=pathname ptr
  bcs ERREXT if error; report it
  rts else return carry clear
 
- ifeq L2B09
- use rename
- endc
 RBIND1 lbra REBIND Rebind the procedure and return carry clear
  endc
 
- ifeq L2B09 only RENAME (in the overlay) uses it
-ERPRCX ldb #M$MDPC Error - multiply defined proc
- endc
 ERREXT lbsr PRTERR
 EXIT1 lbra EXIT
 
@@ -1731,18 +1525,14 @@ LODERR ldb #M$UPRC Error-unknown procedure
 LODABT ldb #M$MFUL Error; memory full
 LODEOF pshs B Save error code
  bsr RBIND1 Bind erroneous procedure
- ifne L2B09
  lbsr L2BANK
- endc
  puls B Restore error code
 LODER1 cmpb #E$EOF End of File?
  beq EXIT1 ..yes; return
  bra ERREXT Print error message & return
 
 LOAD equ *
- ifne L2B09
  lbsr L2BPZ procedures move: breakpoints go
- endc
  leax  ,Y get path name ptr
  lda #READ. Open for input
  OS9 I$Open Open the input file
@@ -1776,11 +1566,7 @@ LOAD2 ldb G.SIGN (abort) signal?
  ldy I.IOBG
  ldd I.ICLM
  std I.ICPT At end of icode-
- ifne L2B09
  lbsr L2INSR -insert this line; report a compile error
- else
- lbsr INSERT -insert this line
- endc
  bra LOAD2 Endloop
 LOAD3 ldx I.IOBG
  pshs X,Y Save next procedure name ptr
@@ -1790,9 +1576,7 @@ LOAD35 lda ,X+
  stx I.IOBG Move I/O buffer up (binding errors wipe out)
  stx I.IOPT
  lbsr J$BIND Bind current procedure
- ifne L2B09
  lbsr L2BANK
- endc
  puls X,Y Restore next procedure name
  stx I.IOBG Reset I/O buffer addr
  stx I.IOPT
@@ -1817,9 +1601,6 @@ PRCLI1 lda ,X+
 CMDNOP clra (l2b09run: an empty command line)
 PRCLI9 rts RETURN to user
 
- ifeq L2B09
- use pack
- else
 ***************
 * Cold commands
 *   PACK lives in the overlay module l2b09ovl (src/overlay.asm,
@@ -1876,7 +1657,6 @@ L2OVLK leax L2OVNM,PCR
  OS9 F$Load
 L2OVK9 rts
 L2OVNM fcs /l2b09ovl/
- endc
 
 ***************
 * Defile
@@ -1984,12 +1764,10 @@ LIST0 stx I.ICPT out of range to KILL "*" on current
  bra LIST2
 LIST1 pshs Y Save proc list ptr
  ldy [,Y] get procedure addr
- ifne L2B09
  tfr Y,X
  lbsr J$L2RS banked? map it
  bcs LIST15
  tfr X,Y
- endc
  sty I.APRC set active procedure
  ldd P.PGMB,Y set icode beginning offset
  addd I.APRC
@@ -2009,21 +1787,17 @@ LSEXIT lbra EXIT (this will fall through)
 LIST12 tst PRTCTL doing a save?
  bmi LIST15 ..yes; don't produce error list
  ldx [,S] restore directory ptr
- ifne L2B09
  ldy  ,X
  lda P.STAT,Y
  bita #P.BANK never rebind a banked procedure in place
  bne LIST15
- endc
  ifeq L2B09RT (l2b09cc showed them)
  lbsr UNBIND Unbind procedure
  lbsr J$BIND Rebind it (show errors)
  endc
 LIST15 puls Y Restore proc list ptr
- ifne L2B09
  ldx [,Y] the current procedure is the stub, not the window
  stx I.APRC
- endc
 LIST2 ldx ,--Y get next directory addr
  bne LIST1
 
@@ -2071,11 +1845,7 @@ OPNCH1 ldd  ,S get mode
  lda #1
  OS9 I$Write
  endc
- ifne L2B09
  lda CMDIN from home command input
- else
- clra from Std input path
- endc
  leax ,--S Input buffer
  ldy #2 Read one byte
  OS9 I$ReadLn
@@ -2122,10 +1892,8 @@ INTER1 lbsr DIRLNK Try to find procedure
  lbcs ERUPRC Not found - error
  ldx  ,X get active procedure addr
  stx I.APRC Set active procedure
- ifne L2B09
  stx L2APRC
  clr L2OVRU no step over pending
- endc
  lda M$TYPE,X external or bound?
  beq INTE30 ..Yes; check type
  anda #LangMask check language
@@ -2187,10 +1955,8 @@ INTRTS puls D,X
  std I.STBG
  stx G.VARS
 INTER9 equ *
- ifne L2B09
  ldx L2APRC current procedure is the stub again, not the window
  stx I.APRC
- endc
  lbra EXIT Return
 
 ERABRT ldb #M$ERST
@@ -2201,10 +1967,8 @@ ERABRT ldb #M$ERST
 *   Return nicely to OS-9
 
 BYEBYE bsr KILALL kill all external procedures
- ifne L2B09
  lbsr J$FALL give back far arrays
  lbsr L2FREE give back the far procedure store
- endc
  clrb
  OS9 F$Exit
 
@@ -2248,9 +2012,7 @@ KILALL ldy I.IOPT build "All" name in I/O buffer
  sta G.SIGN
 
 KILLER equ *
- ifne L2B09
  lbsr L2BPZ procedures move: breakpoints go
- endc
  lbsr PCDLST get list of procedures to kill
  clr I.APRC no active procedure
  clr I.APRC+1
@@ -2663,7 +2425,6 @@ BASLEN2             equ       *-BASL2
 NEWLN               fcb       $1b,$33,$06,$0c,$0d
 NEWLNLEN            equ	*-NEWLN
 				endc
- ifne L2B09
 ***************
 * Subroutine L2OPTS
 *   Parse l2b09run options ahead of the file name
@@ -3154,7 +2915,6 @@ L2INSR pshs D,X where this line goes
  puls Y
 L2INS9 puls D,X,PC
 L2CERR fcs "%CERR"
- endc
 
 ***************
  ifne L2B09RT

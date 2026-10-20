@@ -31,10 +31,8 @@ J$EXIT jsr M.COMAND
  fcb X$EXIT Abortive exit; recovering stack
 J$RPLC jsr M.COMAND
  fcb X$RPLC Replace I-Code
- ifne L2B09
 J$L2EV jsr M.COMAND
  fcb X$L2EV Write a protocol event line
- endc
 
 J$EXDS jsr M.COMPIL
  fcb X$EXDS Expand desr tbl
@@ -369,16 +367,12 @@ ERROR pshs D,X,Y save registers
  leas 5,S Return scratch
  ldb  ,S get error code
  lbsr J$EREX Print error message
- ifne L2B09
  ldb ,S error code
  ldy 4,S I-Code ptr
  leax <L2BERR,PCR "%BERR <code> <proc> <line>"
  lbsr J$L2EV
- endc
 ERRO10 puls D,X,Y,PC and return
- ifne L2B09
 L2BERR fcs "%BERR"
- endc
 
 ***************
 * Subroutine PRT4HX
@@ -506,9 +500,7 @@ PDECLR ldd I.ICLM get bottom of free space
  pshs D,X save beginning of component list & x
  std PCOMPT set beginning of component list
 PDECL1 equ *
- ifne L2B09
  clr FARFLG near unless the type says FAR
- endc
  bsr PID Process id
  ldb ,Y+ get next token
  cmpb #T.COMA is there another?
@@ -519,11 +511,7 @@ PDECL1 equ *
  ldb #1 set flag for implicit typing
  bra PDECL3
 PDECL2 equ *
- ifne L2B09
  lbsr L2PVTY Process explicit type, with optional FAR
- else
- lbsr PVTYPE Process explicit type
- endc
  clrb set Flag for explicit typing
 PDECL3 pshs B,Y save flag & I-Code ptr
  ldx 3,S get beginning of component list
@@ -663,13 +651,9 @@ PVTYP4 std ELMSIZ set size
 
 * save as PDECLR
 
- ifne L2B09
 DEFVAR tst FARFLG far declaration?
  lbne L2FDEF
 DEFVA0 ldb ,X+ get dimension count
- else
-DEFVAR ldb ,X+ get dimension count
- endc
  beq DEFV07 bra if simple
  pshs B save count
  aslb shift For symbol tbl type
@@ -768,10 +752,8 @@ DIMMUL pshs D save multiplier
  adda 2,Y add previous partial
  bcs DIMERR bra if overflow
  std 2,Y put in descr area
- ifne L2B09
  inca $FFxx marks a far array (and is too big anyway)
  beq DIMERR
- endc
  puls D,PC Restore size & return
 DIMERR lda #M$ASO Err - array size overflow
  lbsr ERROR
@@ -2290,10 +2272,8 @@ ALCCXV bsr ALCCMX get description area for structure
  bra ALCSV1 Finish variable allocation
 
 ALCARV bsr ALCARR Do array prep
- ifne L2B09
  cmpa #$FF far array?
  lbeq L2FALS ..yes; only a handle, with the procedure links
- endc
  bra ALCSV1 Finish
 
 ALCSMP leay 1,X get ptr storage offset
@@ -2470,11 +2450,7 @@ DONE25 leax  ,U copy symbol tbl ptr
  std 1,X Update offset
  bra DONE70
 DONE30 cmpa #S.PARM parameter?
- ifne L2B09
  lbne L2FDON ..No; far array handles move like links
- else
- bne DONE55 ..No
- endc
  ldb SHAPE array parameter?
  bne DONE45 ..Yes
  lda TYPE get type
@@ -2512,7 +2488,6 @@ DONE80 cmpu I.STBG end of symbol tbl?
  bcs DONE25 ..No
  rts
 
- ifne L2B09
  ttl FAR ARRAYS
  pag
 ***************
@@ -2736,7 +2711,6 @@ L2FDON cmpa #S.VAR
  addd NEXALC Adjust for variable allocation
  std  ,X
 L2FDN9 lbra DONE55
- endc
 
  endc
 * End of Binder

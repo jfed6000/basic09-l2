@@ -11,19 +11,19 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 
 - **6809 only.** No 6309 work. The stock `H6309` conditionals stay as they are.
 - **Machine-neutral names** (`l2b09*`). Wildbits is only the first test target; a CoCo 3 port is possible. Machine-specific code goes behind conditionals.
-- **Stock builds stay byte-identical.** All l2basic09 changes to `src/` sit behind `ifne L2B09` / `ifeq L2B09`. Run `make check` after touching `src/`, and also compare `build/basic09_6809` against a build from the NitrOS-9 tree.
+- **Old programs must run on basic09-l2 (the compatibility rule).** Basic09 source files load, compile and run unchanged, and PACKed I-Code modules from stock Basic09 or built for stock RunB run under `l2b09run`, by name and with arguments. New programs on stock Basic09 are best effort: PACK output without new features should still run under stock RunB, and PACK refuses what it cannot. Keep the I-Code and module formats compatible. Tests: p1 and p4 (the image's stock basic09/runb), p8a, p8d. (ARCHITECTURE.md.)
+- **`src/` is basic09-l2's own source,** forked from Microware's on 2026-10-20 (`src/MICROWARE.md`, `tools/l2fork.py`). There are no stock builds and no `make check` any more; the pristine source is in the NitrOS-9 tree. Conditionals that remain: `L2B09RT` (runtime), `L2B09CC` (compiler), `INCLUDED`/`EDITOR`, `H6309`, machine.
 
 ## Build and test
 
 - **Toolchain:** `lwasm` and `os9` (toolshed).
-- **NitrOS-9 tree:** `NITROS9DIR` defaults to `build/main/src/nitros9`, an export of the nitros9project clones in `~/projects/wild/main` that every `make` refreshes when a clone's HEAD changes (`recipes/export-main.sh`). Its defs, pipe modules, stock Level 2 image (`build/main/l2_wildbitsjr2.dsk`, the tests' `BASEIMG`) and stock basic09/runb (for `make check`) are used. MAME is `~/projects/wild/mame/mame` (machine `wbjr2`, Longview core).
+- **NitrOS-9 tree:** `NITROS9DIR` defaults to `build/main/src/nitros9`, an export of the nitros9project clones in `~/projects/wild/main` that every `make` refreshes when a clone's HEAD changes (`recipes/export-main.sh`). Its defs, pipe modules, stock Level 2 image (`build/main/l2_wildbitsjr2.dsk`, the tests' `BASEIMG`) are used (the image has the stock basic09 and runb that p1 and p4 run). MAME is `~/projects/wild/mame/mame` (machine `wbjr2`, Longview core).
 - **The main clones stay pristine.** The Longview core (rc22+) moved the device pages to `$FC`-`$FF`; the clones in `~/projects/wild/main` (`nitros9`, `-languages`, `-apps`, `-games`) support it. Never build in them or write to them: everything builds in the export (`recipes/README.md`). The old-core joust tree (`~/projects/wild/joust/nitros9_complete/nitros9`) still works with `NITROS9DIR=` and `BASEIMG=` overrides, but MAME no longer shows its screen. New disk images go in a recipe under `recipes/`, built in the export, not by patching a stock image. Stick to the defs: no hardware addresses in our code.
 
 | Command | What it does |
 |---|---|
-| `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
-| `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5vtest`, `p6test`, `p7test`, `p8atest` | Headless emulator tests; each prints PASS/FAIL lines. `p8atest` is the reference for the separate compiler (docs/COMPILER.md); `p8btest` checks `l2b09cc`'s frames; `p8ctest` checks that its procedures are byte-identical to LOAD's. |
+| `make` | `build/l2b09run`, `l2b09cc`, `l2b09ovl`, `farmem`/`syscall`/`inkey`, the editor, the help browser, `build/l2b09ctl`. |
+| `make p1test` … `p4test`, `p5atest` … `p5xtest`, `p6test`, `p7test`, `p8atest` … `p8dtest` | Headless emulator tests; each prints PASS/FAIL lines. `p8atest` is the reference for the separate compiler (docs/COMPILER.md); `p8btest` checks `l2b09cc`'s frames; `p8ctest` checks that its procedures are byte-identical to LOAD's. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make main` (`k2main`, `jr2main`) | New-core images built in an export of the main repos: `build/main/l2_wildbits{k2,jr2}.dsk` (stock, for tests) and `l2_basic09-l2{k2,jr2}.dsk` (for hardware). |
 | `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the same as `l2_basic09-l2{k2,jr2}.dsk` from `make main`, made by patching the stock image's OS9Boot instead of the recipe. |
@@ -39,8 +39,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `comand.asm` (plus `editor`, which is included at its end) holds the commands, LOAD, the debugger, the decompiler and the l2basic09 additions.
   - `stmts.asm` is the statement interpreter, including code banking (`L2RSLV`/`L2MAPW`).
   - `compil`, `binder`, `exprsn` and `cnvio` are the compiler, binder, expression interpreter, and conversion/I/O.
-  - Direct-page variables are in `b09defs`; `L2B09` variables go after `BufOvf`.
-  - `L2B09` builds also get `-DLevel=2`.
+  - Direct-page variables are in `b09defs`; l2basic09's go after `BufOvf`.
+  - The builds get `-DLevel=2`.
   - The runtime's direct page is full (the last byte, `$FF`, is `L2CCP`). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
 - **`l2b09cc`** (docs/COMPILER.md): the separate compiler, `l2b09run`'s source built with `-DL2B09CC=1`; LOAD sends each bound procedure to stdout as `%PROC <bytes> <name>` plus the bytes. In `l2b09run`, `ccload`/`cccmp <file>` fork it and load or compare through it (step 2; the two pipe paths are in the last direct-page byte, `L2CCP`). `tools/ccframes.py` checks that output; in a test's `fetch` file, `raw:<file>` fetches a binary file unchanged.
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).

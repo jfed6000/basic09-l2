@@ -100,9 +100,7 @@ T.ASGN rmb 1 ':='
 T.ASG1 rmb 1 '='
 T.CNUM rmb 1 '#'
 T.LBNE rmb 1 Invisible goto
- ifne L2B09
 T.FAR rmb 1 Far (DIM x(n):FAR type)
- endc
 
 * Operand Tokens
 
@@ -428,7 +426,6 @@ LNMTBL rmb 2 Line number table ptr
 RESCAN rmb 1 legal format rescan if non-zero
 InpSprtr rmb 1 Input item separator
 BufOvf rmb 1 I/O Buffer Overflow flag
- ifne L2B09
 CMDIN rmb 1 Home command input path (0 unless -t moved stdin)
 LSTERR rmb 1 Last error code printed (for protocol events)
 WINADR rmb 2 Code window address (0 = none yet)
@@ -449,7 +446,6 @@ GRDBLK rmb 2 Block keeping the top slot filled (0 = no guard)
 L2NBP rmb 1 Breakpoints set (the table is at G.DIRA+$100)
 L2OVRU rmb 2 Step over: storage of the procedure to stop in (MSB 0 = none)
 L2CCP rmb 1 l2b09cc's pipes: path to write <<4 + path to read (0 = not started)
- endc
 
  pag
 * Procedure Environment Table Definition
@@ -473,7 +469,6 @@ P.EXEC rmb 2 First executable statement address
 P.STAT rmb 1 Procedure status
 P.NAMS rmb 1 Procedure name size
 P.NAME equ . Procedure name beginning
- ifne L2B09
 P.BANK equ $20 P.STAT bit: banked procedure; this is its stub
 *  A stub is the procedure header and name, followed by the far
 *  block number (2 bytes) and offset in that block (2 bytes) of the
@@ -484,7 +479,6 @@ L2BPSZ equ 4*L2BPN Breakpoint table size; it sits at G.DIRA+$100
 L2BLSZ equ $2000 MMU block size (8K on Wildbits and CoCo 3)
 L2TOPU equ $1D00 Usable part of the top slot: $FD00-$FFFF is fixed on
 *                 Wildbits ($FE00-$FFFF on the CoCo 3)
- endc
 
 * Procedure Invocation Temporaries
 

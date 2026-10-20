@@ -3,8 +3,8 @@
 # The NitrOS-9 tree is a copy of the nitros9project clones in $(MAINDIR),
 # which stay pristine: recipes/export-main.sh writes each one's HEAD into
 # build/main/src/ (again only when HEAD changes; recipes/README.md).  Its
-# defs, pipe modules and stock Level 2 image are used, and the stock
-# basic09/runb built there are the reference for "make check".
+# defs, pipe modules and stock Level 2 image are used (the image's own
+# stock basic09 and runb are the reference programs in p1 and p4).
 # Point NITROS9DIR at another checkout (and BASEIMG at its image) to
 # override, e.g. the old-core joust tree.
 
@@ -14,7 +14,6 @@ BUILD   = build
 MAINDIR    ?= $(HOME)/projects/wild/main
 MAINSRC     = $(CURDIR)/build/main/src
 NITROS9DIR ?= $(MAINSRC)/nitros9
-REFDIR     ?= $(NITROS9DIR)/../nitros9-languages/basic09
 MAME       ?= $(HOME)/projects/wild/mame/mame
 BASEIMG    ?= $(CURDIR)/build/main/l2_wildbitsjr2.dsk
 export NITROS9DIR MAME BASEIMG
@@ -33,7 +32,7 @@ MODDIR  = modules
 SCRIPT  = $(SRCDIR)/build-modular-basic09.py
 
 SRCS = $(addprefix $(SRCDIR)/, comand.asm compil.asm binder.asm stmts.asm \
-       exprsn.asm cnvio.asm defs b09defs b09type jmpdefs linkage editor pack)
+       exprsn.asm cnvio.asm defs b09defs b09type jmpdefs linkage editor pack mem)
 DEPS = Makefile $(SCRIPT) $(SRCS)
 
 AS = lwasm --no-warn=ifp1 --6309 --format=os9 \
@@ -41,9 +40,6 @@ AS = lwasm --no-warn=ifp1 --6309 --format=os9 \
      --includedir=$(NITROS9DIR)/defs
 AFLAGS = -DNOS9VER= -DNOS9MAJ= -DNOS9MIN=
 
-# Stock Microware builds (the baseline everything else is measured against)
-STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
-        $(BUILD)/runb_6809 $(BUILD)/runb_6309
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
 L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl $(BUILD)/l2b09cc
 OS9DIR = os9
@@ -56,48 +52,33 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p6test p7test p8atest p8btest p8ctest p8dtest loadtime clean k2main jr2main main mainsrc
+.PHONY: all subs l2b09 tools pipes k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p6test p7test p8atest p8btest p8ctest p8dtest loadtime clean k2main jr2main main mainsrc
 
-all: stock subs l2b09 tools
+all: subs l2b09 tools
 
 tools: $(TOOLS)
 
 l2b09: $(L2B09)
 
-stock: $(STOCK)
 subs: $(SUBS)
 
 $(BUILD):
 	mkdir -p $@
 
-$(BUILD)/basic09_6809: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1
-
-$(BUILD)/basic09_6309: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DH6309=1
-
-$(BUILD)/basic09_wildbits: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -Dwildbits=1
-
-$(BUILD)/runb_6809: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) runb $@ -DCOMMUNITY=1
-
-$(BUILD)/runb_6309: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) runb $@ -DCOMMUNITY=1 -DH6309=1
-
-# l2basic09 runtime: Basic09 without the line editor (see src/b09type, L2B09)
+# l2basic09 runtime: the interpreter, commands and debugger, without the
+# compiler (L2B09RT; src/MICROWARE.md, docs/COMPILER.md)
 $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DL2B09RT=1 -DLevel=2
+	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09RT=1 -DLevel=2
 	@[ $$(stat -c %s $@) -le 24576 ] || echo "WARNING: $@ is over 24,576 bytes: it needs a fourth 8K block (ARCHITECTURE.md, P5.5)"
 
 # The separate compiler (docs/COMPILER.md): l2b09run's own code, built
 # so that LOAD sends each bound procedure to stdout
 $(BUILD)/l2b09cc: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DL2B09CC=1 -DLevel=2
+	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09CC=1 -DLevel=2
 
 # Cold commands (PACK) that l2b09run loads when they are typed
 $(BUILD)/l2b09ovl: $(SRCDIR)/overlay.asm $(DEPS) | $(BUILD)
-	cd $(BUILD) && $(AS) $(AFLAGS) -DCOMMUNITY=1 -DL2B09=1 -DLevel=2 --includedir=$(CURDIR)/$(SRCDIR) $(CURDIR)/$< -o$(CURDIR)/$@
+	cd $(BUILD) && $(AS) $(AFLAGS) -DCOMMUNITY=1 -DLevel=2 --includedir=$(CURDIR)/$(SRCDIR) $(CURDIR)/$< -o$(CURDIR)/$@
 
 $(BUILD)/%: $(MODDIR)/%.asm $(MODDIR)/defsfile | $(BUILD)
 	cd $(BUILD) && $(AS) $(AFLAGS) --includedir=$(CURDIR)/$(MODDIR) $(CURDIR)/$< -o$(CURDIR)/$@
@@ -136,7 +117,7 @@ $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe: $(BUILD)/%: $(NITROS9DIR)/level1/
 	cd $(BUILD) && $(PLATAS) $< -o$(CURDIR)/$@
 
 # P1: compile with stock basic09 from a script, run the packed module with runb
-p1test: stock pipes $(BASEIMG)
+p1test: pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p1
 
 p2test: l2b09 pipes $(BASEIMG)
@@ -145,7 +126,7 @@ p2test: l2b09 pipes $(BASEIMG)
 p3test: l2b09 tools pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p3
 
-p4test: stock l2b09 subs $(BASEIMG)
+p4test: l2b09 subs $(BASEIMG)
 	tools/emu-wildbits.sh test/p4
 
 p5atest: tools $(BASEIMG)
@@ -285,8 +266,7 @@ $(BUILD)/l2b09_%.dsk: $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk $(TOOLS) $(L2B09)
 #                     l2_basic09-l2{k2,jr2}.dsk (basic09-l2 added by the
 #                     recipe in recipes/wildbits/basic09-l2)
 #   main              both
-# The stock image is rebuilt when a clone's HEAD changes; building it also
-# builds the reference basic09_wildbits and runb_6809 for "make check".
+# The stock image is rebuilt when a clone's HEAD changes.
 MAINRCP   = $(MAINSRC)/nitros9/recipes/wildbits
 MAINHEADS = $(MAINSRC)/nitros9.head $(MAINSRC)/nitros9-languages.head $(MAINSRC)/nitros9-apps.head
 MAINMAKE  = $(MAKE) NITROS9DIR=$(MAINSRC)/nitros9 LANGUAGES=$(MAINSRC)/nitros9-languages \
@@ -303,13 +283,6 @@ k2main jr2main: %main: mainsrc $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk
 	cp -p recipes/wildbits/basic09-l2/makefile recipes/wildbits/basic09-l2/recipe.mak $(MAINRCP)/basic09-l2/
 	$(MAINMAKE) -C $(MAINRCP)/basic09-l2 PLATFORM=$*
 	cp $(MAINRCP)/basic09-l2/l2_basic09-l2$*.dsk $(BUILD)/main/
-
-# Byte-for-byte comparison against the stock modules built in the copy
-# (or the prebuilt ones in REFDIR, for another tree)
-check: $(BUILD)/basic09_wildbits $(BUILD)/runb_6809 $(if $(filter $(MAINSRC)/%,$(REFDIR)),$(CURDIR)/$(BUILD)/main/l2_wildbitsjr2.dsk)
-	cmp $(BUILD)/basic09_wildbits $(REFDIR)/basic09_wildbits
-	cmp $(BUILD)/runb_6809 $(REFDIR)/runb_6809
-	@echo "check: stock builds match $(REFDIR)"
 
 clean:
 	rm -rf $(BUILD)

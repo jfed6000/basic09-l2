@@ -24,9 +24,7 @@ DEBUG pshs D,X,Y,U Preserve registers
  bne CONTIN99 ..Yes; don't enter recursively
  endc
  inc DEBUGGER Signal Debugger Entered
- ifne L2B09
  clr L2OVRU any step over ends at a stop (no storage is below $100)
- endc
  lda G.SIGN Abort signal recieved?
  bne DEBUG9 ..Yes; don't check step count
  ldd STEPS in step mode?
@@ -36,16 +34,8 @@ DEBUG pshs D,X,Y,U Preserve registers
 DEBUG1 lbsr NEWLIN Clean up I/O buffer
  leax DBGMSG,PCR Get debug message
  lbsr STRSPC
- ifne L2B09
  lbsr PAPRLN Print active procedure name and line
- else
- lbsr PAPRCN Print active procedure name
- endc
- ifne L2B09
 DEBUG2 lbsr L2DPMT "%DEBUG <proc> <line>"; (X)=0
- else
-DEBUG2 leax DBGPMT,PCR Get prompt string
- endc
  leay DBGVRB,PCR Get debug verb table ptr
  lbsr RUNCMD Execute debug command
  bcc DEBUG2 Repeat
@@ -65,13 +55,11 @@ HALT lbsr J$TROF Insure trace is turned off
  lda #3
 HALT10 cmpa BASOUT command output path?
  beq HALT20 ..Yes; don't close it
- ifne L2B09
  cmpa CMDIN home command input path?
  beq HALT20 ..Yes; don't close it
  ifne L2B09RT
  lbsr L2CCPA one of the pipes to l2b09cc?
  beq HALT20 ..Yes; don't close it
- endc
  endc
  OS9 I$Close Close all but std I/O paths
 HALT20 inca
@@ -252,7 +240,6 @@ LSTB99 puls X,Y,U,PC Restore registers and return
 *   Process Direct Execution statement
 
 DIREXQ equ *
- ifne L2B09
  lda I.OPTH
  pshs A
  lda #CMDOUT direct statement output to the command channel
@@ -262,7 +249,6 @@ DIREXQ equ *
  sta I.OPTH
  rts
 DIREX0 equ *
- endc
  ldx I.APRC
  tst P.STAT,X is this a compiled procedure?
  bpl DIREX1 ..no; ok!
@@ -297,14 +283,7 @@ DIREX2 clra
  ldx ICDPTR
  stx I.ICLM
  stx I.STBG
- ifne L2B09
  lbsr L2BSTM Bind compiled statement; (A)=binder errors
- else
- lbsr J$BSTM Bind compiled statement
- ldx I.APRC
- lda P.STAT,X
- clr P.STAT,X
- endc
  tsta ANY Binder errors?
  bne RSCRIT ..Yes; avoid running
  endc
@@ -443,9 +422,7 @@ PRTEXT puls D,X,Y,PC return
 *   Print error message
 
 PRTERR equ *
- ifne L2B09
  stb LSTERR remember it for protocol events
- endc
  OS9 F$PErr Use system error routine
  rts
 
@@ -538,11 +515,7 @@ INCHK4 lda ,S+ Pop the descr
 LKTOKE leax DCMTBL,PCR Get tbl addr
  tstb
  bpl LKTOK1
- ifne L2B09
  subb #T.SBYT-T.FAR-1 Adjust for hole in token defs
- else
- subb #T.SBYT-T.LBNE-1
- endc
 LKTOK1 lda #3 3 bytes/entry
  mul
  leax D,X Form addr
@@ -1002,7 +975,6 @@ PARENS ldx  ,S Get return address
  stx ,--Y Push left paren on operator stack
  rts return
 
- ifne L2B09
 ***************
 * Subroutine PAPRLN
 *   Print "PROCEDURE <name> line <n>" for the active procedure.
@@ -1307,7 +1279,6 @@ STEPRN lsl I.RUNM
 * Decompile FAR (no space after the ':' before it)
 DCFAR leax FARKW,PCR
  lbra STRSPC Output it, then a space
- endc
 
 * End of Decompiler routines
 
@@ -1382,71 +1353,6 @@ DCFAR leax FARKW,PCR
 *   Q          Bind procedure and return to Command
 
  pag
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-EDIT lbsr PRCREF Get procedure name
- lbsr DIRADD Get procedure directory address
- ldy  ,X Get procedure address
- tst M$type,Y internal (un typed) procedure?
- bne EDTERR ..No; impossible to edit
- pshs X Save directory address
- lbsr UNBIND Unbind the procedure
- lbsr PCURPC Print current procedure name
- ldy I.ICBG
- bsr EMOVE1 Move to and print the first line
-EDIT1 lda G.SIGN
- cmpa #S$Abort Keyboard abort?
- bne EDIT2 ..no; continue
- lbsr EQUIT Exit editor
-EDIT2 leax EDTPMT,PCR Get editor prompt string
- leay EDTVRB,PCR Get editor verb table ptr
- lbsr RUNCMD Execute editor command
- bcc EDIT1 Repeat
- tst G.SIGN Signal recieved?
- bne EDIT1 ..Yes; check it out
- leax >EDIT1,PCR get "return" addr
- pshs X Push it on stack
-
-* Move to line number?
-
- ldx I.IOBG Pickup line buffer
- lsl  ,X
- lsr  ,X Strip high order bit
- lbsr GETNUM
- lbcs CMDERR Error - what?
- lbsr SCHLIN Search for line number
- lda  ,X
- cmpa #V$CR Line number only?
- beq EMOVE1 ..Yes; move edit ptr to it
- ldy I.IOBG Reset I/O buffer
- bra EINSRT Compile the line
-
-EDTERR coma
- rts
-
-***************
-* Subroutine Emove
-*   Move Edit ptr to target
-
-EMOVE leax -1,Y Back up to sign
- asl  ,X
- asr  ,X Strip high order bit
- lbsr TARGET Find target line
- lbsr CHKEOL Make sure it's end of line
-EMOVE1 sty I.ICPT Reset edit ptr
- lbsr GETLIN Find out it's line number
- leax  ,Y
- lbsr NXTONE Skip to next line
- lbra ELIST1 List the line found & return
-
-***************
-* Subroutine Einsrt
-*   Compile and insert line of I-Code at Edit ptr
-
-EINSRT bsr INSERT
- bcc EMOVE1 Print the current line, and return
- rts just return if error
-
- endc
 INSERT tst G.VARS enough memory to compile?
  beq INSERR ..no; error: memory full
  clr DEBUGGER Normal compil
@@ -1455,7 +1361,6 @@ INSERT tst G.VARS enough memory to compile?
  lda  ,X
  cmpa #T.LREF Does it have a line number?
  bne INSER3 ..no; go insert line
- ifne L2B09
 * LOAD (the only caller in l2b09run) appends at the end; a line
 * numbered above every line so far goes there, without the two
 * searches.  P.EXEC holds the highest number until the binder
@@ -1467,7 +1372,6 @@ INSERT tst G.VARS enough memory to compile?
  std P.EXEC,Y
  bra INSER3
 INSER0 equ *
- endc
  clra
  clrb
  sta ,-S
@@ -1534,137 +1438,20 @@ CHKER8 cmpa #T.ERRL Numbered error line?
 * Subroutine GETLIN
 *   Get ordinal number of current Edit line
 
- ifeq L2B09 only the line editor uses it
-GETLIN ldx #0
- ldy I.ICBG Start at beginning of procedure
-GETLI1 cmpy I.ICPT Are we at the editors current line?
- bhs GETLI2 ..Yes; return
- leax 1,X Count one for each line skipped over
- lbsr NXTONE Skip one line
- cmpy I.ICLM At end of procedure?
- blo GETLI1 ..no; repeat until line is found
-GETLI2 sty I.ICPT insure "CLEAN" edit ptr
- stx EDTLIN Save line number
- clra (return Carry clear)
- rts
- endc
 
 ***************
 * ELIST
 *   Process List command
 
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-ELIST bsr LIMITS Get list limits
- bsr CHKEOL Make sure we've hit end of line
- cmpx I.ICBG List from beginning of procedure?
- bhi ELIST1 ..no
- pshs X,Y
- lbsr PCURPC Print current procedure name
- puls X,Y
-ELIST1 ldd I.ICLM
- pshs D
- sty I.ICLM
- lbsr LSTBN0 Do the listing
- puls D
- std I.ICLM
- clra (return Carry clear)
- rts
-
- endc
 ***************
 * Subroutine CHKEOL
 *   Check for end of line
 
- ifeq L2B09 only the line editor uses it
-CHKEOL pshs B,X Save regs
- ldx I.IOPT Get I/O ptr
- ldb  ,X Get next char there
- cmpb #V$CR End of line?
- bne CHKEO1 ..no; what?
- puls B,X,PC Return
-CHKEO1 leas 5,S Pull of b,x,pc
- lbra CMDERR Print what? and return to caller's caller
- endc
 
 ***************
 * Subroutine LIMITS
 *   Find Low and High limits to List or Delete
 
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-LIMITS lda ,Y+
- cmpa #V$SPAC Space?
- beq LIMITS ..Yes; skip it
- cmpa #'* Entire procedure?
- bne LIMIT2 ..no; continue
- sty I.IOPT
- ldx I.ICBG
- ldy I.ICLM
- rts
-
-LIMIT2 leax -1,Y
- bsr TARGET Must be a target - get it
- bcs LIMIT9
- ldx I.ICPT
- cmpy I.ICPT is limit found below current ptr?
- bhs LIMIT9 ..no
- exg X,Y
- clra clear Carry (no error)
-LIMIT9 rts
-
-***************
-* Subroutine TARGET
-*   Find user's Target line
-
-* Passed: (X)=ptr to Command Line Target
-* Returns: (Y)=I-Code ptr of Target Line
-
-TARGET clr ,-S Default forward target
- ldd  ,X Get command
- cmpa #'+ Forward?
- bne TARGE2 ..no; look again
- ldy I.ICLM MAYBE "+*"
-TARGE1 cmpb #'* to bound?
- bne TARGE3 ..no; go get number
- leax 2,X Update I/O ptr
- stx I.IOPT
- puls A,PC Clean up stack & return
-
-TARGE2 cmpa #'- Backward?
- bne TARGE4 ..no; unsigned foreward
- inc  ,S Set negative mode
- ldy I.ICBG "-*"?
- bra TARGE1 Go see if it is
-
-TARGE3 leax 1,X Update I/O ptr past sign
-TARGE4 lda  ,X Get first digit
- cmpa #'0 Number?
- blo TARGE5 ..no
- cmpa #'9 Number?
- bls TARGE6 .yes
-TARGE5 ldd #1 Default one
- bra TARGE7
-TARGE6 bsr GETNUM Get number of lines forward
- bcs TRGERR Target error - what?
-TARGE7 stx I.IOPT Save updated I/O ptr
- ldy I.ICPT Get current edit ptr
- tst ,S+ Positive target?
- beq TARGE8 ..Yes; go do it
- ldy I.ICBG Skip from bottom up
- pshs D Save absolute target
- ldd EDTLIN Get current edit line
- subd ,S++ Compute absolute line number of target
- bhs TARGE8 Trying to get below I-Code beginning?
- clra Naughty
- clrb Naughty
-TARGE8 lbsr NXTLIN Skip lines to target
- clra return Carry clear
- rts
-
-TRGERR ldy I.ICPT Return with current line
- com ,S+ Return carry set
- rts
-
- endc
 ***************
 * Subroutine GETNUM
 *   Get positive integer from command line
@@ -1686,191 +1473,6 @@ GETNU9 rts
 
 * Passed: (Y)=Line ptr
 
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-SEARCH clrb clear Change mode
- bra SCHSUB
-CHANGE ldb #1 set change mode as "bne if change mode"
-
- org 0 Stack temporary variables
-CHNG rmb 1 Change mode
-CONTNU rmb 1 continuous "*" mode
-SCHLEN rmb 2 Search string length
-CHGLEN rmb 2 Change string length
-CHGSTR rmb 2 Change string ptr
-SCHPTR rmb 2 Current search i-code line
-FOUND rmb 1 Outcome of substring check
-LSTFND rmb 2 I-Code ptr to last line found
-OPBEG rmb 2 Opstack beginning save
-SCHTMP equ . Total stack space needed
-
-SCHSUB leas -SCHTMP,S Chop out workspace
- stb CHNG,S Set search/change mode
- lda  ,Y Get next char
- clr CONTNU,S Clear continuous mode
- cmpa #'* Asterick?
- bne SCHSU1 ..no
- sta CONTNU,S ..Yes; set continuous mode
- leay 1,Y Skip over asterick
-SCHSU1 ldb ,Y+ Get delim char
- cmpb #V$SPAC
- beq SCHSU1 ..but skip spaces
- tfr B,A
- sty I.IOPT Save search string address
- lbsr NXDLIM Skip over search string
- stu SCHLEN,S Save length of search string
- lbmi SCHERR ..no search string - error
- tst CHNG,S Change mode?
- beq SCHSU2 ..no; don't get change string
- lbsr NXDLIM Skip over change string
- stu CHGLEN,S Save change string length
- lbmi SCHERR No change string present - error
-SCHSU2 cmpa #V$CR End of line?
- beq SCHSU3 ..Yes, continue
- lda ,Y+ Get next char
- cmpa #V$CR End of line?
- lbne SCHERR ..no; syntax error
-SCHSU3 ldu I.OPBG Get opstack addr
- stu OPBEG,S Save it
-SCHSU4 lda ,-Y
- sta ,-U Copy search/change string(s) to opstack
- cmpy I.IOPT
- bhi SCHSU4
- stu I.OPBG Save new opstack beginning
- stu I.OPSP
- ldd SCHLEN,S
- leau D,U Compute change string address
- leau 1,U (skip delim)
- stu CHGSTR,S Save it
- ldy I.ICPT Start search with current line
- sty LSTFND,S Initialize last found line
- clr FOUND,S set "NOT FOUND"
- lbra SCHSU6 While not end of I-Code do
-SCHSU5 lbsr NEWLIN Reset I/O ptrs
- sty I.ICPT Tell decompiler which line to decompile
- lbsr DCLINE Decompile line
- ldy I.IOBG Address of source line
- leay 5,Y Skip over line reference field
- asl FOUND,S
- asr FOUND,S unmark Found in current line flag
-FIND tst G.SIGN (abort) signal?
- bne SCHSXT ..Yes; exit
- ldd I.IOPT Get end of decompiled line
- subd SCHLEN,S (d)=last byte to search
- ldx I.OPBG Address of search string
- lbsr SUBST Search for search string in source line
- bcs SCHS55 ..not found; skip to next line
-
-* Search string Found in I-Code line
-*  (Y)=Addr of string in source line
-
- lda #$81 Found in current line
- sta FOUND,S Set found flag
- tst CHNG,S Change mode?
- beq SCHS55 ..no; exit
-
-* Replace Search string with Change string
- ldd I.IOPT
- addd CHGLEN,S
- subd SCHLEN,S
- subd I.IOBG
- cmpd #230 Super long line?
- bhi SCHS55 ..Yes; skip it
- ldx I.IOPT Get end of decompiled line
- exg X,Y
- ldd SCHLEN,S Length of search string
- lbsr FLOTUP Float search string to top of line
- tfr Y,D
- subd SCHLEN,S Compute new end of I/O buffer
- tfr D,Y
- ldu CHGSTR,S Get addr of change stirng
- pshs D,X Save limits of source line info
-FOUND2 lda ,U+
- sta ,Y+ Copy replacement string to end of I/O buffer
- cmpa #V$ESTR
- bne FOUND2 repeat until end of string
- leay -1,Y
- ldd ,S++
- subd  ,S Length of source line to flotup
- puls X Restore source ptr
- lbsr FLOTUP Float change string down into line
-
-* Returns:
-*    Change Str    Remainder of Source Line
-*  !------------!------------------------------!
-* (X)           (.............(D)............)(Y)
-
- sty I.IOPT Save new end of line ptr
- ldd CHGLEN,S Get change string length
- leay D,X Set (y) to rest of line
- ldd SCHLEN,S Zero search length?
- bne FOUND4 ..no; good
- leay 1,Y Give line ptr a little nudge
-FOUND4 tst CONTNU,S Continuous change mode?
- bne FIND ..Yes; search rest of line for occurance
-SCHS55 tst FOUND,S Was string found in this line?
- bpl SCHS57 ..no; skip to next line
- ldy SCHPTR,S
- ldd CHNG,S Test change and continuous modes
- bne SCHS56 Bra if either change or continuous
-SCHSXT ldx OPBEG,S Reset opstack ptrs
- stx I.OPBG
- stx I.OPSP
- leas SCHTMP,S Throw away temps
- lbra EMOVE1 Print current line, and exit
-
-SCHS56 lbsr OUTBUF Print the line found
- sty LSTFND,S Save most recent line found
- tst CHNG,S Change mode?
- beq SCHS57 ..no; skip to next line
- leax  ,Y Save current line ptr
- lbsr NXTONE Skip this line
- lbsr DELLIN Delete the line
- sty I.ICPT Save current I-Code ptr for insert
- ldy I.IOBG Get address of replacement line
- lbsr INSERT Insert it
- sty I.ICPT
- ldy SCHPTR,S Get editor's current line ptr
- lbsr NXTONE Skip over this line
- cmpy I.ICPT Did insert have to move the line?
- bne SCHSU7 ..Yes; stop searching
- tst CONTNU,S Continuous mode?
- beq SCHSU7 ..no; stop searching
-SCHS57 ldy SCHPTR,S
- lbsr NXTONE Skip to next line
-SCHSU6 sty SCHPTR,S Save current I-Code line
- cmpy I.ICLM End of I-Code?
- lblo SCHSU5 ..no repeat
-SCHSU7 lbsr NEWLIN Reset I/O ptrs
- tst FOUND,S Was any occurance found?
- bne SCHSU8 ..Yes; ok
- leax NOTFND,PCR get "CAN'T FIND" string
- lbsr STRSPC Print string
- ldy I.OPBG Get search string addr
- lbsr DCSTLT Print it
- lbsr PRTEOL
-SCHSU8 ldy LSTFND,S Restore ICDPTR to last found line
- sty I.ICPT
- ldx OPBEG,S Reset opstack ptrs
- stx I.OPBG
- stx I.OPSP
- leas SCHTMP,S Throw away temps
- lbra GETLIN Make this line current, and return
-
-***************
-* Subroutine NXDLIM
-*   Skip to next delimiter
-
-NXDLIM ldu #-1
-NXDLI1 cmpa #V$CR
- beq NXDLI9
- leau 1,U Update char cnt
- lda ,Y+
- cmpb -1,Y Delimiter char?
- bne NXDLI1 ..no; loop
-NXDLI9 clr -1,Y
- com -1,Y warning: V$ESTR must equal $FF
- rts
- endc
  endc
 
 ***************
@@ -1909,98 +1511,11 @@ SUBST3 puls X,Y (y)=addr of string that was found
 * Subroutine ERESEQ
 *   Resequence numbered procedure lines
 
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-ERESEQ ldd #100 Defalut first line#
- ldx #10 Default increment
- pshs D,X
- leax  ,Y
- ldy EDTLIN
- lda  ,X
- cmpa #'* Resequence entire procedure?
- bne RESEQ1 ..no
- ldy #0 Set top of procedure as starting point
-RESEQ0 leax 1,X
- lda  ,X
-RESEQ1 cmpa #V$SPAC Skip any spaces here
- beq RESEQ0
- pshs Y Save starting point
- cmpa #V$CR End of line?
- beq RESEQ2 ..Yes; go do resequencing
- lbsr GETNUM Get explicit starting line#
- bcs RESER1 ..error - what?
- std 2,S Reset starting line#
- lda ,X+
- cmpa #V$CR End of command line?
- beq RESEQ2 ..Yes; use default increment
- lbsr GETNUM Get increment
- bcs RESER1 ..error - what?
- std 4,S Save explicit increment
- bmi RESER1 ..negative - what?
- lda  ,X
-RESEQ2 cmpa #V$CR End of line?
- bne RESER1 ..no: what?
- bsr REBIND Bind the procedure
- ldd ,S++ Get starting point
- ldy I.ICBG
- lbsr NXTLIN Skip to line to begin with
- sty I.ICPT
- ldd  ,S Get starting line number
- lbsr SCHLIN Find it in I-Code
- clr ,-S Set up for dummy resequence
- cmpy I.ICPT is it below the renumbered lines?
- blo RESER2 ..Yes; error - bad range
- bsr RESEQ5 Try it out
- cmpx #0 Did it work?
- ble RESER2 ..no; error - bad range
- tst G.SIGN
- bne RESEQ3
- tst G.SIGN Signal recieved?
- bne RESEQ3 ..Yes; don't renumber
- inc  ,S Signal real stuff!
- bsr RESEQ5 Do it
-RESEQ3 leas 5,S Throw away temps
- ldx 2,S Get directory addr (remember-editor saved it)
- lbsr UNBIND Unbind the procedure
- ldy I.ICBG
- ldd EDTLIN Get current editor line number
- lbsr NXTLIN Skip to it
- sty I.ICPT Reset current I-Code ptr
- clra return Carry set
- rts
-
-RESEQ5 ldy I.ICPT Get starting I-Code ptr
- ldx 3,S Get starting line number
-RESEQ6 clra
- clrb
- lbsr SCHLI0 Find next line with a number
-RESEQ7 cmpy I.ICLM Run out of I-Code?
- bhs RESEQ9 ..Yes; good - done!
- tst 2,S Trial run?
- beq RESEQ8 ..Yes - don't mess up I-Code
- stx 1,Y Renumber the line
-RESEQ8 lbsr NXTONE Skip over this line
- tfr X,D
- addd 5,S Form next line#
- tfr D,X
- bpl RESEQ6 Exit if out of range
-RESEQ9 rts
-
-RESER1 leas 6,S Discard temps
- bra SCHER9
-SCHERR leas SCHTMP,S
-SCHER9 lbra CMDERR Error - what?
-RESER2 leax RNGERR,PCR
- lbsr PRTLIN print BAD RANGE
- bra RESEQ3 Unbind procedure and return
- endc
 
 ***************
 * Subroutine EQUIT
 *   Quit Editing; return to Command mode
 
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-EQUIT leas 4,S Throw away return addr & TEMP
- endc
 REBIND lbsr J$BIND Bind the procedure & return
  clra (return Carry clear)
  rts
@@ -2009,21 +1524,7 @@ REBIND lbsr J$BIND Bind the procedure & return
 * Subroutine EDELET
 *   Process Editor's delete command
 
- ifeq L2B09 line editor commands are not in the l2b09 runtime
-EDELET lbsr LIMITS
- lbsr CHKEOL
- bsr DELLIN Delete the line
- lbra EMOVE1 Print the current line, return
- endc
 
- ifeq L2B09 only the line editor uses it
-DELLIN ldd I.STBG
- std ICDPTR Insure nothing gets inserted
- tfr Y,D
- pshs X
- subd ,S++ Calculate number of bytes to delete
- leay  ,X Delete bytes from lower 'limit'
- endc
 * Fall thru to Replace
 
 ***************
@@ -2047,21 +1548,15 @@ REPLAC pshs D,X,Y,U Save caller's registers
  ldd I.STBG
  subd  ,S (d)=length of I-Code following inserted stuff
  beq REPLA1
- ifne L2B09
  lbsr L2FLUP Move new below old I-Code where it goes
- else
- lbsr FLOTUP Move new below old I-Code where it goes
- endc
 REPLA1 ldd ICDPTR
  ldu  ,S First byte to move
  subd ,S++ (d)=number of bytes to move down
  bls REPLA2
  ldy 4,S Original I-Code ptr
- ifne L2B09
  pshs U nothing deleted (an insertion): it is
  cmpy ,S++ in place already, so skip the copy
  beq REPLA2 of everything above onto itself
- endc
  lbsr J$MVDN Accomplish the deletion by moving down
 REPLA2 ldd ICDPTR
  subd I.STBG (d)=number of bytes added
@@ -2079,7 +1574,6 @@ REPLA2 ldd ICDPTR
  puls D,X,Y,U,PC Return
 
 ***************
- ifne L2B09
 * Subroutine L2FLUP
 *   FLOTUP for a short insertion (the binder's conversion tokens are
 *   one byte): keep the new bytes on the stack, block-move the
@@ -2129,7 +1623,6 @@ L2FLU2 lda ,Y+ the new bytes into the gap
 L2FLU9 puls D,X,Y,U,PC
 L2FLU8 puls D,X,Y,U
  lbra FLOTUP
- endc
 
 ***************
 * Subroutine MOVUP
@@ -2262,11 +1755,7 @@ UNBIN3 ldx I.DSCR Get description area ptr
  pag
 UNBIC1 ldb ,Y+ Get next token
  bpl UNBIC2
- ifne L2B09
  subb #T.SBYT-T.FAR-1 Adjust for hole in token defs
- else
- subb #T.SBYT-T.LBNE-1 Adjust for hole in token defs
- endc
 UNBIC2 clra
  leax SKPTBL,PCR Get address of table
  ldb D,X
@@ -2399,11 +1888,7 @@ FNDVA7 leas 2,S Return scratch
 
 NXTTOK tstb
  bpl NXTADJ
- ifne L2B09
  subb #T.SBYT-T.FAR-1 Adjust for hole in token defs
- else
- subb #T.SBYT-T.LBNE-1 Adjust for hole in token defs
- endc
 NXTADJ leax <SKPTBL,PCR
  clra
  ldb D,X
@@ -2435,12 +1920,6 @@ SKIP cmpy I.ICLM Repeat (entry point of skip routine)
  coma set Carry (not found)
 SKIP9 puls D,X,U,PC Restore registers, return
 
- ifeq L2B09 nothing uses it
-LREFS fcb T.GOTO,T.GOSB,T.LREF,$FF
-NXLNRF pshs D,X,U Save regs
- leau >LREFS,PCR
- bra SKIP
- endc
 
 STMTS fcb T.BKSL
 EOLTOK fcb T.EOL,$FF
@@ -2598,9 +2077,7 @@ SKPTBL equ *
  fcb N$SKP0+U$SKP0 T.ASG1
  fcb N$SKP0+U$SKP0 T.CNUM
  fcb N$SKP2+U$SKP2 T.LBNE
- ifne L2B09
  fcb N$SKP0+U$SKP0 T.FAR
- endc
 
 * Operand Tokens
  fcb N$SKP2+U$SVAR T.SBYT

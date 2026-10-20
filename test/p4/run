@@ -7,7 +7,7 @@ mfree >mfree1
 mfree >mfree2
 echo == same program packed, under stock RunB
 load /dd/l2b09/p4pk
-/dd/l2b09/runb #24k p4main >runb.out >>runb.err
+/dd/cmds/runb #24k p4main >runb.out >>runb.err
 echo == benchmark
 /dd/l2b09/l2b09run #16k p4prog.b09 p4bench <bye.cmds >bench.out >>bench.err
 unlink p4main p4bench

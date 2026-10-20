@@ -16,9 +16,7 @@ EXPRENT equ *
  fdb RLCMP-EXPRENT Real compare
  fdb FIX-EXPRENT Teat for real & make integer
  fdb FLOAT-EXPRENT Test for integer & make real
- ifne L2B09
  fdb L2FMAP-EXPRENT Map far block into the data window
- endc
 
 ***************
 * External Subroutine Refs
@@ -29,10 +27,8 @@ J$STER jsr M.STMTS
  fcb X$STER  statement error exit
 J$CVIO jsr M.CNVIO
  fcb X$CVIO  call cnvio
- ifne L2B09
 J$NEAR jsr M.STMTS
  fcb X$NEAR Refuse a far element
- endc
 
  ifne INCLUDED&EDITOR
 J$TEXP jsr M.COMAND
@@ -348,7 +344,6 @@ VARR02 ldd ,X++ Get symbol table offset
  tfr D,U Copy array description ptr
  ldd  ,U Get array base offset
  std I.OFFS Save it
- ifne L2B09
  lda 2,U
  inca far array mark ($FF)?
  bne L2VR01
@@ -357,9 +352,6 @@ VARR02 ldd ,X++ Get symbol table offset
  tst I.VRFL field?
  lbne L2FVRF ..no; far
 L2VR01 lda 1,S Get subscript count
- else
- lda 1,S Get subscript count
- endc
  bne VARR03 bra if count > 0
  lda #S.RCRD Treat unsubscripted array as record
  sta  ,S return TYPE
@@ -2921,9 +2913,7 @@ VALFNC ldd I.IOBG Get I/O buffer ptrs
 *   Variable Address Function
 
 ADRFNC lbsr EVAL20 Call eval recursively
- ifne L2B09
  lbsr J$NEAR no ADDR of far elements
- endc
  leay -OPSIZE,Y Make room on opstack
  stu 1,Y Store variable addr
 ADRF10 lda #S.INT Set TYPE
@@ -4407,7 +4397,6 @@ INIT1 ldd ,X++ Copy values
  endc
  puls B,X,Y,PC
 
- ifne L2B09
  ttl FAR ARRAYS
  pag
 ***************
@@ -4619,7 +4608,6 @@ L2FME stb 1,S
  orcc #1
  rts
 
- endc
 
 * End of Exprsn
 

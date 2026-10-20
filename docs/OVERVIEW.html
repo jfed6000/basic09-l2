@@ -104,7 +104,7 @@ nav ul { padding-left: 18px; }
 <h2 id="host">On the host (development)</h2>
 <div class="tablewrap"><table>
 <tr><th>Part</th><th>What it is</th></tr>
-<tr><td><code>src/</code></td><td>The Microware Basic09 source. Every l2basic09 change sits behind <code>ifne L2B09</code>, so the stock builds stay byte-identical (<code>make check</code>); <code>-DL2B09RT</code> builds the runtime without the compiler, <code>-DL2B09CC</code> the compiler. To be forked into basic09-l2's own source (Compatibility, below).</td></tr>
+<tr><td><code>src/</code></td><td>basic09-l2's own source, forked from Microware's Basic09 on 2026-10-20 (<code>src/MICROWARE.md</code>): <code>-DL2B09RT</code> builds the runtime without the compiler, <code>-DL2B09CC</code> the compiler. Until the fork every change sat behind <code>ifne L2B09</code> and the stock builds stayed byte-identical; the pristine source is in the NitrOS-9 tree.</td></tr>
 <tr><td><code>os9/basic09-l2/</code>, <code>os9/l2b09help/</code></td><td>The editor (18 files, about 11,100 lines) and the help browser.</td></tr>
 <tr><td><code>help/*.txt</code>, <code>tools/mkhelp.py</code></td><td>The help pages and their compiler, which checks that every keyword and error has a page and every link a target.</td></tr>
 <tr><td><code>tools/</code></td><td>The emulator runner (<code>emu-wildbits.sh</code>), key scripts (<code>keys.py</code>), the editor model for expected files (<code>edmodel.py</code>), the keyword table generator (<code>mkkw.py</code>), <code>bootfile-add.py</code>, the MAME profiler (<code>b09prof.py</code>) and the compiler-frame checker (<code>ccframes.py</code>).</td></tr>
@@ -214,7 +214,7 @@ nav ul { padding-left: 18px; }
 <p>The full note is <a href="COMPILER.md">COMPILER.md</a>.</p>
 
 <h2 id="compat">Compatibility</h2>
-<p>Decided 2026-10-20, together with forking the source (after the merge, a script will turn Microware's source into basic09-l2's own, without the stock builds):</p>
+<p>Decided 2026-10-20, together with forking the source, which was done the same day: <code>tools/l2fork.py</code> turned Microware's source into basic09-l2's own, dropping the stock-only code (777 lines, the line editor among them), and every basic09-l2 program came out byte-identical. The stock builds and <code>make check</code> are gone; the rule is now:</p>
 <ul>
 <li><strong>Old programs must run on basic09-l2.</strong> Basic09 source files load, compile and run unchanged (the compiler is Microware's own code). PACKed I-Code modules, from stock Basic09 or built for stock RunB, run under <code>l2b09run</code>, by name and with arguments.</li>
 <li><strong>The other way is best effort.</strong> PACK output of a program that uses no new feature should still run under stock RunB. Programs using new features (far arrays, banking, and later GLOBAL, labels, <code>MODULE.Procedure</code>) may need basic09-l2; PACK refuses what stock RunB cannot run.</li>

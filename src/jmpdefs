@@ -22,7 +22,6 @@ X$PBLN rmb 2 Print a bound line
 X$DBUG rmb 2 Enter debug state
 X$TEXP rmb 2 Trace expression address
 X$TEXR rmb 2 Trace result
- ifne L2B09
 X$L2EV rmb 2 Write a protocol event line
 * for the overlay module l2b09ovl (PACK)
 X$BPZ  rmb 2 Clear all breakpoints
@@ -34,7 +33,6 @@ X$NXVR rmb 2 Next variable reference in I-code
 * (the banner)
 X$NWLN rmb 2 Reset the I/O buffer
 X$STEL rmb 2 Put a string in it and print it
- endc
  endc
 
 *** Compiler Entries
@@ -68,12 +66,10 @@ X$STER rmb 2 Statement error exit
 X$ISTM rmb 2 Interpret single statement
 X$TRON rmb 2 Turn on trace mode
 X$TROF rmb 2 Turn off trace mode
- ifne L2B09
 X$L2RS rmb 2 Resolve procedure ptr (map banked procedure)
 X$L2MW rmb 2 Map far block into the code window
 X$FALL rmb 2 Free all far arrays
 X$NEAR rmb 2 Refuse a far element
- endc
 
 *** Expression Interpreter Entries
  org 0
@@ -85,9 +81,7 @@ X$FDIV rmb 2 Real divide
 X$FCMP rmb 2 Real compare
 X$FIX rmb 2 Fix real
 X$FLOT rmb 2 Float integer
- ifne L2B09
 X$FMAP rmb 2 Map far block into the data window
- endc
 
 *** Conversion & I/O Entries
  org 0

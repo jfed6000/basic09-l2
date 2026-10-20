@@ -1,23 +1,25 @@
 * l2basic09 P1: drive stock basic09 from scripts, run packed modules with runb
+* stock basic09 and runb are the image's own (/dd/CMDS), the reference
+* programs since the fork of the source (src/MICROWARE.md)
 -x
 chd /dd/l2b09
 echo == compile: basic09 driven by p1.cmds
 date -t
-/dd/l2b09/basic09 #16k <p1.cmds >b09.out >>b09.err
+/dd/cmds/basic09 #16k <p1.cmds >b09.out >>b09.err
 date -t
 echo == packed module
 ident -s /dd/l2b09/p1main
 echo == run packed module with runb
 load /dd/l2b09/p1main
 date -t
-/dd/l2b09/runb #24k p1main
+/dd/cmds/runb #24k p1main
 date -t
 mfree
 smap
 echo == anonymous pipe: list p1a.cmds piped into basic09
-list p1a.cmds ! /dd/l2b09/basic09 #16k >b09a.out >>b09a.err
+list p1a.cmds ! /dd/cmds/basic09 #16k >b09a.out >>b09a.err
 echo == runb on a second terminal /vt2
 date -t
-/dd/l2b09/runb #24k p1main <>>>/vt2
+/dd/cmds/runb #24k p1main <>>>/vt2
 echo == done
 date -t

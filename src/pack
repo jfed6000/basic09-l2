@@ -4,20 +4,16 @@
 *   saves procedure icode suitable for Roming
 
 DUMP equ *
- ifne L2B09
  lbsr L2BPZ PACK strips procedures: breakpoints go
- endc
  lbsr DEFILE Parse procedure names, get pathnname
  ldu I.OPBG
  bra DUMP02 Repeat
 DUMP01 ldy  ,Y get proc addr
  tst M$TYPE,Y internal (un-typed) procedure?
  lbne ERABRT ..no; illegal to compile
- ifne L2B09
  lda P.STAT,Y
  bita #P.BANK+P.FAR PACK rebinds in place: not for banked procedures;
  lbne ERABRT RunB has no far arrays
- endc
  lda P.STAT,Y
  rora any errors in procedure?
  lbcs ERABRT ..Yes; abort

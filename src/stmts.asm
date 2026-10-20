@@ -17,12 +17,10 @@ STMTENT equ *
  fdb LETSTM-STMTENT Single statement execution
  fdb TONSTM-STMTENT Trace on statement
  fdb TOFSTM-STMTENT Trace off statement
- ifne L2B09
  fdb L2RSLV-STMTENT Resolve procedure ptr
  fdb L2MAPW-STMTENT Map far block into the code window
  fdb L2FALL-STMTENT Free all far arrays
  fdb L2NEAR-STMTENT Refuse a far element
- endc
 
 ***************
 * External Subroutine References
@@ -57,10 +55,8 @@ J$FLOT jsr M.EXPRSN
  fcb X$FLOT Float integer
 J$EXPI jsr M.EXPRSN
  fcb X$EXPI Initialize expression
- ifne L2B09
 J$FMAP jsr M.EXPRSN
  fcb X$FMAP Map far block into the data window
- endc
 
 J$CVIO jsr M.CNVIO
  fcb X$CVIO  Call cnvio
@@ -68,16 +64,10 @@ J$CVIO jsr M.CNVIO
  ifne INCLUDED&EDITOR
 J$DBUG jsr M.COMAND
  fcb X$DBUG Enter DEBUG state
- ifne L2B09
 J$L2EV jsr M.COMAND
  fcb X$L2EV Write a protocol event line
- endc
 J$PBLN jsr M.COMAND
  fcb X$PBLN Print a bound line
- ifeq L2B09 unused
-J$TEXP jsr M.COMAND
- fcb X$TEXP Trace expression address
- endc
 J$TEXR jsr M.COMAND
  fcb X$TEXR Trace result
  endc
@@ -199,10 +189,8 @@ EXEC20 std G.VARS Update free space
  sts U.S,U Save current stack
  std U.U,U Save caller's storage address
  stx U.PROC,U Set procedure address
- ifne L2B09
  lbsr L2RSLV banked? map it; (X)=real address
  lbcs EXCERR
- endc
  ldd #1
  std I.BASE Default array base to one
  sta U.DEG,U Default trig mode to radians
@@ -280,12 +268,10 @@ SETGLB stx I.APRC Set active procedure address
 * Local: U,Y,D,CC Destroyed
 
 STMLUP stx I.ICPT Set I-Code ptr to current line
- ifne L2B09
  tst L2NBP any breakpoints?
  beq STML05
  lbsr L2BPCK stop here if one is set on this statement
 STML05 equ *
- endc
  lda I.RUNM Continuous execution?
  beq STML20 bra if so
  bpl STML10 bra if not DEBUG call
@@ -329,9 +315,7 @@ ENDSTM ldb  ,X get next TOKEN
  beq ENDS10 ..yes; don't print anything
  lbsr PRTSTM Print message if there is one
 ENDS10 lbsr TOFSTM Turn off trace
- ifne L2B09
  lbsr L2FPOP free this procedure's far arrays
- endc
  ldu I.ASTR Get storage base address
  lds U.S,U Reset stack
  ldu U.U,U Get caller's storage address
@@ -818,9 +802,7 @@ FORRL ldd ,X++ Get storage offset
 
 ASGSTM jsr J$EVAL Get destination address
 ASGST0 equ *
- ifne L2B09
  lbsr L2PIN note a far destination
- endc
  cmpa #S.STR need to save size?
  bcs *+6 branch if not
  pshs U save address
@@ -840,9 +822,7 @@ ASGST0 equ *
 * Global: None
 
 ASGDIS equ *
- ifne L2B09
  lbsr L2UNPN map a far destination back in
- endc
  puls A Get TYPE
  asla TYPE*2
  leau <ASGBRA,PCR Get ptr to bra table
@@ -1271,7 +1251,6 @@ INPS30 bsr STROUT
  lda I.IPTH
  sta I.CNCH
 INPS35 equ *
- ifne L2B09
  lda I.CNCH reading the program's terminal (not a file)?
  cmpa I.IPTH
  bne INPS36
@@ -1282,7 +1261,6 @@ INPS35 equ *
  lbsr J$L2EV
  puls X,Y
 INPS36 equ *
- endc
  ldb #V$INLN Get input line code
  lbsr J$CVIO Call conversion & I/O
  bcc INPS40 ..continue if no error
@@ -1366,9 +1344,7 @@ ASGV40 addd I.ASTR Make offset into ptr
  lda -3,X Get TOKEN
  suba #T.SBYT Change TOKEN to TYPE
 ASGV50 equ *
- ifne L2B09
  lbsr L2PIN note a far destination
- endc
  puls Y Get return address
  cmpa #S.STR need to save size?
  bcs *+6 branch if not
@@ -1708,15 +1684,6 @@ CHXSTM jsr J$EVAL
 * Subroutine SPATH
 *   Set Variable to Path
 
- ifeq L2B09 nothing calls it
-SPATH lbsr ASGVAR Get variable address
- ldy I.OPBG Get opstack ptr
- leay -6,Y Get room
- ldb I.CNCH Get path number
- clra
- std 1,Y Put in stack
- lbra ASGDIS
- endc
 
 ***************
 * Subroutine CHNSTM
@@ -1726,9 +1693,7 @@ CHNSTM jsr J$EVAL Get module name
  ldy 1,Y extract name address
  pshs x,y,u
  lbsr J$KALL kills all external procs
- ifne L2B09
  lbsr L2FALL far arrays would outlive the process
- endc
  puls x,y,u
  bsr SYSSUB Set up for system call
  sts TEMP borrow compiler's TEMP variable
@@ -1832,17 +1797,13 @@ DEBUG equ *
  lbsr J$PBLN Print line
  ldb I.ERR Get error code
  lbsr J$EREX Print error message
- ifne L2B09
  ldb I.ERR
  ldy I.ICPT
  leax <L2ERRE,PCR "%ERROR <code> <proc> <line>"
  lbsr J$L2EV
- endc
  lbra J$DBUG call debugger; then return
- ifne L2B09
 L2ERRE fcs "%ERROR"
 L2INPE fcs "%INPUT"
- endc
  else
  lbsr J$KALL kill all external procs
  ldb I.ERR Get error code
@@ -2004,9 +1965,7 @@ RUNS20 ldx  ,S Retrieve I-Code ptr
  std  ,S Save procedure ptr
  ldu I.ASTR Get storage base
  lda I.RUNM Get current run mode
- ifne L2B09
  anda #$7F a pending stop (step) is for the callee, not the return
- endc
  sta U.RUNM,U Save it
  ldb I.BASE+1 Get array base lsb
  stb U.BASE,U Save it
@@ -2016,11 +1975,7 @@ RUNS20 ldx  ,S Retrieve I-Code ptr
  std U.PRLM,U Save it
  ldd I.DATA Get data ptr
  std U.DATA,U Save it
- ifne L2B09
  lbsr RPARAM Process parameters
- else
- bsr RPARAM Process parameters
- endc
  stx U.ICPT,U Save I-Code ptr
  puls X Retrieve procedure ptr
  lda M$TYPE,X Get procedure TYPE
@@ -2060,19 +2015,12 @@ RUNS30 ldd U.S,U Get data stack ptr
  bcc RUNS50 continue if no error
  bra RUNERR signal runtime error
 RUNS40 lbsr TOFSTM Turn off trace
- ifeq L2B09
- lda I.RUNM
- anda #$7F disable step mode
- sta I.RUNM
- else
  tst L2OVRU stepping over this call?
  beq RUNS42 ..no; a step stops in the callee
  lsl I.RUNM
  lsr I.RUNM
 RUNS42 equ *
- endc
  lbsr EXECUT Execute basic09 procedure
- ifne L2B09
  lda I.RUNM a stop still pending (stepping out of the callee)
  anda #$80
  cmpu L2OVRU back in the procedure that stepped over the call?
@@ -2085,14 +2033,6 @@ RUNS44 ora U.RUNM,U or one set by the debugger's BREAK <procedure>
  lbsr TONSTM Turn on trace
  puls A
 RUNS45 sta I.RUNM
- else
- lda U.RUNM,U Get old run mode
- bita #1 is trace on?
- beq RUNS50 bra if not
- lbsr TONSTM Turn on trace
- lda U.RUNM,U restore old run mode
- sta I.RUNM Restore it
- endc
 RUNS50 ldd U.STBG,U Get string stack beginning
  std I.STBG Restore it
  ldd U.PRLM,U Get parameter limit
@@ -2103,10 +2043,8 @@ RUNS50 ldd U.STBG,U Get string stack beginning
  sex Set Msb
  std I.BASE Restore array base
  ldx U.PROC,U Get procedure ptr
- ifne L2B09
  lbsr L2RSLV caller banked? map it back
  bcs RUNERR
- endc
  lbsr SETGLB Set I.xxxx
  ldx U.ICPT,U Restore I-Code ptr
  ldd I.OPSP Reset free space
@@ -2158,9 +2096,7 @@ RPAR20 ldu 1,Y Get ptr to string
  bra RPAR30
 RPAR25 leax 1,X Skip complex TOKEN
  jsr J$EVAL Call eval
- ifne L2B09
  lbsr L2NEAR far elements can't be passed by reference
- endc
 RPAR30 puls Y Retrieve count ptr
  inc  ,Y Count parameter
  cmpa #S.STR need to save size?
@@ -2219,7 +2155,6 @@ INIT lbsr J$EXPI Init expr
  stx D.STMT
  rts
 
- ifne L2B09
  ttl CODE BANKING
  pag
 ***************
@@ -2522,7 +2457,6 @@ L2UP2 addd  ,X
 L2UP9 puls D,X,U,PC
 L2UPOV ldb #M$STOV Err: string stack overflow
  lbra EXCERR
- endc
 
 * End of Statement Interpreter routines
 

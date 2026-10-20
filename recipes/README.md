@@ -53,7 +53,7 @@ Notes:
   exports and builds everything again (about three minutes).
 - The top-level Makefile runs `export-main.sh` whenever it is read (except
   for `make clean`), and its default `NITROS9DIR` is the copy, so `defs`,
-  the pipe modules and `make check`'s reference builds all come from it.
+  the pipe modules and the stock image all come from it.
 - The K2 OS9Boot with the pipes is 31,744 bytes; the tree's limit is 32,256.
 - The stock images are 262,134 blocks. The emulated SD card accepts only
   sizes it can express, so `tools/emu-wildbits.sh` pads its copy to a power
