@@ -1,8 +1,12 @@
-* l2basic09 P8 step 2: l2b09run forks l2b09cc and takes in its
-* procedures.  CCCMP compares each with the one LOAD made (byte for
-* byte); CCLOAD puts them in the workspace, to run and list.
+* l2basic09 P8 steps 3 and 4: l2b09run has no compiler; it forks
+* l2b09cc at start-up and LOAD goes through it.  The procedures run,
+* list and replace older ones; KILL is passed on, so the compiler's
+* copies go too (startrek fits after kill*); l2b09cc exits with us.
 -x
 chd /dd/l2b09
 echo >term.out
 /dd/l2b09/l2b09run #32k -t=/dd/l2b09/term.out <c.cmds >c.out >>c.err
 procs >procs.out
+* slot 7: l2b09run's code fits there now, so a 40K workspace starts
+echo >term40.out
+/dd/l2b09/l2b09run #40k -t=/dd/l2b09/term40.out <w.cmds >w.out >>w.err

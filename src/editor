@@ -18,7 +18,11 @@ DEBUG pshs D,X,Y,U Preserve registers
  cmpa #M$SSOV System stack overflow?
  beq HALT ..Yes; exit
  tst DEBUGGER already in Debugger?
+ ifne L2B09RT
+ lbne CONTIN99 ..Yes; don't enter recursively
+ else
  bne CONTIN99 ..Yes; don't enter recursively
+ endc
  inc DEBUGGER Signal Debugger Entered
  ifne L2B09
  clr L2OVRU any step over ends at a stop (no storage is below $100)
@@ -64,6 +68,10 @@ HALT10 cmpa BASOUT command output path?
  ifne L2B09
  cmpa CMDIN home command input path?
  beq HALT20 ..Yes; don't close it
+ ifne L2B09RT
+ lbsr L2CCPA one of the pipes to l2b09cc?
+ beq HALT20 ..Yes; don't close it
+ endc
  endc
  OS9 I$Close Close all but std I/O paths
 HALT20 inca
@@ -204,7 +212,11 @@ LSTBL2 lbsr PUTCHR
  tfr X,D
  subd I.ICBG Get offset address of line
  ldx I.IOPT
+ ifne L2B09RT
+ lbsr L2P4HX Put it in I/O buffer
+ else
  lbsr J$PHEX Put it in I/O buffer
+ endc
  lda #V$SPAC
  sta ,X+
  stx I.IOPT
@@ -257,7 +269,23 @@ DIREX0 equ *
  coma COMPILER Can't handle compiled state
  rts
 
-DIREX1 ldy I.IOBG
+DIREX1 equ *
+ ifne L2B09RT
+ lbsr L2STM compiled and bound by l2b09cc
+ cmpd #0
+ beq DIREX2 ..errors (shown already)
+ bsr SVCRIT Save critical global variables
+ ldx I.STBG
+ stx I.ICBG
+ stx I.ICPT
+ leax D,X
+ stx I.ICLM
+ stx I.STBG
+ bra DIREX3
+DIREX2 clra
+ rts
+ else
+ ldy I.IOBG
  lbsr J$CMPL Compile the line
  bsr SVCRIT Save critical global variables
  ldx I.STBG
@@ -279,7 +307,8 @@ DIREX1 ldy I.IOBG
  endc
  tsta ANY Binder errors?
  bne RSCRIT ..Yes; avoid running
- leax <RSCRIT,PCR
+ endc
+DIREX3 leax <RSCRIT,PCR
  lbsr SETEXT Set error exit for interpreter
  ldx I.ICBG
  lbsr J$ISTM Interpret statement

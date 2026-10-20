@@ -59,6 +59,11 @@ def main():
 
     objs = []
     for module in modules:
+        mdefs = defs
+        if '-DL2B09RT=1' in defs and module in ('compil', 'binder'):
+            # l2b09run without the compiler (docs/COMPILER.md): compil and
+            # binder keep only what the interpreter uses, as in RunB
+            mdefs = defs + ['-DINCLUDED=6']
         obj = os.path.join(build, module)
         cmd = [
             'lwasm',
@@ -68,7 +73,7 @@ def main():
             '--pragma=pcaspcr,nosymbolcase,condundefzero,undefextern,dollarnotlocal,noforwardrefmax',
             f'--includedir={src}',
             f'--includedir={defs_dir}',
-            *defs,
+            *mdefs,
             f'-o{obj}',
             os.path.join(src, f'{module}.asm'),
         ]

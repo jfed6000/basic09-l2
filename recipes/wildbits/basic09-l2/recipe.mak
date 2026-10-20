@@ -19,5 +19,5 @@ BOOTMODS_EXTRA += pipeman piper pipe
 # build/main/ of the repository (B09L2DIR, set by the top-level
 # Makefile); the makefile copies them into the image
 B09L2BUILD = $(B09L2DIR)/build/main
-B09L2MODS = basic09-l2 l2b09run l2b09ovl l2b09help syscall inkey farmem
+B09L2MODS = basic09-l2 l2b09run l2b09cc l2b09ovl l2b09help syscall inkey farmem
 all: b09l2

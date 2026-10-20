@@ -1,16 +1,11 @@
 load n200.b09
-cccmp n200.b09
 load errs.b09
-cccmp errs.b09
 load p8cprog.b09
-cccmp p8cprog.b09
-kill*
-ccload p8cprog.b09
 run p8cmain
 list p8csub
-ccload p8cprog.b09
+load p8cprog.b09
 run p8cmain
 kill*
-ccload startrek.b09
+load startrek.b09
 list RAND8I
 bye

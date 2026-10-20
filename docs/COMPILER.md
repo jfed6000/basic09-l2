@@ -1,6 +1,6 @@
 # A separate compiler process (design note)
 
-Status (2026-10-20): steps 1 and 2 are built on the branch `separate_compiler`: `l2b09cc` compiles and sends procedures (`make p8btest`), and `l2b09run` takes them in with CCLOAD, or compares them with its own with CCCMP (`make p8ctest`). It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
+Status (2026-10-20): steps 1 to 4 are built on the branch `separate_compiler`. `l2b09run` has no compiler any more (19,477 bytes, down from 23,945): it forks `l2b09cc` at start-up and LOAD, the arguments of RUN, the debugger's statements and PACK go to it. All tests pass, and a 40K workspace starts (`make p8ctest`). Step 5 (using the room) is next. It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
 
 ## The idea
 
@@ -117,14 +117,42 @@ Details:
 - **The current directories** are the runtime's at the moment of the first fork; a later `chd` or `chx` in the runtime does not reach the compiler yet.
 - **Size:** the receiver costs about 500 bytes, so `l2b09run` is 24,480 bytes, 96 below the limit. Step 3 needs room before it can add the run-argument and debugger routes: CCCMP can go once LOAD itself uses the compiler, and compil and binder are the big win (step 4).
 
+## How it works now (steps 3 and 4)
+
+**`l2b09run` is built with `-DL2B09RT=1`.** The build script then assembles compil and binder in their RunB form (`-DINCLUDED=6` for those two only): compil keeps `NAMSYM`, `SEARC0`, `MOVDWN` and the literal-only `CMPRAM` (635 bytes), binder keeps an empty `PRPRAM` (19). `l2b09run` went from 23,945 to 19,477 bytes, so its code can use slot 7: `#40k` starts and runs (`make p8ctest`). Stock builds are unchanged (`make check`).
+
+**At start-up** `L2CCST` forks `l2b09cc` with our workspace size (at most 32K, below) and our `-b`, with pipe A as its stdin and pipe B as its stdout; its stderr is ours. Both pipe paths are kept in `L2CCP`. Without `l2b09cc`, LOAD gives ERROR #216.
+
+**What goes to the compiler** (`L2FWD` sends a line, `L2CCLP` reads its answers until `%DONE`):
+- **LOAD** sends `load <file>`; `%PROC` frames go into the workspace as in step 2 (an old procedure of the same name is killed through `KILL0`, by directory entry), with `-b` banking.
+- **PACK** is done there entirely (it has the same procedures). If it asks to rewrite a file, it writes `%ASK` on stdout as well, and `l2b09run` passes it one line of its own input.
+- **RUN's arguments:** with none, `l2b09run` writes the I-Code `T.EOL` itself. Otherwise it sends `ccprm <procedure> <arguments>`; the compiler compiles and binds them as INTERP did (`CMPRAM`, `PRPRAM`) and answers `%ICODE`, 2 bytes of length, and the bound I-Code (length 0: errors, shown by the compiler).
+- **The debugger's statements** (PRINT, LET, the editor's Evaluate and watches): `ccstm <procedure> <statement>`; the compiler sets up its copy of the procedure as `SETGLB` would (mapping it in first if it is banked), compiles and binds the statement in debugger mode as DIREXQ did, and answers `%ICODE`. `l2b09run` runs it with `X$ISTM` as before.
+- **KILL, MEM, CHD and CHX** are done here, then passed on, so that the compiler's copies and settings stay as ours. MEM passes on `mem <the size now>`, because its own output overwrites the command line. Lines are passed on with bit 7 cleared, because `J$NAME` marks the last character of a name in place.
+
+**In `l2b09cc` (`-DL2B09CC=1`)** there is no prompt, banner, name line or MEM size line (its stderr is the editor's), and it has the two commands `ccprm` and `ccstm`.
+
+**Found on the way:**
+- `HALT` (Q, and an abort) closes every path from 3 up except the command paths; it now skips the two pipes (`L2CCPA`), or the compiler saw the end of its input and exited.
+- `CMPRAM` used to clear the `DEBUGGER` flag on every RUN; after Q in the debugger the next RUN relied on it, so `L2PRM` clears it too.
+- `DIRSCH` destroys B, so the compiler keeps `J$NAME`'s name length across it.
+- LIST no longer rebinds a procedure with errors to show them again (the compiler showed them when it loaded it).
+
+**Speed:** loading startrek (`make loadtime`) takes about 4 s against 3 s with the built-in compiler: the fork of `l2b09cc` and the pipe copy. Programs run as fast as before.
+
+**Still open:**
+- **`l2b09cc` is 24,283 bytes,** too big for slot 7, so its workspace is capped at 32K (it holds only the procedures, not the program's variables and stacks). Trimming what it never uses (the interpreter's debugger commands, RUN, LIST) would let it grow too.
+- **RUN of an external (packed) module with arguments** needs the compiler to know the module; it gives an error now.
+- **Room:** `l2b09run` has 4,331 bytes left below 23,808 (5,099 below 24,576), for step 5.
+
 ## Steps
 
 1. **Build `l2b09cc`** from the same sources. Done 2026-10-20 (above).
 2. **Both paths side by side** (done 2026-10-20, above).
    - `l2b09run` learns `%PROC`, but keeps its own compiler.
    - A test option compiles each loaded procedure both ways and compares the bytes, which must be identical. That proves the compiler process before anything depends on it.
-3. **Move `run` arguments and the debugger's snippets** to the compiler (routes 1 and 2), with tests for each. `make p8atest` is the reference: the debugger's PRINT and LET (conversions, arrays, a record field, strings, errors 49 and 71) and `run <proc>(<args>)` (expressions, a long string, too few arguments, and stock Basic09's unchecked argument types, whose bytes must stay the same).
-4. **Remove compil and binder from `l2b09run`.**
+3. **Move `run` arguments and the debugger's snippets** (done 2026-10-20, with step 4, above) to the compiler (routes 1 and 2), with tests for each. `make p8atest` is the reference: the debugger's PRINT and LET (conversions, arrays, a record field, strings, errors 49 and 71) and `run <proc>(<args>)` (expressions, a long string, too few arguments, and stock Basic09's unchecked argument types, whose bytes must stay the same).
+4. **Remove compil and binder from `l2b09run`** (done 2026-10-20).
    - Measure, then re-check the slot-7 placement. Code at or under 23,808 bytes should let `#40k` start.
    - Update PROTOCOL.md (216 for `load`), CLAUDE.md and the tests' `modules` files.
 5. **Then use the room,** and the compiler's own 64K: GLOBAL storage, labels, `MODULE.Procedure` syntax, and better error messages (ARCHITECTURE.md lists them).

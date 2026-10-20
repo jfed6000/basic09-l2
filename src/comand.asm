@@ -1041,18 +1041,22 @@ CMDVRB equ *
  fcb V$CR+$80
 
  ifne L2B09
- fdb 15 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP, CCLOAD, CCCMP)
+ ifne L2B09CC
+ fdb 15 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP, CCPRM, CCSTM)
+ else
+ fdb 13 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP)
+ endc
  else
  fdb 14 number of alphabetic entries
  endc
  fcb 2 number of skip bytes per entry
  fdb BYEBYE-*
  fcs "BYE"
- ifne L2B09
- fdb CCLOAD-*
- fcs "CCLOAD"
- fdb CCCMP-*
- fcs "CCCMP"
+ ifne L2B09CC
+ fdb CCPRM-*
+ fcs "CCPRM"
+ fdb CCSTM-*
+ fcs "CCSTM"
  endc
  ifeq L2B09
  fdb DIR-*
@@ -1068,7 +1072,11 @@ CMDVRB equ *
  fcs "LIST"
  fdb INTERP-*
  fcs "RUN"
+ ifne L2B09RT (done here, then passed on to l2b09cc)
+ fdb L2KILL-*
+ else
  fdb KILLER-*
+ endc
  fcs "KILL"
  fdb SAVE-*
  fcs "SAVE"
@@ -1080,11 +1088,23 @@ CMDVRB equ *
  endc
  fdb DUMP-*
  fcs "PACK"
+ ifne L2B09RT (done here, then passed on to l2b09cc)
+ fdb L2MEM-*
+ else
  fdb CHGMEM-*
+ endc
  fcs "MEM"
+ ifne L2B09RT (done here, then passed on to l2b09cc)
+ fdb L2CHD-*
+ else
  fdb CHDDIR-*
+ endc
  fcs "CHD"
+ ifne L2B09RT (done here, then passed on to l2b09cc)
+ fdb L2CHX-*
+ else
  fdb CHXDIR-*
+ endc
  fcs "CHX"
  ifne L2B09
  fdb BPSET-*
@@ -1355,6 +1375,11 @@ START15 lda #$7E JMP Opcode
  ifne L2B09
  lbsr L2OPTS Parse l2b09run options
  lbsr L2GARD keep the data window out of the top slot
+ ifne L2B09RT
+ pshs Y (the rest of our parameters)
+ lbsr L2CCST start the compiler, l2b09cc
+ puls Y
+ endc
  lda CMDIN
  sta BASINP Command input from home path
  endc
@@ -1447,8 +1472,10 @@ COMAND equ *
  leax CPYRIT,PCR
  bsr CMDER1 print copyright msg
  endc
+ ifeq L2B09CC (l2b09cc: its stderr is the editor's)
  leax B09NAM,PCR Basic09 message
  bsr CMDER1 print "Basic09"
+ endc
 COMAN0 equ *
  ifne L2B09
  lbsr J$FALL no program is running any more
@@ -1461,7 +1488,11 @@ COMAN0 equ *
  leax READY,PCR Ready message
  bsr CMDER1 (prtlin) print message
  endc
+ ifne L2B09CC
+ ldx #0 no prompt: %DONE is on stdout
+ else
  leax CMDPMT,PCR command mode prompt
+ endc
  leay CMDVRB,PCR command verb table
  clr PRTCTL
  bsr RUNCMD process command
@@ -1681,6 +1712,7 @@ PRCRE1 leay DEFNAM,PCR get default name
 PRCRE9 rts RETURN
 
  ifne INCLUDED&EDITOR
+ ifeq L2B09RT (l2b09run: LOAD is done by l2b09cc)
 ***************
 * Subroutine Load
 *   Load A "Save" File
@@ -1759,6 +1791,7 @@ LOAD35 lda ,X+
  stx I.IOBG Reset I/O buffer addr
  stx I.IOPT
  bra LOAD1 Go load the new procedure
+ endc
 
 INLINE lda BASINP get Basic09's working path
  ldx I.IOBG
@@ -1787,8 +1820,10 @@ PRCLI9 rts RETURN to user
 *   which assembles src/pack); L2OVLY loads it and calls the entry.
 *   l2b09run has no DIR or RENAME (the editor does not use them).
 
+ ifeq L2B09RT (l2b09run: PACK is done by l2b09cc)
 DUMP ldb #0 entry 0: PACK
 *     (Fall Through to L2OVLY)
+ endc
 
 ***************
 * Subroutine L2OVLY
@@ -1974,8 +2009,10 @@ LIST12 tst PRTCTL doing a save?
  bita #P.BANK never rebind a banked procedure in place
  bne LIST15
  endc
+ ifeq L2B09RT (l2b09cc showed them)
  lbsr UNBIND Unbind procedure
  lbsr J$BIND Rebind it (show errors)
+ endc
 LIST15 puls Y Restore proc list ptr
  ifne L2B09
  ldx [,Y] the current procedure is the stub, not the window
@@ -2022,6 +2059,12 @@ OPNCH1 ldd  ,S get mode
  ldy #OVWLEN
  lda BASOUT to 'normal' command path
  OS9 I$WritLn File exists, rewrite?:
+ ifne L2B09CC
+ leax L2ASTX,PCR and to l2b09run, which passes the answer on
+ ldy #5
+ lda #1
+ OS9 I$Write
+ endc
  ifne L2B09
  lda CMDIN from home command input
  else
@@ -2086,7 +2129,12 @@ INTER1 lbsr DIRLNK Try to find procedure
 INTE30 lda P.STAT,X
  rora ANY Errors in procedure?
  bcs ERABRT Run aborted - procedure errors
-INTE40 lbsr J$CPRM Call parameter list
+INTE40 equ *
+ ifne L2B09RT
+ lbsr L2PRM the arguments, from l2b09cc
+ bcs ERABRT ..errors
+ else
+ lbsr J$CPRM Call parameter list
  ldy I.STBG get ptr to parameter list
  ldb  ,Y test parameter
  cmpb #T.ERRL Error?
@@ -2106,6 +2154,7 @@ INTE40 lbsr J$CPRM Call parameter list
  lda P.STAT,X
  rora ANY Errors in run stmt?
  bcs ERABRT Syntax errors - abort
+ endc
  leas 258,S Discard opstack area
  ldd G.WSPA get workspace beginning
  addd G.WSPS Add workspace size
@@ -2652,11 +2701,13 @@ L2OPTX pshs B
 L2OPTE ldb #E$IllArg illegal argument
  bra L2OPTX
 L2OPT9 leay -1,Y back up to first non-option char
+ ifeq L2B09CC (l2b09cc: no banner)
  lda  ,Y nothing follows: command mode, which starts
  cmpa #V$CR with the banner (in l2b09ovl; not shown if
  bne L2OPT8 there is no slot for it)
  ldb #2
  bsr L2OVSC
+ endc
 L2OPT8 rts
 
 * L2OVSC: at start-up, call l2b09ovl's entry B with (Y), then unlink
@@ -2773,6 +2824,133 @@ L2FRE1 ldx FARBAS
  clr WINBLK
  clr WINBLK+1
 L2FRE9 puls D,X,U,PC
+
+***************
+ ifne L2B09CC
+* CCPRM <procedure> <arguments>  (from l2b09run's RUN)
+*   Compile and bind the arguments, as INTERP does, and send them:
+*   %ICODE, 2 bytes of length, the bound I-Code (length 0: errors,
+*   which are shown here).
+
+CCPRM lbsr L2CCPR (X)=our copy of the procedure, (Y)=past its name
+ bcs L2CCP8
+ stx I.APRC
+ lbsr J$CPRM Call parameter list
+ ldy I.STBG
+ ldb  ,Y
+ cmpb #T.ERRL Error?
+ beq L2CCP8
+ sty I.ICBG
+ sty I.ICPT
+ ldx ICDPTR
+ stx I.ICLM
+ stx I.STBG
+ ldd G.VARS
+ pshs D,Y
+ ldx I.APRC
+ ldb P.STAT,X its own status stays as it was
+ pshs B
+ clr P.STAT,X
+ lbsr J$BPRM Bind parameters
+ ldx I.APRC
+ lda P.STAT,X
+ puls B
+ stb P.STAT,X
+ ldx I.ICBG
+ ldd I.ICLM
+ subd I.ICBG
+ rora ANY Errors in run stmt?
+ bcc L2CCP7
+ ldd #0
+L2CCP7 bsr L2SNDI
+ puls D,Y
+ std G.VARS
+ sty I.STBG
+ clra
+ rts
+L2CCP8 ldd #0
+ bsr L2SNDI
+ clra
+ rts
+
+* CCSTM <procedure> <statement>  (from l2b09run's debugger)
+*   Compile and bind the statement against our copy of the
+*   procedure, as DIREXQ does in the debugger, and send it as above.
+
+CCSTM lbsr L2CCPR
+ bcs L2CCP8
+ lbsr J$L2RS banked? map it
+ bcs L2CCP8
+ stx I.APRC as SETGLB, for the compiler and the binder
+ ldd P.SYMB,X
+ addd I.APRC
+ std I.SYMT
+ ldd P.DSCB,X
+ addd I.APRC
+ std I.DSCR
+ std I.ICLM
+ ldd P.PGMB,X
+ addd I.APRC
+ std I.ICBG
+ inc DEBUGGER compile as the debugger does
+ lbsr J$CMPL Compile the line
+ lbsr SVCRIT
+ ldx I.STBG
+ lbsr CHKERR an error line?
+ beq L2CCS7
+ stx I.ICBG
+ stx I.ICPT
+ leay  ,X
+ ldx ICDPTR
+ stx I.ICLM
+ stx I.STBG
+ lbsr L2BSTM Bind compiled statement; (A)=binder errors
+ tsta
+ bne L2CCS7
+ ldx I.ICBG
+ ldd I.ICLM
+ subd I.ICBG
+ bra L2CCS6
+L2CCS7 ldd #0
+L2CCS6 bsr L2SNDI
+ lbsr RSCRIT
+ clr DEBUGGER
+ clra
+ rts
+
+* L2CCPR: the procedure named at (Y), in our directory
+* Returns: (X)=Its address, (Y)=Past the name; carry set if unknown
+L2CCPR lbsr J$NAME
+ pshs B,Y (DIRSCH destroys B)
+ lbsr DIRSCH
+ puls B,Y
+ bcs L2CCR8
+ ldx  ,X
+ leay B,Y past the name (J$NAME: (B)=its length)
+L2CCR8 rts
+
+* L2SNDI: %ICODE, (D) as 2 bytes, then (D) bytes at (X), to stdout
+L2SNDI pshs D,X
+ leax L2ICTX,PCR
+ ldy #7
+ lda #1
+ OS9 I$Write
+ leax  ,S
+ ldy #2
+ lda #1
+ OS9 I$Write
+ ldy  ,S
+ beq L2SND9
+ ldx 2,S
+ lda #1
+ OS9 I$Write
+L2SND9 puls D,X,PC
+
+L2ICTX fcc "%ICODE"
+ fcb V$CR
+L2ASTX fcc "%ASK"
+ fcb V$CR
+ endc
 
 ***************
  ifne L2B09CC
@@ -2942,81 +3120,164 @@ L2CERR fcs "%CERR"
  endc
 
 ***************
- ifne L2B09
-* CCLOAD <file>: load through the separate compiler l2b09cc
-*   (docs/COMPILER.md, step 2): start it the first time, send it
-*   "load <file>", and put each procedure it sends in the workspace,
-*   as LOAD would (an old one of the same name is killed first).
-* CCCMP <file>: the same, but compare each procedure it sends with
-*   the one of that name already here (loaded with LOAD), and print
-*   "%SAME <bytes> <name>" or "%DIFF <bytes> <name>".
+ ifne L2B09RT
+* l2b09run without the compiler (docs/COMPILER.md, steps 3 and 4).
+* l2b09cc, forked at start-up (L2CCST), compiles for it: LOAD, the
+* arguments of RUN, the debugger's statements and PACK go to it, and
+* KILL, MEM, CHD and CHX are passed on after they are done here, so
+* that its copies of the procedures and its settings stay the same
+* as ours.  Its messages reach the editor directly (its stderr is
+* ours); on stdout it answers with lines, read by L2CCLP:
+*   %PROC <bytes> <name>  then the procedure: put it in the workspace
+*   %ICODE                then 2 bytes of length and that much bound
+*                         I-Code (none: errors), into free space
+*   %ASK                  it asks (a file to rewrite): pass on a line
+*   %DONE                 the command is finished
 
-* Passed: (Y)=File name
+* LOAD <file>, PACK [...]: done by the compiler
+LOAD lbsr L2BPZ procedures move: breakpoints go
+ leax L2LDTX,PCR
+ ldb #5
+ bra L2FWDX
+DUMP leax L2PKTX,PCR
+ ldb #4
+ bra L2FWDX
+* KILL, MEM, CHD, CHX: done here, then passed on
+L2KILL pshs Y
+ lbsr KILLER
+ leax L2KLTX,PCR
+ bra L2FWD2
+L2MEM lbsr CHGMEM
+ bcs L2FWD9 ..What?
+ lbsr NEWLIN "mem <our size now>" (CHGMEM's own output has
+ leax L2MMTX,PCR overwritten the command line)
+ lbsr CPYSTR
+ ldd G.WSPS
+ lbsr ItoA
+ lbsr PUTCR
+ ldy I.IOBG
+ clrb
+ bra L2FWDX
+L2CHD pshs Y
+ lbsr CHDDIR
+ leax L2CDTX,PCR
+ bra L2FWD4
+L2CHX pshs Y
+ lbsr CHXDIR
+ leax L2CXTX,PCR
+L2FWD4 ldb #3
+ bra L2FWD1
+L2FWD2 ldb #4
+L2FWD1 puls Y
+L2FWDX lbsr L2FWD
+ lbcs ERREXT
+ clra
+ rts
 
-CCLOAD clrb load
- fcb $8C (cmpx #: skip the ldb)
-CCCMP ldb #1 compare
- clra no error yet
- pshs D,Y 0,S=error, 1,S=mode, 2,S=file name
- lbsr L2BPZ procedures move: breakpoints go
- lbsr L2CCST
- lbcs L2CCER
- leax L2LDTX,PCR "load "
- ldy #5
- lbsr L2CCWR
- lbcs L2CCER
- ldx 2,S the file name, to its CR
+***************
+* Subroutine L2FWD
+*   Send the compiler (X), (B) bytes, then the line at (Y) to its
+*   CR, and read its answers until %DONE (L2CCLP).
+* Returns: as L2CCLP
+
+L2FWD pshs Y
+ tst L2CCP
+ bne L2FWD5
+ ldb #E$PNNF not running: as if not found
+ coma
+ puls Y,PC
+L2FWD5 clra
+ tfr D,Y
+ lbsr L2CCWR the word
+ puls X
+ bcs L2FWD9
+ pshs X the line: J$NAME may have marked a name's
+L2FWD6 lda  ,X last char, and the compiler would read
+ anda #$7F it as the end of the name
+ sta ,X+
+ cmpa #V$CR
+ bne L2FWD6
+ puls X
  ldy #256
  lda L2CCP
  lsra
  lsra
  lsra
  lsra
- OS9 I$WritLn
- lbcs L2CCER
-L2CC1 ldx I.IOBG a line from the compiler
+ OS9 I$WritLn the rest of the line
+ bcc L2CCLP
+L2FWD9 rts
+
+***************
+* Subroutine L2CCLP
+*   Read the compiler's answers until %DONE.
+* Returns: (X)=Bytes of %ICODE received at I.STBG (0 = none);
+*          carry set, (B)=error (32: no room) on failure
+
+L2CCLP ldx #0
+ pshs X 2,S=%ICODE bytes
+ pshs X 0,S=error
+L2CL1 ldx I.IOBG a line from the compiler
  ldy #256
  lbsr L2CCRL
- lbcs L2CCER
+ lbcs L2CLER
  lda 1,X
- cmpa #'P %PROC?
- lbne L2CC9 ..no: %DONE
- leay 6,X past "%PROC "
-L2CC2 lda ,Y+ past the size
+ cmpa #'P %PROC
+ beq L2CLPR
+ cmpa #'I %ICODE
+ lbeq L2CLIC
+ cmpa #'A %ASK
+ bne L2CLDN ..%DONE
+ lda CMDIN pass on a line of our input
+ ldy #256
+ OS9 I$ReadLn
+ lbcs L2CLER
+ lda L2CCP
+ lsra
+ lsra
+ lsra
+ lsra
+ OS9 I$WritLn
+ lbcs L2CLER
+ bra L2CL1
+L2CLDN ldb  ,S
+ ldx 2,S
+ leas 4,S
+ tstb
+ beq L2CLD9
+ coma error
+ rts
+L2CLD9 clra
+ rts
+
+L2CLPR leay 6,X past "%PROC "
+L2CL2 lda ,Y+ past the size
  cmpa #V$SPAC
- bne L2CC2
+ bne L2CL2
  lbsr J$NAME the name, its last char marked as in a directory
  pshs Y
- tst 3,S compare?
- bne L2CC3
  lbsr DIRSCH an old one?
- bcs L2CC3
- ldy  ,S
- leay -1,Y (KILLER wants the space before)
- lbsr KILLER
-L2CC3 ldx I.STBG the module header, into free space
+ bcs L2CL3
+ lbsr L2KIL1 ..kill it
+L2CL3 ldx I.STBG the module header, into free space
  ldy #4
  lbsr L2CCRD
- lbcs L2CCE2
+ lbcs L2CLE2
  ldd 2,X its size
- addd #256
- cmpd G.VARS room for it?
- lbhi L2CC7 ..no; read it away
- ldd 2,X
+ lbsr L2CLRM room for it?
+ bhi L2CL7 ..no; read it away
  subd #4
  tfr D,Y
  leax 4,X the rest
  lbsr L2CCRD
- lbcs L2CCE2
+ lbcs L2CLE2
  ldy ,S++ the name
  lbsr DIRSCH (X)=its directory entry, or the end
- ldu I.STBG the procedure
- tst 1,S
- bne L2CC5 compare
- bcc L2CC1 (still there: KILLER refused it)
+ lbcc L2CL1 (still there: KILLER refused it)
  tfr X,D
  cmpb #-2 directory full?
- lbeq L2CC8
+ beq L2CL81
+ ldu I.STBG the procedure
  stu  ,X
  ldd P.SIZE,U
  pshs D
@@ -3030,64 +3291,70 @@ L2CC3 ldx I.STBG the module header, into free space
  std I.STBG
  stu I.APRC
  lbsr L2BANK -b: to the far store
- lbra L2CC1
-L2CC5 ldd #'D*256+'I "%DIFF"
- bcs L2CC6 ..not here
- ldx  ,X
- ldy P.SIZE,U
- cmpy P.SIZE,X
- bne L2CC6
-L2CC51 lda ,U+ the same bytes?
- cmpa ,X+
- bne L2CC55
- leay -1,Y
- bne L2CC51
- ldd #'S*256+'A "%SAME"
- bra L2CC6
-L2CC55 ldd #'D*256+'I
-L2CC6 ldx I.IOBG the line, now %SAME or %DIFF
- std 1,X
- cmpa #'S
- bne L2CC60
- ldd #'M*256+'E
- bra L2CC61
-L2CC60 ldd #'F*256+'F
-L2CC61 std 3,X
-L2CC62 lda ,X (the name's last char was marked)
- anda #$7F
- sta ,X+
- cmpa #V$CR
- bne L2CC62
- ldx I.IOBG
- ldy #256
- lda #CMDOUT
- OS9 I$WritLn
- lbra L2CC1
-L2CC7 ldd 2,X no room: read the rest away
+ lbra L2CL1
+L2CL7 ldd 2,X no room: read the rest away
  subd #4
-L2CC71 ldx I.IOBG
+ bsr L2CLDR
+ lbcs L2CLE2
+L2CL8 leas 2,S
+L2CL81 ldb #M$MFUL
+ stb  ,S remembered, reported at %DONE
+ lbra L2CL1
+
+L2CLIC ldx I.STBG %ICODE: its length, then the I-Code
+ ldy #2
+ lbsr L2CCRD
+ bcs L2CLER
+ ldd  ,X
+ std 2,S
+ beq L2CL9 ..none: errors (the compiler showed them)
+ bsr L2CLRM
+ bhi L2CLI7
+ tfr D,Y
+ lbsr L2CCRD
+ bcs L2CLER
+L2CL9 lbra L2CL1
+L2CLI7 clr 2,S no room
+ clr 3,S
+ bsr L2CLDR
+ bcs L2CLER
+ bra L2CL81
+
+L2CLE2 leas 2,S
+L2CLER stb  ,S the pipe failed: stop
+ lbra L2CLDN
+
+* L2KIL1: kill the procedure of directory entry (X), as KILLER does
+*   for a list (KILLER would parse the name again)
+L2KIL1 clr I.APRC
+ clr I.APRC+1
+ ldu I.OPBG the list KILL0 takes, below the opstack
+ clr -4,U
+ clr -3,U
+ stx -2,U
+ lbra KILL0
+
+* L2CLRM: (D)=bytes: is there room for them (and 256 more)?  "bhi"
+*   if not; keeps (D)
+L2CLRM pshs D
+ addd #256
+ cmpd G.VARS
+ puls D,PC
+
+* L2CLDR: read (D) bytes away, 256 at a time
+L2CLDR ldx I.IOBG
  ldy #256
  cmpd #256
- bhs L2CC72
+ bhs L2CLD1
  tfr D,Y
-L2CC72 pshs D
- lbsr L2CCRD
+L2CLD1 pshs D
+ bsr L2CCRD
  puls D
- lbcs L2CCE2
+ bcs L2CLD8
  pshs Y
  subd ,S++
- bne L2CC71
-L2CC8 ldb #M$MFUL
- stb 2,S remembered, reported at %DONE
- leas 2,S
- lbra L2CC1
-L2CCE2 leas 2,S
-L2CCER stb  ,S
-L2CC9 ldb ,S error?
- leas 4,S
- lbne ERREXT
- clra
- rts
+ bne L2CLDR
+L2CLD8 rts
 
 * L2CCWR: (X),(Y) to the compiler; L2CCRL/L2CCRD: a line, or (Y) bytes
 L2CCWR lda L2CCP
@@ -3114,14 +3381,120 @@ L2CCR9 leas 2,S
  rts
 
 ***************
-* Subroutine L2CCST
-*   Start l2b09cc if it is not running: pipe A becomes its stdin,
-*   pipe B its stdout; its stderr is ours (the editor's pipe), so its
-*   messages need no forwarding.  We keep a path to each pipe.
-* Returns: carry set, (B)=error on failure
+* Subroutine L2PRM  (RUN)
+*   The arguments of RUN <procedure>(...), at (Y): none is the
+*   I-Code T.EOL; otherwise the compiler compiles and binds them.
+*   They go to I.STBG, with I.ICBG, I.ICPT, I.ICLM around them.
+* Returns: carry set if they had errors
 
-L2CCST tst L2CCP
- bne L2CCS9 ..running
+L2PRM clr DEBUGGER (as CMPRAM did: a RUN after Q in the debugger)
+L2PRM0 lda ,Y+
+ cmpa #V$SPAC
+ beq L2PRM0
+ leay -1,Y
+ ldx I.STBG
+ cmpa #V$CR no arguments?
+ bne L2PRM1
+ lda #T.EOL
+ sta  ,X
+ ldd #1
+ bra L2PRM2
+L2PRM1 leax L2PRTX,PCR "ccprm <procedure> <arguments>"
+ bsr L2SNDN
+ bcs L2PRM9
+ tfr X,D
+ subd #1
+ bcs L2PRM9 ..none: errors
+ addd #1
+L2PRM2 ldx I.STBG
+ stx I.ICBG
+ stx I.ICPT
+ leax D,X
+ stx I.ICLM
+ andcc #$FE
+L2PRM9 rts
+
+***************
+* Subroutine L2STM  (debugger: PRINT, LET ... at I.IOBG)
+*   The compiler compiles and binds the statement against its copy
+*   of the active procedure: "ccstm <procedure> <statement>".
+* Returns: (D)=Bytes of bound I-Code at I.STBG; 0 = errors
+
+L2STM leax L2STTX,PCR "ccstm <procedure> <statement>"
+ ldy I.IOBG
+ bsr L2SNDN
+ bcs L2STM8
+ tfr X,D
+ rts
+L2STM8 lbsr PRTERR
+ clra
+ clrb
+ rts
+
+* L2SNDN: send the compiler (X) (6 bytes), the active procedure's
+*   name and a space, then the line at (Y), and read its answers
+*   (L2FWD)
+L2SNDN leas -40,S
+ leau ,S
+ ldb #6
+L2STM1 lda ,X+
+ sta ,U+
+ decb
+ bne L2STM1
+ ldx I.APRC
+ leax P.NAME,X
+L2STM2 lda ,X+
+ bita #$80
+ pshs CC
+ anda #$7F
+ sta ,U+
+ puls CC
+ beq L2STM2
+ lda #V$SPAC
+ sta ,U+
+ tfr U,D
+ leax ,S
+ pshs X
+ subd ,S++
+ lbsr L2FWD
+ leas 40,S (keeps the carry)
+ rts
+
+* PRT4HX, as in the binder (LIST's offsets): (D) as 4 hex digits at (X)
+L2P4HX bsr L2P2HX
+ tfr B,A
+L2P2HX pshs A
+ lsra
+ lsra
+ lsra
+ lsra
+ bsr L2PHX
+ puls A
+ anda #$0F
+L2PHX adda #'0
+ cmpa #'9
+ bls L2PHX1
+ adda #7
+L2PHX1 sta ,X+
+ rts
+
+***************
+* Subroutine L2CCST  (at start-up)
+*   Start l2b09cc with our workspace size and -b: pipe A becomes its
+*   stdin, pipe B its stdout; its stderr is ours.  We keep a path
+*   to each pipe (L2CCP).  On failure L2CCP stays 0, and LOAD gives
+*   ERROR #216.
+
+L2CCST lbsr NEWLIN its parameters, in the I/O buffer
+ ldd FARBAS
+ beq L2CCS1
+ leax L2BOTX,PCR "-b="
+ lbsr CPYSTR
+ lda FARCNT
+ ldb #8 kilobytes
+ mul
+ lbsr ItoA
+L2CCS1 lbsr PUTCR
  clra set our paths 0 and 1 aside
  OS9 I$Dup
  bcs L2CCS9
@@ -3143,13 +3516,20 @@ L2CCST tst L2CCP
  ora L2CCP
  sta L2CCP
  leax L2CCNM,PCR
- leau L2CCCR,PCR parameters: none
- ldy #1
- ldd #$0080 32K
+ ldu I.IOBG
+ ldd I.IOPT
+ subd I.IOBG
+ tfr D,Y
+ lda G.WSPS our workspace size, in pages
+ inca
+ cmpa #$80 at most 32K: it holds only procedures, and
+ bls L2CCS2 its code cannot use the top slot
+ lda #$80
+L2CCS2 tfr A,B
+ clra
  OS9 F$Fork
  bcs L2CCSB
- ldx I.STBG its first %DONE: it is up (into free
-* space: the command line is in the I/O buffer)
+ ldx I.STBG its first %DONE: it is up
  ldy #256
  lbsr L2CCRL
 L2CCSB tfr CC,A put our own paths back
@@ -3169,9 +3549,25 @@ L2CCSB tfr CC,A put our own paths back
  puls D
  leas 2,S
  tfr A,CC
- bcc L2CCS9
+ bcc L2CCS8
  clr L2CCP failed: not started
+L2CCS8 lbra NEWLIN
 L2CCS9 rts
+
+* L2CCPA: is path (A) one of our pipes to the compiler?  Z set if so
+*   (HALT closes the program's paths, not these)
+L2CCPA pshs A
+ lda L2CCP
+ anda #$0F
+ cmpa  ,S
+ beq L2CCA9
+ lda L2CCP
+ lsra
+ lsra
+ lsra
+ lsra
+ cmpa  ,S
+L2CCA9 puls A,PC
 
 * L2CCPP: close path (A), open a pipe there, and return a copy of it
 L2CCPP pshs A
@@ -3185,10 +3581,20 @@ L2CCPP pshs A
 L2CCP9 rts
 
 L2CCNM fcc "l2b09cc"
-L2CCCR fcb V$CR
+ fcb V$CR
 L2PIPE fcc "/pipe"
  fcb V$CR
-L2LDTX fcc "load "
+L2LDTX fcc "load " (a space: at start-up the file name has none)
+* the others are followed by the rest of their command line, as typed
+* ("pack*", "kill*", " <name>")
+L2PKTX fcc "pack"
+L2KLTX fcc "kill"
+L2MMTX fcs "mem "
+L2CDTX fcc "chd"
+L2CXTX fcc "chx"
+L2PRTX fcc "ccprm "
+L2STTX fcc "ccstm "
+L2BOTX fcs "-b="
  endc
 
 * End of Command routines

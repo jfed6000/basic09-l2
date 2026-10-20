@@ -2,3 +2,4 @@ l2b09run l2b09run
 runb_6809 runb
 farmem farmem
 l2b09ovl /CMDS/l2b09ovl
+l2b09cc /CMDS/l2b09cc

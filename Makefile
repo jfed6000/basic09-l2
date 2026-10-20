@@ -87,7 +87,7 @@ $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 
 # l2basic09 runtime: Basic09 without the line editor (see src/b09type, L2B09)
 $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
-	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DLevel=2
+	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DL2B09RT=1 -DLevel=2
 	@[ $$(stat -c %s $@) -le 24576 ] || echo "WARNING: $@ is over 24,576 bytes: it needs a fourth 8K block (ARCHITECTURE.md, P5.5)"
 
 # The separate compiler (docs/COMPILER.md): l2b09run's own code, built
@@ -232,7 +232,7 @@ p8btest: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/p8b
 	tools/ccframes.py build/emu/p8b/cc.out
 
-# Step 2: l2b09run forks l2b09cc; CCCMP compares, CCLOAD loads through it
+# Steps 3-4: l2b09run has no compiler; LOAD, KILL ... go through l2b09cc
 p8ctest: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/p8c
 
@@ -255,7 +255,7 @@ $(BUILD)/l2b09_%.dsk: $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk $(TOOLS) $(L2B09)
 	tools/bootfile-add.py $(BUILD)/$*boot.orig $(BUILD)/$*boot \
 	    $(BUILD)/pipeman $(BUILD)/piper $(BUILD)/pipe
 	os9 copy -r $(BUILD)/$*boot $@.tmp,OS9Boot
-	for m in basic09-l2 l2b09run l2b09ovl l2b09help syscall inkey farmem; do \
+	for m in basic09-l2 l2b09run l2b09cc l2b09ovl l2b09help syscall inkey farmem; do \
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
 	os9 copy -r $(BUILD)/basic09-l2.hlp $@.tmp,SYS/basic09-l2.hlp

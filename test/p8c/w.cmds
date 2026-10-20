@@ -1,0 +1,4 @@
+mem
+load p8cprog.b09
+run p8cmain
+bye

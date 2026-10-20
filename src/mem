@@ -20,10 +20,16 @@ CHGMEM lbsr CMDSEP Skip command separator
  bcs CHGME1 ..error; print current size
  subd #1 >>experimental fix<<
  std G.WSPS
-CHGME1 lbsr NEWLIN Reset I/O ptrs
+CHGME1 equ *
+ ifne L2B09CC
+ clra (l2b09cc: l2b09run shows the size)
+ rts
+ else
+ lbsr NEWLIN Reset I/O ptrs
  ldd G.WSPS get current mem size
  bsr ItoA Put number in I/O buffer
 CHGME9 lbra PRTEOL Print buffer; then end of line
+ endc
 
 CHGERR leas 2,S
 CHGER1 coma RETURN Error - carry set
