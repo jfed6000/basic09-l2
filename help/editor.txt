@@ -122,7 +122,7 @@ Compile
   Messages          F6      into the message window ({Message window})
   Pretty print              tidy the procedure at the cursor ({Pretty print})
   All: pretty print ^Space  tidy every procedure ({Pretty print})
-  Pack module...           PACK: a module for RunB ({Running})
+  Pack module...           (K) PACK: a module for RunB ({Running})
 Debug
   Trace into        F7      step, into called procedures ({Debugger})
   Step over         F8      step, running calls whole ({Debugger})

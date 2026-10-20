@@ -121,7 +121,7 @@ mcomp               fdb       c_make-cmdtab
                     fcn       "All: pretty print"
                     fcn       "^Space"
                     fdb       c_pack-cmdtab
-                    fcn       "Pack module..."
+                    fcn       "Pac&k module..."
                     fcn       ""
                     fdb       $FFFF
 mdbg                fdb       c_step-cmdtab
@@ -325,7 +325,8 @@ mp2                 tfr       a,b
                     sta       <msel
                     rts
 
-* m_letter: select the item whose text starts with key A; carry if none
+* m_letter: select the item whose letter is key A: its text's first, or
+* the one after a "&" in it (m_key); carry if none
 m_letter            cmpa      #'a
                     blo       ml1
                     cmpa      #'z
@@ -337,7 +338,7 @@ mlt2                cmpb      <mcnt
                     bsr       m_item
                     ldy       ,x
                     beq       mlt3
-                    cmpa      2,x
+                    lbsr      m_key
                     beq       mlt4
 mlt3                incb
                     bra       mlt2
@@ -390,7 +391,7 @@ mla1                ldd       ,x
                     cmpd      #0
                     beq       mla4
                     leay      2,x                 text + shortcut + 3 spaces + 2 borders
-                    bsr       strlen
+                    lbsr      m_len
                     pshs      b
                     bsr       strlen
                     addb      ,s+
@@ -432,6 +433,40 @@ sl1                 tst       ,y+
                     incb
                     bra       sl1
 sl9                 rts
+
+* m_key: Z if key A is the letter of item X
+m_key               pshs      b,x
+                    leax      2,x
+mky1                ldb       ,x+
+                    beq       mky2
+                    cmpb      #'&
+                    bne       mky1
+                    ldb       ,x                  the one after the "&"
+                    andb      #$DF
+                    bra       mky3
+mky2                ldx       1,s                 or the first
+                    ldb       2,x
+mky3                pshs      b
+                    cmpa      ,s+
+                    puls      b,x,pc
+* m_str: draw item text X ("&" not drawn); m_len: B = its length, Y past it
+m_str               pshs      a,x
+msr1                lda       ,x+
+                    beq       msr9
+                    cmpa      #'&
+                    beq       msr1
+                    lbsr      t_ch
+                    bra       msr1
+msr9                puls      a,x,pc
+m_len               pshs      a
+                    clrb
+mln1                lda       ,y+
+                    beq       mln9
+                    cmpa      #'&
+                    beq       mln1
+                    incb
+                    bra       mln1
+mln9                puls      a,pc
 
 * m_drawbox: the drop-down of menu mcur, item msel selected
 m_drawbox           ldx       <base
@@ -479,11 +514,11 @@ mdb3                lda       #C$SPAC
                     pshs      x
                     leay      2,x                 text
                     tfr       y,x
-                    lbsr      t_str
-                    bsr       strlen              Y = the shortcut
+                    lbsr      m_str
+                    lbsr      m_len               Y = the shortcut
                     pshs      b
                     tfr       y,x
-                    bsr       strlen
+                    lbsr      strlen
                     pshs      b
                     lda       <mwid               spaces between them
                     suba      #4

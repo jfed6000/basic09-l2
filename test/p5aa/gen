@@ -25,7 +25,7 @@ END
 keys = '''
 alt-r "w" "asub(5,\\"hi\\")" enter    # the dialog starts with amain: typing replaces it
 alt-r "w" enter                     # the last one again
-alt-c up enter enter                # Pack module (last; p is Pretty print), then pk: the file's name without .b09
+alt-c "k" enter                     # Pac&k module, then pk: the file's name without .b09
 ^r                                  # Make (all again), run amain
 ^q
 '''
