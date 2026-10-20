@@ -1,5 +1,4 @@
 load p6prog.b09
-dir
 run p6main
 run p6bad
 print z

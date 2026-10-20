@@ -203,14 +203,9 @@ CMDENT equ *
  fdb CLSCHL-CMDENT Close it again
  fdb UNBIND-CMDENT Unbind a procedure
  fdb NXTVAR-CMDENT Next variable reference in I-code
-* (DIR, RENAME, MEM)
+* (the banner)
  fdb NEWLIN-CMDENT Reset the I/O buffer
- fdb PUTCHR-CMDENT Put a character in it
- fdb STRSPC-CMDENT Put a string and a space in it
  fdb STREOL-CMDENT Put a string in it and print it
- fdb PRTEOL-CMDENT Print it
- fdb ItoA-CMDENT   Put a number in it
- fdb DIRSCH-CMDENT Search the procedure directory
  endc
  endc
 
@@ -1034,19 +1029,25 @@ ARROW equ *+1
 CMDVRB equ *
  fdb INVOKE-*
  fcs "$"
+ ifne L2B09
+ fdb CMDNOP-* an empty line: nothing (no DIR)
+ else
  fdb DIR05-*
+ endc
  fcb V$CR+$80
 
  ifne L2B09
- fdb 15 number of alphabetic entries (no EDIT/E; BP, BC, STEP)
+ fdb 13 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP)
  else
  fdb 14 number of alphabetic entries
  endc
  fcb 2 number of skip bytes per entry
  fdb BYEBYE-*
  fcs "BYE"
+ ifeq L2B09
  fdb DIR-*
  fcs "DIR"
+ endc
  ifeq L2B09
  fdb EDIT-*
  fcs "EDIT"
@@ -1063,8 +1064,10 @@ CMDVRB equ *
  fcs "SAVE"
  fdb LOAD-*
  fcs "LOAD"
+ ifeq L2B09
  fdb RENAME-*
  fcs "RENAME"
+ endc
  fdb DUMP-*
  fcs "PACK"
  fdb CHGMEM-*
@@ -1094,15 +1097,17 @@ DBGVRB equ *
  fcb V$CR+$80
 
  ifne L2B09
- fdb 17 number of alphabetic debug commands (BP, BC, OVER)
+ fdb 16 number of alphabetic debug commands (BP, BC, OVER; no DIR)
  else
  fdb 14 number of alphabetic debug commands
  endc
  fcb 2 number of skip bytes per entry
  fdb CONTIN-*
  fcs "CONT"
+ ifeq L2B09
  fdb DIR-*
  fcs "DIR"
+ endc
  fdb HALT-*
  fcs "Q"
  fdb LSTBND-*
@@ -1529,8 +1534,8 @@ RUNC20 ldd  ,X
 RUNC90 coma return carry set
  puls X,Y,PC
 
- ifeq L2B09
  use mem
+ ifeq L2B09
  use dir
  endc
 
@@ -1757,7 +1762,7 @@ PRCLI1 lda ,X+
  bne PRCLI9 Exit if not equal
  tst -1,X
  bpl PRCLI1 Loop until all characters are checked
- clra
+CMDNOP clra (l2b09run: an empty command line)
 PRCLI9 rts RETURN to user
 
  ifeq L2B09
@@ -1765,18 +1770,10 @@ PRCLI9 rts RETURN to user
  else
 ***************
 * Cold commands
-*   PACK, DIR (and the empty line), RENAME and MEM live in the overlay module l2b09ovl
-*   (src/overlay.asm, which assembles src/pack, src/dir, src/rename
-*   and src/mem); L2OVLY loads it and calls the entry
+*   PACK lives in the overlay module l2b09ovl (src/overlay.asm,
+*   which assembles src/pack); L2OVLY loads it and calls the entry.
+*   l2b09run has no DIR or RENAME (the editor does not use them).
 
-DIR ldb #1 overlay entry 1: DIR
- fcb $8C (cmpx #: skip the next ldb)
-RENAME ldb #2 entry 2: RENAME
- fcb $8C
-CHGMEM ldb #3 entry 3: MEM
- fcb $8C
-DIR05 ldb #4 entry 4: DIR to the command path (an empty line)
- fcb $8C
 DUMP ldb #0 entry 0: PACK
 *     (Fall Through to L2OVLY)
 
@@ -2629,7 +2626,7 @@ L2OPTS lda ,Y+
  bra L2OPTX
 L2OPT2 cmpd #'B*256+'=
  bne L2OPTE ..unknown option
- ldb #5 the far store (l2b09ovl's L2STOR)
+ ldb #1 the far store (l2b09ovl's L2STOR)
  bsr L2OVSC
  bcs L2OPTX
  bsr L2WIN then the code window, with the overlay gone
@@ -2644,7 +2641,7 @@ L2OPT9 leay -1,Y back up to first non-option char
  lda  ,Y nothing follows: command mode, which starts
  cmpa #V$CR with the banner (in l2b09ovl; not shown if
  bne L2OPT8 there is no slot for it)
- ldb #6
+ ldb #2
  bsr L2OVSC
 L2OPT8 rts
 

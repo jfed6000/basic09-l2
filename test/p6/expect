@@ -10,4 +10,3 @@ p6save     PROCEDURE p6deep
 bigno.err  ERROR #032
 bigyes.out big: total 1200.
 same       mfree1 mfree2
-bigyes.err   big30         34

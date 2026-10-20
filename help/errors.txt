@@ -705,7 +705,7 @@ The file or directory does not exist.  On {OPEN}, check the name and
 the current directory; on {RUN} or {CHAIN}, the module was not in
 memory or in the execution directory.
 
-l2b09run gives 216 for PACK, DIR, RENAME and MEM when its overlay
+l2b09run gives 216 for PACK, or at start-up for -b, when its overlay
 l2b09ovl is missing from /dd/CMDS.
 
 == Error 217 | Error 217: Segment List Full

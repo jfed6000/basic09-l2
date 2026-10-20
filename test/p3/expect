@@ -8,9 +8,5 @@ term.out  p3calc x=5
 ctl.out   < %ASK Rewrite?
 ctl.out   < ERROR #043
 ctl.out   < ERROR #051
-ctl.out   < ERROR #044
-ctl.out   p3sum         73
 ctl.out   < What?
-p3dir       p3main
-p3dir     free
 ctl.out   < 16127

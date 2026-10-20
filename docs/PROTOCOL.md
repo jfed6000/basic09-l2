@@ -31,7 +31,7 @@ Full usage: `l2b09run [#mem] [-b=<kb>] [-t=<terminal>] [<file> [<procedure>[(<pa
 
 ## Runtime to editor
 
-Output is plain text lines. Lines starting with `%` are events; everything else is human-readable output: LIST, DIR, `ERROR #nnn`, the offending source line with a `^` under the error, debugger PRINT output, and so on.
+Output is plain text lines. Lines starting with `%` are events; everything else is human-readable output: LIST, MEM, `ERROR #nnn`, the offending source line with a `^` under the error, debugger PRINT output, and so on.
 
 | Event | Meaning |
 |---|---|
@@ -56,7 +56,7 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 
 Send one command per line, ending with CR.
 
-- **After `%READY`:** Basic09 commands such as `load <file>`, `run [<proc>[(<params>)]]`, `list [<proc>]`, `kill <proc>`, `save* <file>`, `pack* <file>`, `dir`, `mem [<n>]`, `chd`, `chx`, `$<shell command>` and `bye`. The line editor (`edit`/`e`) is not in `l2b09run`. `pack`, `dir`, `rename` and `mem` (and an empty line, which lists the procedures like `dir`) run from the overlay module `l2b09ovl`, which must be in memory or in the execution directory (`/dd/CMDS`); without it they fail with error 216. At start-up `l2b09run` also uses it for `-b` (without it `-b` exits with 216) and for the banner line (skipped without it, or when the workspace leaves no 8K slot free). Also (not in stock Basic09):
+- **After `%READY`:** Basic09 commands such as `load <file>`, `run [<proc>[(<params>)]]`, `list [<proc>]`, `kill <proc>`, `save* <file>`, `pack* <file>`, `mem [<n>]`, `chd`, `chx`, `$<shell command>` and `bye`. The line editor (`edit`/`e`), `dir` and `rename` are not in `l2b09run`, and an empty line does nothing. `pack` runs from the overlay module `l2b09ovl`, which must be in memory or in the execution directory (`/dd/CMDS`); without it it fails with error 216. At start-up `l2b09run` also uses it for `-b` (without it `-b` exits with 216) and for the banner line (skipped without it, or when the workspace leaves no 8K slot free). Also (not in stock Basic09):
   - **`step [<proc>[(<params>)]]`** is `run`, but the program stops in the debugger (`%DEBUG`) before its first statement.
   - **`bp`** and **`bc`**, as in the debugger (below).
 - **After `%DEBUG`:** debugger commands such as `cont`, `step [n]`, `list`, `print <expr>`, `let <var>:=<expr>`, `state`, `tron`, `troff`, `break <proc>`, `q` (quit to command mode) and `$<shell command>`. `print` output comes back on the channel, before the next `%DEBUG`.

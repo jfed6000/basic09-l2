@@ -54,7 +54,7 @@ nav ul { padding-left: 18px; }
 <body>
 <main>
 <h1>basic09-l2: the parts</h1>
-<p class="lede">An overview of the l2basic09 system for NitrOS-9 Level 2 on the Wildbits, how its parts fit together, the address-space limits that shape it, and a comparison with how OS-9 Pascal runs programs larger than memory. Written 2026-10-19; sizes are as of commit <code>61544ee</code>. The detailed design is in <a href="ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
+<p class="lede">An overview of the l2basic09 system for NitrOS-9 Level 2 on the Wildbits, how its parts fit together, the address-space limits that shape it, and a comparison with how OS-9 Pascal runs programs larger than memory. Written 2026-10-19; sizes are as of the commit that removed DIR and RENAME. The detailed design is in <a href="ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
 
 <nav><ul>
 <li><a href="#glance">The system at a glance</a></li>
@@ -86,8 +86,8 @@ nav ul { padding-left: 18px; }
 <div class="tablewrap"><table>
 <tr><th>Part</th><th>Size</th><th>What it is</th></tr>
 <tr><td><code>basic09-l2</code><br>the editor</td><td class="num">22,779 bytes<br>(1,797 left of 3 blocks)</td><td>Full-screen editor with Turbo C-style menus. A paged text buffer (2K pages in a swap file, a few cached), so files can be larger than 64K. Undo/redo, find and replace, clipboard, syntax colours, mouse with wheel and scroll bar, double spacing, 80x60. Drives the runtime: Make (only changed procedures), Run, the debugger UI (step, step over, breakpoints, watches, evaluate), pretty print, <code>DEFTYPE</code>/<code>USE</code>. <a href="EDITOR.md">EDITOR.md</a></td></tr>
-<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">23,842 bytes<br>(734 left below 24,576)</td><td>Microware's Basic09 compiler, binder and interpreter, built from the original modular source: comand 6.7K, exprsn 5.6K, binder 3.6K, stmts 3.1K, cnvio 2.6K, compil 2.2K. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor is removed.</td></tr>
-<tr><td><code>l2b09ovl</code><br>the overlay</td><td class="num">969 bytes</td><td>Cold code the runtime links only when needed: PACK, DIR, RENAME, MEM, and at start-up <code>-b</code>'s set-up and the banner. It needs a free 8K slot while it runs.</td></tr>
+<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">23,852 bytes<br>(724 left below 24,576)</td><td>Microware's Basic09 compiler, binder and interpreter, built from the original modular source: comand 6.7K, exprsn 5.6K, binder 3.6K, stmts 3.1K, cnvio 2.6K, compil 2.2K. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor, DIR and RENAME are removed (the editor does not use them).</td></tr>
+<tr><td><code>l2b09ovl</code><br>the overlay</td><td class="num">566 bytes</td><td>Cold code the runtime links only when needed: PACK, and at start-up <code>-b</code>'s set-up and the banner. It needs a free 8K slot while it runs.</td></tr>
 <tr><td><code>l2b09help</code><br><code>basic09-l2.hlp</code></td><td class="num">3,631 bytes<br>92K data</td><td>The help browser and its 253 pages (editor, every statement and function, every error). Its own process, forked from F1; built from the editor's screen and keyboard code. <a href="HELP.md">HELP.md</a></td></tr>
 <tr><td><code>farmem</code>, <code>syscall</code>, <code>inkey</code></td><td class="num">644, 99, 95 bytes</td><td>Subroutine modules: far memory by explicit calls (mostly superseded by far arrays; <a href="FARMEM.md">FARMEM.md</a>), system calls, single keys.</td></tr>
 <tr><td><code>l2b09ctl</code></td><td class="num">654 bytes</td><td>A scripted stand-in for the editor, for driving <code>l2b09run</code> in tests.</td></tr>
@@ -142,7 +142,7 @@ nav ul { padding-left: 18px; }
 <li><strong>A call</strong> maps the callee's block into the window and runs it there; the return maps the caller's back. Within one block no cost; across blocks about 0.8 ms each way.</li>
 <li><strong>The window never moves</strong>, because the runtime keeps pointers into running code; a remap that does not land in the same slot fails with 207.</li>
 </ol>
-<p><strong>Limits:</strong> 8K per procedure (7,424 if the window is slot 7); the store is never reused; PACK refuses banked procedures; <code>DIR</code> shows stub sizes. <code>make p6test</code> loads about 48K of compiled code in a 24K workspace.</p>
+<p><strong>Limits:</strong> 8K per procedure (7,424 if the window is slot 7); the store is never reused; PACK refuses banked procedures. <code>make p6test</code> loads about 48K of compiled code in a 24K workspace.</p>
 <h3>Ideas discussed</h3>
 <ul>
 <li><strong>Allocate the store on demand</strong>, one block at a time: the stubs already hold absolute block numbers, so only the final free needs a table. <code>-b=&lt;kb&gt;</code> becomes a maximum. About 60-100 bytes.</li>
