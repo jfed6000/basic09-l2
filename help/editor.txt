@@ -216,8 +216,8 @@ A runtime error becomes a message in the {Message window}, and the
 cursor goes to the line. The program stays stopped there, so you can
 {Evaluate} its variables. Press ^P to reset it.
 
-BREAK stops the program in the debugger, even when the editor had the
-keyboard last.
+RUN/STOP (or ^C) stops the program in the debugger, even when the
+editor had the keyboard last. ^P then ends it.
 
 F5 (Run > User screen) shows the program's screen until you press a
 key. With -t=<file> there is no user screen.
@@ -229,9 +229,9 @@ so, and the next Make starts a new l2b09run.
 The debugger stops your program and lets you step through it.
 
 A program stops at a breakpoint ({Breakpoints}), a {PAUSE} statement,
-BREAK, a runtime error, or with Until return. The line it stopped at is
-drawn white on red, and the cursor goes there. The bottom line lists the
-debugger keys.
+RUN/STOP or ^C, a runtime error, or with Until return. The line it
+stopped at is drawn white on red, and the cursor goes there. The bottom
+line lists the debugger keys.
 
   F7   Trace into: run one statement. A RUN line stops at the first
        statement of the called procedure. If the program is not

@@ -182,9 +182,10 @@ The process was killed by signal 1 (S$Kill), for example by the shell's
 KILL command or by another process.  It cannot be trapped.
 
 == Error 2 | Error 2: Keyboard Abort
-The user pressed the abort key (^E on most terminals), which sends
-signal 2 (S$Abort).  In a running program it stops the program;
-{ON ERROR} can trap it.
+The user pressed the abort key (^E on most terminals, RUN/STOP on the
+K2), which sends signal 2 (S$Abort).  In stock Basic09 it stops a
+running program, and {ON ERROR} can trap it.  l2b09run makes it a
+break instead: the program stops in the debugger, as with ^C.
 
 == Error 3 | Error 3: Keyboard Interrupt
 The user pressed the interrupt key (^C), signal 3 (S$Intrpt).  Basic09

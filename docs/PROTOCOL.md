@@ -83,7 +83,7 @@ Send these with `F$Send` to the runtime's process id (from `F$Fork`).
 | `S$Intrpt` (3) | Break: the running program stops at the next statement, followed by `%DEBUG`. |
 
 A BREAK typed on the program's terminal goes to the last process that used that terminal. That is not always `l2b09run`: an editor that writes to the terminal (for example to select the window) can get it, and should then pass it on with `F$Send`.
-| `S$Abort` (2) | Abort: the program stops, followed by `%READY`. |
+| `S$Abort` (2) | The same as `S$Intrpt` (not stock Basic09, where it ends the program): the keyboard abort is RUN/STOP on the K2, which should stop the program where it is. `q` in the debugger then ends it. A program's `ON ERROR` no longer sees error 2 from the keyboard. |
 
 ## Example (from test/p3)
 
@@ -114,6 +114,6 @@ A BREAK typed on the program's terminal goes to the last process that used that 
 
 ## Not yet covered
 
-- **BREAK during INPUT.** Behaviour while the program is blocked in `INPUT` on its terminal is untested. The stock INPUT code treats a keyboard interrupt as an error exit.
+- **BREAK during INPUT.** Not tested automatically. The stock INPUT code stops in the debugger on a keyboard interrupt and asks again afterwards; any other signal (the abort, before it was made a break) is an error exit (error 2), as seen on hardware with startrek.
 - **Output on path 2.** Output the program writes to path 2 (`PRINT #2`) arrives on the command channel as free text.
 - **No read timeout.** Pipes cannot be polled on NitrOS-9 (`pipeman` has no `SS.Ready`), so an editor that must not block needs its own design (for example, a reader process).

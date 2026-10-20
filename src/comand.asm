@@ -1261,6 +1261,12 @@ NOTFND fcs "can't find:"
 
 INTCPT lda R$DP,S
  tfr A,DP reset Basic09's direct page
+ ifne L2B09
+ cmpb #S$Abort keyboard abort (RUN/STOP on the K2): a break,
+ bne INTCP1 as ^C, so the program stops in the debugger
+ ldb #S$Intrpt (^P in the editor, Q here, ends it)
+INTCP1 equ *
+ endc
  stb G.SIGN Save signal
  ifne H6309
  oim #$80,I.RUNM Set high bit (flag signal was received)

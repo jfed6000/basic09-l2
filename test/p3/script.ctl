@@ -12,8 +12,11 @@ send print n
 expect %DEBUG
 send cont
 sleep 20
-* abort (S$Abort): back to command mode
+* abort (S$Abort, RUN/STOP): a break too, so the program stops in the
+* debugger; q ends it
 signal 2
+expect %DEBUG
+send q
 expect %READY
 * compile and bind errors come back with procedure and line
 send load p3bad.b09
