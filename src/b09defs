@@ -476,6 +476,14 @@ P.BANK equ $20 P.STAT bit: banked procedure; this is its stub
 P.FAR equ $10 P.STAT bit: procedure has far arrays (not packable)
 L2BPN equ 16 Breakpoint table entries: procedure ptr, I-Code offset
 L2BPSZ equ 4*L2BPN Breakpoint table size; it sits at G.DIRA+$100
+* l2b09cc: below the breakpoint table, an index of the symbol table of the
+* procedure being compiled (compil's ADDSYM, SYMSRC): its owner (I.APRC),
+* how many, then per name its offset from I.SYMT and its first letter
+L2SXN equ 255 names it holds (more: the plain search)
+L2SXSZ equ 3+3*L2SXN
+SX.OWN equ 0 the procedure it is for
+SX.N equ 2 names in it
+SX.TAB equ 3 the entries: offset (2), letter (1)
 L2BLSZ equ $2000 MMU block size (8K on Wildbits and CoCo 3)
 L2TOPU equ $1D00 Usable part of the top slot: $FD00-$FFFF is fixed on
 *                 Wildbits ($FE00-$FFFF on the CoCo 3)

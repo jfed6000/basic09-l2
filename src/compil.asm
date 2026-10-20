@@ -1462,7 +1462,11 @@ PRSNA0 lbra INSYM9 save token,SYMTYP; put token in I-Code; exit
 PRSNA2 tst DEBUGGER Are variable references permitted?
  bmi ERUDVR ..No; error: undefined variable
  ldx I.SYMT get ptr to symbol table
+ ifne L2B09CC
+ lbsr SYMSRC Search symbol table for name, through its index
+ else
  lbsr SCHALL Search symbol table for name
+ endc
  bne PRSNA3 Found; continue
  tst DEBUGGER Are variable definitions allowed?
  bne ERUDVR ..No; error: undefined variable ref
@@ -1640,7 +1644,12 @@ ADDSY1 lda ,X+
  sta ,Y+ Move name string into table
  bpl ADDSY1
  leay  ,X Update source ptr
+ ifne L2B09CC
+ puls X
+ lbra SXADD and into the index
+ else
  puls X,PC get symbol tbl ptr and return
+ endc
 
 ***************
 * Subroutine EXPDSC (Size)
@@ -1776,6 +1785,105 @@ MOVDW9 clr ,S++ discard temp, clear carry
 
 ***************
  ifne L2B09CC
+* The symbol table of the procedure being compiled, indexed (l2b09cc).
+* Every name in the source that is not a keyword is looked up here, and
+* SCHALL walks every name a character at a time.  ADDSYM only appends
+* (EXPSYM moves the table down as a whole, so offsets from I.SYMT stay),
+* so an index of fixed 3-byte entries, built as names are added, lets
+* SYMSRC compare only the names with the right first letter.  The index
+* is used only while it is that procedure's (SX.OWN = I.APRC) and has as
+* many names as its table; otherwise (a debugger statement against
+* another procedure, more than L2SXN names) it is the plain search.
+
+* SXBASE: (U)=the index (below the breakpoint table, under G.PRCA)
+SXBASE ldu G.PRCA
+ leau -L2BPSZ-L2SXSZ,U
+ rts
+
+* SXADD (end of ADDSYM): (X)=the new name's entry; keeps X, Y
+SXADD pshs D,X,Y,U
+ bsr SXBASE
+ ldy I.SYMT
+ ldd -3,Y names in the table, this one included
+ cmpd #1 the first of a new table?
+ bne SXA1
+ ldd I.APRC ..yes: the index starts again, for it
+ std SX.OWN,U
+ clr SX.N,U
+SXA1 ldd SX.OWN,U still this procedure's?
+ cmpd I.APRC
+ bne SXA9
+ ldb SX.N,U
+ cmpb #L2SXN full?
+ bhs SXA8
+ lda #3
+ mul
+ leay D,U
+ leay SX.TAB,Y the next entry
+ ldd 2,S its offset
+ subd I.SYMT
+ std ,Y
+ ldx 2,S its first letter, upper case
+ lda 3,X (after the type and offset bytes)
+ anda #$DF
+ sta 2,Y
+ inc SX.N,U
+ bra SXA9
+SXA8 clr SX.OWN,U too many names: the plain search from here
+ clr SX.OWN+1,U
+SXA9 puls D,X,Y,U,PC
+
+* SYMSRC: SCHALL in the symbol table (X)=I.SYMT, for the name at (Y)
+* Returns: as SCHALL (Z set: not found; else (X)=the entry, (Y) past it)
+SYMSRC pshs U
+ bsr SXBASE
+ ldd SX.OWN,U the index, if it is this table's
+ cmpd I.APRC
+ bne SYMS8
+ clra
+ ldb SX.N,U
+ cmpd -3,X as many names as the table?
+ bne SYMS8
+ tstb
+ beq SYMS7 ..none: not found
+ pshs B count
+ lda  ,Y the name's first letter
+ anda #$DF
+ pshs A
+ leau SX.TAB,U
+SYMS1 lda 2,U
+ cmpa ,S this letter?
+ bne SYMS2
+ ldd  ,U
+ ldx I.SYMT
+ leax D,X the entry
+ pshs U
+ lbsr SXCMP1 is it the name?
+ puls U
+ bne SYMS6 ..found
+SYMS2 leau 3,U
+ dec 1,S
+ bne SYMS1
+ leas 2,S not found
+SYMS7 puls U
+ orcc #Zero
+ rts
+SYMS6 leas 2,S found: (X)=the entry, (Y) past the name
+ puls U
+ andcc #^Zero
+ rts
+SYMS8 puls U
+ lbra SCHALL
+* SXCMP1: compare the name at (Y) with one entry (X), as SEARC0 would
+SXCMP1 lda #$20 match upper and lower case
+ pshs A,X,Y,U
+ ldu #1 one entry
+ ldb #3 skip bytes: type, offset
+ lbra SEARC1
+ endc
+
+***************
+ ifne L2B09CC
 * Subroutine KWSRCH
 *   SCHALL in the keyword table (X), for a name at (Y): only the entries
 *   with the name's first letter.  KEYTAB is sorted, and KWIDX (comand,
@@ -1787,7 +1895,7 @@ MOVDW9 clr ,S++ discard temp, clear carry
 KWISZ equ 26*3 (KWIDX's size; comand checks it)
 KWSRCH pshs U
  lda  ,Y
- anda #$DF upper case
+ anda #$5F upper case (a one-letter name's has the end bit too)
  suba #'A
  cmpa #25
  bhi KWSR8 ..not a letter

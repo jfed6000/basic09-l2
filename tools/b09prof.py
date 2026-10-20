@@ -15,6 +15,9 @@ from its code, by routine.
       Reads of each label's first byte: how often its first instruction ran.
 
 Used for the compiler speed-ups (docs/OVERVIEW.html, "Compiler speed-ups").
+Caution: the tap also counts reads made in system state, where other code
+sits at the same addresses, so per-label counts high in the module can be
+wrong; compare totals between runs.
 """
 import bisect
 import collections

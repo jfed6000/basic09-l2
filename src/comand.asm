@@ -1193,6 +1193,9 @@ START0 std ,--U clear DP Globals
  std G.DIRA
  inca
  addd #L2BPSZ breakpoint table between directory and procedures
+ ifne L2B09CC
+ addd #L2SXSZ and below it the symbol index (compil's SYMSRC)
+ endc
  std G.PRCA
  std I.STBG
  tfr U,D

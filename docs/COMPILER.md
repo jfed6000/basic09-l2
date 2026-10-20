@@ -141,7 +141,7 @@ Details:
 **Speed:** loading startrek (`make loadtime`) takes about 4 s against 3 s with the built-in compiler: the fork of `l2b09cc` and the pipe copy. Programs run as fast as before.
 
 **Still open:**
-- **`l2b09cc` was 24,425 bytes, too big for slot 7** (fixed 2026-10-20): its workspace was capped at 32K. Its exprsn is now assembled without the trig package (`-DINCLUDED=3` for that module only; the compiler evaluates nothing, and cnvio's number conversion needs only the real arithmetic), 5,592 → 4,009 bytes, so `l2b09cc` is 22,842 bytes (22,970 with the keyword index), its code can use slot 7, and it gets the runtime's workspace, 40K included (`make p8ctest` loads startrek at `#40k`).
+- **`l2b09cc` was 24,425 bytes, too big for slot 7** (fixed 2026-10-20): its workspace was capped at 32K. Its exprsn is now assembled without the trig package (`-DINCLUDED=3` for that module only; the compiler evaluates nothing, and cnvio's number conversion needs only the real arithmetic), 5,592 → 4,009 bytes, so `l2b09cc` is 22,842 bytes (22,970 with the keyword index, 23,138 with the name index), its code can use slot 7, and it gets the runtime's workspace, 40K included (`make p8ctest` loads startrek at `#40k`).
 - **RUN of an external (packed) module with arguments** (fixed 2026-10-20): the compiler did not know the module and refused the arguments (error 51). `CCPRM` now uses a stand-in header holding the name, since the binder only marks errors in it; `make p8dtest` runs a PACKed module with constants and expressions.
 - **Room:** `l2b09run` has 4,331 bytes left below 23,808 (5,099 below 24,576), for step 5.
 
