@@ -1,0 +1,8 @@
+# the messages stay on stderr
+cc.err    STARTREK
+cc.err    %CERR 37 bad 1
+cc.out    %PROC STARTREK
+cc.out    %PROC RANDOMIZE
+cc.out    %PROC good
+cc.out    %PROC bad
+cc.out    %DONE

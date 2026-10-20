@@ -192,6 +192,11 @@ nav ul { padding-left: 18px; }
 <li><strong>What has to move first:</strong> <code>run</code> arguments and the debugger's statements, which go to the compiler as small requests.</li>
 <li><strong>The first step is safe:</strong> receive procedures from the compiler while keeping the built-in compiler, and compare the two byte for byte.</li>
 </ul>
+<h3>Progress (branch <code>separate_compiler</code>)</h3>
+<ul>
+<li><strong>2026-10-20, the reference test:</strong> <code>make p8atest</code> (on <code>main</code>) records what the compiler does while a program runs: the debugger's PRINT and LET, and <code>run</code> with arguments, including stock Basic09's unchecked argument types.</li>
+<li><strong>2026-10-20, step 1:</strong> <code>l2b09cc</code> is <code>l2b09run</code>'s source built with <code>L2B09CC</code>, so it compiles exactly as <code>l2b09run</code> does. After LOAD binds each procedure, it writes a <code>%PROC &lt;name&gt; &lt;bytes&gt;</code> frame to stdout; <code>%DONE</code> marks each command's end. Its messages stay on stderr, which will be the editor's pipe, so the runtime does not have to forward them. <code>make p8btest</code> checks the frames. <code>l2b09run</code> is unchanged.</li>
+</ul>
 <p>The full note is <a href="COMPILER.md">COMPILER.md</a>.</p>
 
 <h2 id="speed">Compiler speed-ups (a log)</h2>

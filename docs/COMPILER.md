@@ -1,6 +1,6 @@
 # A separate compiler process (design note)
 
-Status: a proposal, not built (2026-10-19). It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The name `l2b09cc` is a placeholder.
+Status (2026-10-20): step 1 is built on the branch `separate_compiler`: `l2b09cc` compiles and sends procedures (`make p8btest`); `l2b09run` does not use it yet. It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
 
 ## The idea
 
@@ -36,7 +36,7 @@ Checked in the source:
 - **The runtime forks the compiler,** not the editor. That keeps the editor/runtime protocol ([PROTOCOL.md](PROTOCOL.md)) as it is: the editor still sends `load <file>` and gets back `%CERR`, `%BERR` and `%READY`. `l2b09ctl` and every test keep working.
 - **The compiler is forked once,** on the first `load`, and stays alive. When the runtime exits, the compiler's command pipe ends, and it exits too.
 - **One pipe each way.** `F$Fork` passes only paths 0-2, so the compiler gets the command pipe on stdin and the data pipe on stdout.
-- **Messages go through the runtime.** The compiler doesn't write to the editor's pipe directly: the runtime forwards its text lines. Then nothing else in the system interleaves, and the runtime always knows where a load stands.
+- **Messages go straight to the editor (changed in step 1).** The compiler's stderr is the runtime's own stderr, which it inherits, so `%CERR`, `%BERR` and listings reach the editor as they do today, and the runtime only reads frames. Nothing interleaves: the runtime waits for `%DONE` before it writes its own `%READY`, and the compiler has written its messages by then.
 
 ### The runtime → compiler direction
 
@@ -44,12 +44,11 @@ Plain text lines, like the current protocol:
 - `load <file>`: compile every procedure in the file. The compiler opens the file itself, with the same current directory as the runtime; it gets the runtime's `chd` and `chx` before each load.
 - `bye`: exit.
 
-### The compiler → runtime direction
+### The compiler → runtime direction (stdout)
 
 Lines, plus one binary frame:
-- **Any text line** (`%CERR ...`, `%BERR ...`, an error listing) is forwarded unchanged to the runtime's own output.
-- **`%PROC <bytes>`,** followed by exactly that many raw bytes: one finished procedure. Pipes carry raw bytes: the runtime reads the line with `I$ReadLn`, then the body with `I$Read`.
-- **`%DONE`:** the load is finished. The runtime then prints its own `%READY`.
+- **`%PROC <name> <bytes>`,** followed by exactly that many raw bytes: one finished procedure, as it is in the compiler's workspace (module header, I-code, symbol and description tables; the error bit set in `P.STAT` if it has errors). Pipes carry raw bytes: the runtime reads the line with `I$ReadLn`, then the body with `I$Read`.
+- **`%DONE`:** the compiler is ready for a command: once at start-up, and after each command (so after a load has sent all its procedures).
 
 ### How the runtime handles a received procedure
 
@@ -89,9 +88,20 @@ Until 1 and 2 are moved, compil and binder can't leave the runtime. That shapes 
 - **Pipes:** two more. The pipe modules are already in OS9Boot for the editor.
 - **When the compiler is missing:** `load` fails with 216, as PACK does without the overlay.
 
+## How `l2b09cc` is built (step 1)
+
+`l2b09cc` is `l2b09run`'s own source built with `-DL2B09CC=1` (`make` builds it). So it compiles exactly as `l2b09run` does, and `l2b09run` stays byte-identical. The differences, all under `ifne L2B09CC` in `comand.asm`:
+- the module name;
+- `L2BANK`, which runs after LOAD binds each procedure, first calls `L2SEND`, which writes the `%PROC` frame to stdout;
+- the command loop (`COMAN0`) writes `%DONE` to stdout before each command.
+
+It keeps every procedure it compiled in its own workspace, as LOAD does, so a later step can compile debugger statements against them. It is 24,035 bytes today, with the interpreter still in; trimming it is for later, since it has its own 64K.
+
+`make p8btest` loads startrek and a file with a compile error into `l2b09cc`, then checks the frames with `tools/ccframes.py`: each must start with a module header whose size and name match its `%PROC` line (`-x <dir>` writes the procedures out). The emulator harness fetches binary results unchanged with `raw:<file>` in a test's `fetch` file.
+
 ## Steps
 
-1. **Build `l2b09cc`** from the same sources (compil, binder, the LOAD path of comand, and the helpers it needs), the way `src/overlay.asm` assembles `src/pack`. Stock builds stay byte-identical (`make check`).
+1. **Build `l2b09cc`** from the same sources. Done 2026-10-20 (above).
 2. **Both paths side by side.**
    - `l2b09run` learns `%PROC`, but keeps its own compiler.
    - A test option compiles each loaded procedure both ways and compares the bytes, which must be identical. That proves the compiler process before anything depends on it.

@@ -23,7 +23,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 |---|---|
 | `make` | Stock variants, `build/l2b09run`, `farmem`/`syscall`/`inkey`, `build/l2b09ctl`. |
 | `make check` | Byte-compare the stock builds with the NitrOS-9 tree's prebuilt copies. |
-| `make p1test` … `p4test`, `p5atest` … `p5vtest`, `p6test`, `p7test`, `p8atest` | Headless emulator tests; each prints PASS/FAIL lines. `p8atest` is the reference for the separate compiler (docs/COMPILER.md). |
+| `make p1test` … `p4test`, `p5atest` … `p5vtest`, `p6test`, `p7test`, `p8atest` | Headless emulator tests; each prints PASS/FAIL lines. `p8atest` is the reference for the separate compiler (docs/COMPILER.md); `p8btest` checks `l2b09cc`'s frames. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make main` (`k2main`, `jr2main`) | New-core images built in an export of the main repos: `build/main/l2_wildbits{k2,jr2}.dsk` (stock, for tests) and `l2_basic09-l2{k2,jr2}.dsk` (for hardware). |
 | `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the same as `l2_basic09-l2{k2,jr2}.dsk` from `make main`, made by patching the stock image's OS9Boot instead of the recipe. |
@@ -42,6 +42,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - Direct-page variables are in `b09defs`; `L2B09` variables go after `BufOvf`.
   - `L2B09` builds also get `-DLevel=2`.
   - The runtime's direct page is full (1 byte left). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
+- **`l2b09cc`** (branch `separate_compiler`, docs/COMPILER.md): the separate compiler, `l2b09run`'s source built with `-DL2B09CC=1`; LOAD sends each bound procedure to stdout as `%PROC <name> <bytes>` plus the bytes. `tools/ccframes.py` checks that output; in a test's `fetch` file, `raw:<file>` fetches a binary file unchanged.
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
 - **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `basic09-l2/` is the editor, `basic09-l2` (formerly `l2b09ed`; P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`. `l2b09help/` is the help browser (docs/HELP.md); it includes the editor's `term.asm` and `keys.asm`.
 - **`help/`:** the help pages (`*.txt`), compiled by `tools/mkhelp.py` into `build/basic09-l2.hlp`, which checks that every Basic09 keyword and error has a page.

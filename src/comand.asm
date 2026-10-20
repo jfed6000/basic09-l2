@@ -98,7 +98,11 @@ O.COMAND fdb ENTRYPT offset of self
 
  ifne INCLUDED&EDITOR
  ifne L2B09
+ ifne L2B09CC
+B09NAM fcs "l2b09cc"
+ else
 B09NAM fcs "l2b09run"
+ endc
  else
 B09NAM fcs "Basic09"
  endc
@@ -1442,6 +1446,9 @@ COMAND equ *
 COMAN0 equ *
  ifne L2B09
  lbsr J$FALL no program is running any more
+ ifne L2B09CC
+ lbsr L2DONE ready for a command: %DONE on stdout
+ endc
  endc
  bsr SETUP
  ifeq L2B09
@@ -2760,7 +2767,59 @@ L2FRE1 ldx FARBAS
  clr WINBLK+1
 L2FRE9 puls D,X,U,PC
 
+***************
+ ifne L2B09CC
+* l2b09cc (docs/COMPILER.md): the same program as l2b09run, built
+* with L2B09CC, so that it compiles exactly as l2b09run does.  Its
+* messages (%CERR, %BERR, listings) go to stderr as before; stdout
+* carries each procedure LOAD has bound, as a line
+*   %PROC <name> <bytes>
+* followed by exactly that many bytes (the procedure as it is in the
+* workspace), and a line %DONE whenever it is ready for a command.
+
+* Subroutine L2SEND: write the procedure just bound (I.APRC)
+L2SEND pshs D,X,Y,U
+ lbsr NEWLIN
+ leax L2PRTX,PCR
+ lbsr STRSPC
+ ldx I.APRC
+ ldd M$NAME,X
+ leax D,X
+ lbsr STRSPC
+ ldx I.APRC
+ ldd P.SIZE,X
+ lbsr ItoA
+ bsr L2WRLN the line
+ ldx I.APRC
+ ldy P.SIZE,X
+ lda #1
+ OS9 I$Write then the bytes
+ puls D,X,Y,U,PC
+
+* Subroutine L2DONE: %DONE on stdout
+L2DONE pshs D,X,Y,U
+ leax L2DNTX,PCR
+ lbsr NEWLIN
+ lbsr CPYSTR
+ bsr L2WRLN
+ puls D,X,Y,U,PC
+
+* L2WRLN: the I/O buffer and a CR to stdout, then reset the buffer
+L2WRLN lbsr PUTCR
+ ldx I.IOBG
+ ldd I.IOPT
+ subd I.IOBG
+ tfr D,Y
+ lda #1
+ OS9 I$WritLn
+ lbra NEWLIN
+
+L2PRTX fcs "%PROC"
+L2DNTX fcs "%DONE"
+ endc
+
 L2BNK0 puls D,X,Y,U,PC L2BANK's early exit, in reach of short branches
+
 
 ***************
 * Subroutine L2BANK
@@ -2770,6 +2829,9 @@ L2BNK0 puls D,X,Y,U,PC L2BANK's early exit, in reach of short branches
 *   that no longer fit in the store (they stay in the workspace).
 
 L2BANK pshs D,X,Y,U
+ ifne L2B09CC
+ lbsr L2SEND l2b09cc: the procedure goes to stdout
+ endc
  ldd FARBAS
  beq L2BNK0 ..banking off
  ldx I.APRC the procedure just bound

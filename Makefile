@@ -45,7 +45,7 @@ AFLAGS = -DNOS9VER= -DNOS9MAJ= -DNOS9MIN=
 STOCK = $(BUILD)/basic09_6809 $(BUILD)/basic09_6309 $(BUILD)/basic09_wildbits \
         $(BUILD)/runb_6809 $(BUILD)/runb_6309
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
-L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl
+L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl $(BUILD)/l2b09cc
 OS9DIR = os9
 TOOLS = $(BUILD)/l2b09ctl $(BUILD)/basic09-l2 $(BUILD)/l2b09help $(BUILD)/basic09-l2.hlp
 
@@ -56,7 +56,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest loadtime clean k2main jr2main main mainsrc
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest p8btest loadtime clean k2main jr2main main mainsrc
 
 all: stock subs l2b09 tools
 
@@ -89,6 +89,11 @@ $(BUILD)/runb_6309: $(DEPS) | $(BUILD)
 $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
 	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DLevel=2
 	@[ $$(stat -c %s $@) -le 24576 ] || echo "WARNING: $@ is over 24,576 bytes: it needs a fourth 8K block (ARCHITECTURE.md, P5.5)"
+
+# The separate compiler (docs/COMPILER.md): l2b09run's own code, built
+# so that LOAD sends each bound procedure to stdout
+$(BUILD)/l2b09cc: $(DEPS) | $(BUILD)
+	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09=1 -DL2B09CC=1 -DLevel=2
 
 # Cold commands (PACK) that l2b09run loads when they are typed
 $(BUILD)/l2b09ovl: $(SRCDIR)/overlay.asm $(DEPS) | $(BUILD)
@@ -220,6 +225,12 @@ p7test: l2b09 $(BASEIMG)
 # the reference for the separate compiler (docs/COMPILER.md)
 p8atest: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/p8a
+
+# l2b09cc (step 1 of the separate compiler): it compiles, and sends each
+# bound procedure to stdout as a %PROC frame; tools/ccframes.py checks them
+p8btest: l2b09 $(BASEIMG)
+	tools/emu-wildbits.sh test/p8b
+	tools/ccframes.py build/emu/p8b/cc.out
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09 $(BASEIMG)

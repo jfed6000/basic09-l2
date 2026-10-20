@@ -9,6 +9,7 @@
 #            to /dd/L2B09/<name>, or to /dd/<path> for a name /<path> (e.g. /CMDS/x)
 #   bootmods optional list of build/ modules to add to OS9Boot (drivers, managers)
 #   fetch    optional list of files to copy back from /dd/l2b09 after the run
+#            (as text, CR to LF; "raw:<file>" copies it unchanged)
 #   expect   optional "<file> <text>" lines; each text must appear in that file,
 #            or "same <fileA> <fileB>": the two fetched files must be identical
 #   gen      optional executable, run as "gen <dir>"; every file it writes to
@@ -88,13 +89,17 @@ start=$(date +%s.%N)
 end=$(date +%s.%N)
 
 for f in run.out run.err $( [ -f "$tdir/fetch" ] && cat "$tdir/fetch" ); do
-    os9 copy -l -r "$img,L2B09/$f" "$out/$f" 2>/dev/null || true
+    l=-l
+    case $f in raw:*) f=${f#raw:}; l= ;; esac
+    os9 copy $l -r "$img,L2B09/$f" "$out/$f" 2>/dev/null || true
     [ -f "$out/$f" ] || echo "(missing: $f)" > "$out/$f"
 done
 
 for f in run.out run.err $( [ -f "$tdir/fetch" ] && cat "$tdir/fetch" ); do
-    echo "---------------- $f"
-    cat "$out/$f"
+    case $f in
+    raw:*) echo "---------------- ${f#raw:} ($(stat -c %s "$out/${f#raw:}") bytes, binary)" ;;
+    *) echo "---------------- $f"; cat "$out/$f" ;;
+    esac
 done
 echo "---------------- screen"
 sed -n '/=== VRAM TEXT MATRIX SNAPSHOT ===/,/^=====/p' "$out/mame.log"

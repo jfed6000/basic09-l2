@@ -1,0 +1,6 @@
+* l2basic09 P8 step 1: l2b09cc compiles and writes each bound
+* procedure to stdout (%PROC <name> <bytes>, then the bytes; %DONE
+* when ready).  make p8btest checks the frames with tools/ccframes.py.
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09cc #32k <cc.cmds >cc.out >>cc.err
