@@ -87,6 +87,11 @@ check("s3 comment", 31, 4)
 check("s3 y", 36, 4)            -- after the \ in the comment: still red
 check("s3 end", 60, 4)          -- the rest of the row too
 check("s3 next line", 6, 5)
+trace()                         -- line 4: PRINT k \ ! note \ more
+trace()
+check("t1 print", 3, 5)         -- the PRINT is done
+check("t1 note", 12, 5)         -- the "!" comment is red...
+check("t1 more", 18, 5)         -- ...to the end: its \ is no separator
 local i = 0
 p5w_sub = emu.add_machine_frame_notifier(function()   -- global: kept alive
     i = i + 1

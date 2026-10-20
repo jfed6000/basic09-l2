@@ -657,7 +657,7 @@ dbghint             fcc       "Stopped:  F7 Step  F8 Over  ^R Continue  ^P Reset
 * (dbstm, from %DEBUG's third number) is drawn red.  vs_char follows
 * the line a character at a time: a "\" outside strings starts the
 * next statement (it is part of it); a statement that starts with
-* REM or "(*" is a comment to the end of the line, as the compiler
+* REM, "(*" or "!" is a comment to the end of the line, as the compiler
 * has it.
 VS.EXL              equ       $01                 this is the stopped line
 VS.INQ              equ       $02                 in a string
@@ -714,12 +714,14 @@ vsc3                cmpa      #'\
 vsc3a               andb      #^VS.REM
                     orb       #VS.ST
                     bra       vsc8
-vsc4                cmpa      #'*
+vsc4                cmpa      #'!                "!": a comment too
+                    beq       vsc4c
+                    cmpa      #'*
                     bne       vsc5
                     lda       vlast,x
                     cmpa      #'(
                     bne       vsc7
-                    orb       #VS.COM             "(*"
+vsc4c               orb       #VS.COM             "(*" or "!"
                     bra       vsc8
 vsc5                bitb      #VS.ST
                     beq       vsc8

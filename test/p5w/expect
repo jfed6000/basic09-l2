@@ -13,3 +13,6 @@ mame.log p5w: s3 comment FF880000
 mame.log p5w: s3 y FF880000
 mame.log p5w: s3 end FF880000
 mame.log p5w: s3 next line FF000050
+mame.log p5w: t1 print FF000050
+mame.log p5w: t1 note FF880000
+mame.log p5w: t1 more FF880000

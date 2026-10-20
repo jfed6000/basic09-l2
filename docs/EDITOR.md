@@ -272,7 +272,7 @@ DIM p:pt
 
 ## The debugger
 
-- **Stops:** a program stops in the debugger at a breakpoint, a `PAUSE` statement, a BREAK, a runtime error, or (with Until return) on its way back to a procedure. On a line with several statements, `%DEBUG`'s third number says which one, and only that statement is red (`vs_char` in `view.asm` follows the line: a `\` outside strings starts the next statement, and one that starts with `REM` or `(*` is a comment to the end of the line); the cursor goes to its start (`vs_cur`). `make p5wtest` reads the colours off the screen as it steps along such a line. `l2b09run` then sends `%DEBUG <proc> <line>`, and the editor stays in the debugger until the program ends or is reset:
+- **Stops:** a program stops in the debugger at a breakpoint, a `PAUSE` statement, a BREAK, a runtime error, or (with Until return) on its way back to a procedure. On a line with several statements, `%DEBUG`'s third number says which one, and only that statement is red (`vs_char` in `view.asm` follows the line: a `\` outside strings starts the next statement, and one that starts with `REM`, `(*` or `!` is a comment to the end of the line); the cursor goes to its start (`vs_cur`). `make p5wtest` reads the colours off the screen as it steps along such a line. `l2b09run` then sends `%DEBUG <proc> <line>`, and the editor stays in the debugger until the program ends or is reset:
   - the line it stopped at is drawn white on red (1 on 2) across the window, or in reverse video with colours off, and the cursor goes there (the window moves only if that line is not in it);
   - the hint line lists the debugger keys;
   - a stop in a procedure that is not in the text says `Stopped in <proc> line <n>`.

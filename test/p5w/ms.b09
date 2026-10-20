@@ -1,5 +1,5 @@
 PROCEDURE ms
 DIM k:INTEGER
 k=1 \ PRINT "a\b" \ k=k+1 \ (* x \ y *)
-PRINT k
+PRINT k \ ! note \ more
 END
