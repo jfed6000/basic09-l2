@@ -117,8 +117,7 @@ B09NAM fcs "RunB"
 
 CPYRIT
  ifne L2B09
- fcc "l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware"
- fcb V$LF+$80
+* (l2b09run's banner is in l2b09ovl: L2OPTS prints it at start-up)
  else
  ifne wildbits
  fcb V$LF
@@ -1428,8 +1427,11 @@ SETEXT ldd SP.ERR previous exit ptr
 *   by user.  Expects one command per line, terminated
 *   with carriage-return.
 
-COMAND leax CPYRIT,PCR
+COMAND equ *
+ ifeq L2B09
+ leax CPYRIT,PCR
  bsr CMDER1 print copyright msg
+ endc
  leax B09NAM,PCR Basic09 message
  bsr CMDER1 print "Basic09"
 COMAN0 equ *
@@ -1787,15 +1789,9 @@ DUMP ldb #0 entry 0: PACK
 *   trap, which unlinks it and goes on to the previous trap.
 
 L2OVLY pshs B,Y
- leax L2OVNM,PCR
- clra any type
- OS9 F$Link
- bcc L2OVL1
- leax L2OVNM,PCR
- clra
- OS9 F$Load
+ bsr L2OVLK
  lbcs ERREXT
-L2OVL1 ldb ,S+ entry number
+ ldb ,S+ entry number
  lda #3 (each entry is a LBRA)
  mul
  leay D,Y entry addr
@@ -1817,6 +1813,16 @@ L2OVL8 leas 4,S error: the command line and entry go
  puls U
  OS9 F$UnLink
  lbra EXIT on to the previous trap
+* L2OVLK: link l2b09ovl, or load it from the execution directory:
+* (Y)=entry, (U)=module; carry set, (B)=error on failure
+L2OVLK leax L2OVNM,PCR
+ clra any type
+ OS9 F$Link
+ bcc L2OVK9
+ leax L2OVNM,PCR
+ clra
+ OS9 F$Load
+L2OVK9 rts
 L2OVNM fcs /l2b09ovl/
  endc
 
@@ -2623,7 +2629,10 @@ L2OPTS lda ,Y+
  bra L2OPTX
 L2OPT2 cmpd #'B*256+'=
  bne L2OPTE ..unknown option
- bsr L2STOR
+ ldb #5 the far store (l2b09ovl's L2STOR)
+ bsr L2OVSC
+ bcs L2OPTX
+ bsr L2WIN then the code window, with the overlay gone
  bcc L2OPTS
 L2OPTX pshs B
  lbsr L2FREE give back a far store already set up
@@ -2632,7 +2641,50 @@ L2OPTX pshs B
 L2OPTE ldb #E$IllArg illegal argument
  bra L2OPTX
 L2OPT9 leay -1,Y back up to first non-option char
+ lda  ,Y nothing follows: command mode, which starts
+ cmpa #V$CR with the banner (in l2b09ovl; not shown if
+ bne L2OPT8 there is no slot for it)
+ ldb #6
+ bsr L2OVSC
+L2OPT8 rts
+
+* L2OVSC: at start-up, call l2b09ovl's entry B with (Y), then unlink
+* it.  Returns the entry's (Y) and carry; carry set, (B)=error if the
+* overlay cannot be linked or loaded.
+L2OVSC pshs B,Y
+ lbsr L2OVLK (Y)=entry, (U)=module
+ bcs L2OVC8
+ ldb  ,S the entry number (F$Link returned its own B)
+ lda #3 (each entry is a LBRA)
+ mul
+ leax D,Y
+ ldy 1,S
+ stu 1,S module, for the unlink
+ jsr  ,X
+ tfr CC,A
+ ldu 1,S
+ sty 1,S
+ sta  ,S
+ OS9 F$UnLink
+ puls A,Y
+ tfr A,CC
  rts
+L2OVC8 leas 1,S
+ puls Y,PC (carry)
+
+* L2WIN: -b: reserve the code window, while it is the highest free
+* slot (only l2b09run's own code is above it), so it never moves;
+* carry set, (B)=error on failure
+L2WIN ldd FARBAS
+ lbsr J$L2MW
+ bcs L2WIN9
+ ldd #L2BLSZ
+ cmpx #-L2BLSZ in the top slot?
+ bne L2WIN8
+ ldd #L2TOPU ..yes; only its lower part is ours
+L2WIN8 std WINLIM
+ andcc #$FE
+L2WIN9 rts
 
 * Move paths 0 and 1 to the program terminal at (Y)
 L2TERM clra
@@ -2651,74 +2703,6 @@ L2TERM clra
  clra
  OS9 I$Dup terminal becomes path 1 too
 L2TER9 rts
-
-***************
-* Subroutine L2STOR
-*   -b=<kb>: allocate the far procedure store and reserve the
-*   code window at once, while it can be the highest free slot
-*   (only l2b09run's own code is above it), so it never moves.
-
-* Passed: (Y)=Decimal kilobytes
-* Returns: (Y)=Updated; carry set, (B)=error on failure
-
-L2STOR ldd #0
-L2STO1 pshs D
- ldb  ,Y
- subb #'0
- cmpb #9
- bhi L2STO2 ..not a digit
- leay 1,Y
- ldd  ,S value*10
- aslb
- rola
- std  ,S
- aslb
- rola
- aslb
- rola
- addd  ,S
- std  ,S
- ldb -1,Y plus digit
- subb #'0
- clra
- addd  ,S
- leas 2,S
- bra L2STO1
-L2STO2 puls D (D)=kilobytes
- addd #7 whole 8K blocks
- lsra
- rorb
- lsra
- rorb
- lsra
- rorb
- tsta
- bne L2STOE ..over 255 blocks
- tstb
- beq L2STOE ..none
- pshs B
- OS9 F$AllRAM (D)=first block
- puls A (A)=block count
- bcs L2STO9
- clr FARBAS
- stb FARBAS+1
- sta FARCNT
- clr FARIDX
- clr FAROFS
- clr FAROFS+1
- ldd FARBAS
- lbsr J$L2MW reserve the window now
- bcs L2STO9
- ldd #L2BLSZ
- cmpx #-L2BLSZ in the top slot?
- bne L2STO8
- ldd #L2TOPU ..yes; only its lower part is ours
-L2STO8 std WINLIM
- andcc #$FE
- rts
-L2STOE ldb #E$IllArg
- coma
-L2STO9 rts
 
 ***************
 * Subroutine L2GARD

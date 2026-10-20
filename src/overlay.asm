@@ -11,7 +11,9 @@
 *
 * Entries: 0 PACK (src/pack, the stock DUMP routine), 1 DIR
 * (src/dir), 2 RENAME (src/rename), 3 MEM (src/mem), 4 DIR05 (an
-* empty command line: DIR without a path)
+* empty command line: DIR without a path); at start-up (L2OPTS calls
+* them through L2OVSC) 5 L2STOR (-b's far store) and 6 L2BANR (the
+* banner)
 
  nam l2b09ovl
  ttl l2basic09 cold-command overlay
@@ -26,6 +28,8 @@ OVLENT lbra DUMP entry 0: PACK
  lbra RENAME 2
  lbra CHGMEM 3
  lbra DIR05 4
+ lbra L2STOR 5: -b's far store, at start-up
+ lbra L2BANR 6: the banner, at start-up
 
 ***************
 * Into the runtime.  Each stub jumps to the routine, which returns
@@ -137,6 +141,76 @@ ItoA jsr M.COMAND
  fcb X$ITOA DIRNUM falls through to ItoA
 
  use pack
+
+* L2BANR (entry 6): the banner, when l2b09run starts in command mode
+L2BANR pshs Y
+ leax CPYRIT,PCR
+ lbsr PRTLIN
+ puls Y
+ clra carry clear
+ rts
+CPYRIT fcc "l2basic09 runtime; Basic09 copyright 1980 Motorola and Microware"
+ fcb V$LF+$80
+
+***************
+* Subroutine L2STOR  (entry 5)
+*   -b=<kb>, at start-up: allocate the far procedure store.
+*   l2b09run reserves the code window once this overlay is gone
+*   (L2WIN), so that it is the highest free slot.
+
+* Passed: (Y)=Decimal kilobytes
+* Returns: (Y)=Updated; carry set, (B)=error on failure
+
+L2STOR ldd #0
+L2STO1 pshs D
+ ldb  ,Y
+ subb #'0
+ cmpb #9
+ bhi L2STO2 ..not a digit
+ leay 1,Y
+ ldd  ,S value*10
+ aslb
+ rola
+ std  ,S
+ aslb
+ rola
+ aslb
+ rola
+ addd  ,S
+ std  ,S
+ ldb -1,Y plus digit
+ subb #'0
+ clra
+ addd  ,S
+ leas 2,S
+ bra L2STO1
+L2STO2 puls D (D)=kilobytes
+ addd #7 whole 8K blocks
+ lsra
+ rorb
+ lsra
+ rorb
+ lsra
+ rorb
+ tsta
+ bne L2STOE ..over 255 blocks
+ tstb
+ beq L2STOE ..none
+ pshs B
+ OS9 F$AllRAM (D)=first block
+ puls A (A)=block count
+ bcs L2STO9
+ clr FARBAS
+ stb FARBAS+1
+ sta FARCNT
+ clr FARIDX
+ clr FAROFS
+ clr FAROFS+1
+ andcc #$FE (l2b09run reserves the window: L2WIN)
+ rts
+L2STOE ldb #E$IllArg
+ coma
+L2STO9 rts
 
 FREE fcs " free"
 DEFNAM fcs "Program"
