@@ -1,0 +1,10 @@
+* l2basic09: an old program on the new system.  A PACKed module, not
+* compiled in this session, run from the command level with arguments
+* (l2b09run's compiler, l2b09cc, has never seen it).
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09run #16k <pk.cmds >pk.out >>pk.err
+load /dd/l2b09/p8dpk
+echo >term.out
+/dd/l2b09/l2b09run #16k -t=/dd/l2b09/term.out <r.cmds >r.out >>r.err
+unlink p8main p8args

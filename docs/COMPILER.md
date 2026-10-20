@@ -142,7 +142,7 @@ Details:
 
 **Still open:**
 - **`l2b09cc` is 24,283 bytes,** too big for slot 7, so its workspace is capped at 32K (it holds only the procedures, not the program's variables and stacks). Trimming what it never uses (the interpreter's debugger commands, RUN, LIST) would let it grow too.
-- **RUN of an external (packed) module with arguments** needs the compiler to know the module; it gives an error now.
+- **RUN of an external (packed) module with arguments** (fixed 2026-10-20): the compiler did not know the module and refused the arguments (error 51). `CCPRM` now uses a stand-in header holding the name, since the binder only marks errors in it; `make p8dtest` runs a PACKed module with constants and expressions.
 - **Room:** `l2b09run` has 4,331 bytes left below 23,808 (5,099 below 24,576), for step 5.
 
 ## Steps

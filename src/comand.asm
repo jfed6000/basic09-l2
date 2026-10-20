@@ -2832,14 +2832,37 @@ L2FRE9 puls D,X,U,PC
 *   %ICODE, 2 bytes of length, the bound I-Code (length 0: errors,
 *   which are shown here).
 
-CCPRM lbsr L2CCPR (X)=our copy of the procedure, (Y)=past its name
- bcs L2CCP8
- stx I.APRC
+CCPRM leas -L2FKSZ,S room for a stand-in procedure header
+ lbsr L2CCPR (X)=our copy of the procedure, (Y)=past its name
+ bcc L2CCP1
+* Not ours: a module (PACKed, or loaded from the shell).  Its arguments
+* are compiled and bound all the same; the binder only marks errors in
+* the procedure's P.STAT, and messages show its name, so a header that
+* holds the name stands in for it.
+ pshs B,Y
+ leau 3,S
+ ldb #L2FKSZ
+L2CCP0 clr ,U+
+ decb
+ bne L2CCP0
+ ldd #P.NAME
+ std 3+M$NAME,S
+ puls B,Y
+ pshs Y
+ negb
+ leax B,Y the name (J$NAME marked its last char)
+ leau 2+P.NAME,S
+L2CCQ0 lda ,X+
+ sta ,U+
+ bpl L2CCQ0
+ puls Y
+ leax  ,S
+L2CCP1 stx I.APRC
  lbsr J$CPRM Call parameter list
  ldy I.STBG
  ldb  ,Y
  cmpb #T.ERRL Error?
- beq L2CCP8
+ beq L2CCPF
  sty I.ICBG
  sty I.ICPT
  ldx ICDPTR
@@ -2862,16 +2885,23 @@ CCPRM lbsr L2CCPR (X)=our copy of the procedure, (Y)=past its name
  rora ANY Errors in run stmt?
  bcc L2CCP7
  ldd #0
-L2CCP7 bsr L2SNDI
+L2CCP7 lbsr L2SNDI
  puls D,Y
  std G.VARS
  sty I.STBG
+ leas L2FKSZ,S
+ clra
+ rts
+L2CCPF ldd #0
+ bsr L2SNDI
+ leas L2FKSZ,S
  clra
  rts
 L2CCP8 ldd #0
  bsr L2SNDI
  clra
  rts
+L2FKSZ equ P.NAME+40 a header with room for a name
 
 * CCSTM <procedure> <statement>  (from l2b09run's debugger)
 *   Compile and bind the statement against our copy of the
@@ -2919,14 +2949,15 @@ L2CCS6 bsr L2SNDI
  rts
 
 * L2CCPR: the procedure named at (Y), in our directory
-* Returns: (X)=Its address, (Y)=Past the name; carry set if unknown
+* Returns: (X)=Its address, (Y)=Past the name, (B)=The name's length;
+*          carry set if unknown
 L2CCPR lbsr J$NAME
  pshs B,Y (DIRSCH destroys B)
  lbsr DIRSCH
  puls B,Y
+ leay B,Y past the name (J$NAME: (B)=its length; keeps C)
  bcs L2CCR8
  ldx  ,X
- leay B,Y past the name (J$NAME: (B)=its length)
 L2CCR8 rts
 
 * L2SNDI: %ICODE, (D) as 2 bytes, then (D) bytes at (X), to stdout

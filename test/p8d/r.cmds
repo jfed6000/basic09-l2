@@ -1,0 +1,5 @@
+run p8args(3,2.5,"hi")
+run p8args(1+2,SQRT(16),"a"+"b")
+run p8args
+q
+bye

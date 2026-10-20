@@ -56,7 +56,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest p8btest p8ctest loadtime clean k2main jr2main main mainsrc
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest p8btest p8ctest p8dtest loadtime clean k2main jr2main main mainsrc
 
 all: stock subs l2b09 tools
 
@@ -235,6 +235,10 @@ p8btest: l2b09 $(BASEIMG)
 # Steps 3-4: l2b09run has no compiler; LOAD, KILL ... go through l2b09cc
 p8ctest: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/p8c
+
+# Compatibility: a PACKed module the compiler never saw, run with arguments
+p8dtest: l2b09 $(BASEIMG)
+	tools/emu-wildbits.sh test/p8d
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09 $(BASEIMG)
