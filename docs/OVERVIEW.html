@@ -64,6 +64,7 @@ nav ul { padding-left: 18px; }
 <li><a href="#far">How far memory works</a></li>
 <li><a href="#banking">Code banking</a></li>
 <li><a href="#pascal">OS-9 Pascal compared</a></li>
+<li><a href="#compiler">The compiler, and a separate compiler process</a></li>
 </ul></nav>
 
 <h2 id="glance">The system at a glance</h2>
@@ -167,6 +168,30 @@ nav ul { padding-left: 18px; }
 <li><strong>Our route:</strong> at start-up <code>runb-l2</code> reads the packed procedures from the file straight into far RAM, as <code>L2BANK</code> does after a load, and runs them through the code window as <code>l2b09run</code> does. The module never has to fit in the 64K.</li>
 </ol>
 <p>On Level 2 with plenty of RAM, route 2 fits better: it reuses the tested <code>L2RSLV</code>/<code>L2MAPW</code> code. <code>PascalS</code>'s model is the one to copy if Level 1, or a small-memory CoCo 3, ever matters.</p>
+
+<h2 id="compiler">The compiler, and a separate compiler process</h2>
+<h3>How it works today</h3>
+<p>The compiler is part of <code>l2b09run</code>, as it is in stock Basic09. LOAD reads the source a line at a time:</p>
+<ol>
+<li><strong>compil</strong> (2,241 bytes) turns each line into I-code: keywords become tokens, constants become binary, names go into the procedure's symbol table. Line errors come back as <code>%CERR</code>.</li>
+<li><strong>binder</strong> (3,589 bytes) runs at the end of each procedure: it lays out the variables, resolves line numbers, and checks what needs the whole procedure. Its errors come back as <code>%BERR</code>.</li>
+<li>The source is thrown away. LIST and SAVE decompile the I-code and symbol table; PACK strips the symbol table for RunB.</li>
+</ol>
+<p>The compiler is also used while running: <code>run p(args)</code> compiles its arguments each time, and the debugger's PRINT, LET, Evaluate and watches compile statements against the paused procedure.</p>
+<h3>The proposal (not built)</h3>
+<pre>
+ basic09-l2 (editor) ==pipes==&gt; l2b09run ==pipes==&gt; l2b09cc
+        (protocol unchanged)      (forks it on the first load)
+</pre>
+<ul>
+<li><strong>Send the result, not the memory map.</strong> The compiler process compiles and binds in its own 64K and sends each finished procedure as a <code>%PROC &lt;bytes&gt;</code> frame; the runtime copies it into its workspace. A procedure's header holds offsets, not addresses, and calls to other procedures are linked at run time, so a bound procedure can be moved as bytes.</li>
+<li><strong>Sharing the runtime's map was rejected:</strong> Basic09's pointers are absolute, <code>F$MapBlk</code> cannot choose a slot, a child that exits with the runtime's blocks mapped can free them, and such a compiler would need a free slot in the runtime's map anyway, just as the overlay does.</li>
+<li><strong>The runtime forks it,</strong> so the editor protocol, <code>l2b09ctl</code> and the tests do not change. The runtime forwards the compiler's <code>%CERR</code>/<code>%BERR</code> lines.</li>
+<li><strong>What it frees:</strong> about 5.4K of <code>l2b09run</code>, enough for slot 7 and a 40K workspace, and room for GLOBAL storage, labels and <code>MODULE.Procedure</code>.</li>
+<li><strong>What has to move first:</strong> <code>run</code> arguments and the debugger's statements, which go to the compiler as small requests.</li>
+<li><strong>The first step is safe:</strong> receive procedures from the compiler while keeping the built-in compiler, and compare the two byte for byte.</li>
+</ul>
+<p>The full note is <a href="COMPILER.md">COMPILER.md</a>.</p>
 </main>
 </body>
 </html>

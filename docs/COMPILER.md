@@ -1,0 +1,109 @@
+# A separate compiler process (design note)
+
+Status: a proposal, not built (2026-10-19). It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The name `l2b09cc` is a placeholder.
+
+## The idea
+
+`l2b09run` forks a compiler process, `l2b09cc`, and drives it through pipes.
+- **The compiler** has its own 64K map. It compiles and binds procedures in its own memory, then sends each finished procedure down a pipe: the same bytes that the workspace holds today.
+- **The runtime** copies those bytes into its workspace.
+
+compil and binder (5,830 bytes) leave `l2b09run`. That frees about 5.4K, which is enough to put the code in slot 7 and get a 40K workspace, with room left for new language features.
+
+**Sharing the runtime's memory map was considered and rejected.**
+- **Same addresses everywhere:** Basic09 keeps absolute pointers in its direct page, including the module addresses `M.COMAND` and the rest. So a compiler that shared the workspace would need the workspace and `l2b09run`'s code at the same addresses in both processes.
+- **No way to choose a slot:** `F$MapBlk` always takes the highest free slot. Forcing the layout would need dummy mappings, and moving the child's own stack out of slot 0.
+- **A dangerous exit:** a child that exits, or crashes, with the runtime's blocks still mapped can free them.
+- **No slot gained:** that compiler needs a slot free in the runtime's map, which is exactly what the overlay already needs.
+
+Sending the result instead needs none of this.
+
+## Why a procedure can be sent as bytes
+
+Checked in the source:
+- **Offsets, not addresses:** the procedure header (`b09defs`, `P.*`) holds offsets from the start of the procedure. `P.PGMB`, `P.SYMB`, `P.DSCB`, `P.DATA`, `P.EXEC` and `P.PRCS` are all offsets. `SETGLB` (`stmts.asm:249-262`) adds them to the procedure's address on every call, so a procedure can sit anywhere. That's already how it works when LOAD and KILL move procedures around the workspace.
+- **Calls are linked at run time:** a call to another procedure goes through a link slot in the caller's variable storage (`P.PRCS`). `EXEC` clears these slots at each call (`stmts.asm:219-232`). So binding doesn't depend on what else is in the workspace.
+- **External modules work the same way:** they are found by name when RUN calls them.
+- **What the runtime adds after receiving:** a directory entry for the procedure. With `-b`, it also banks it (`L2BANK`, as LOAD does today).
+
+## Who forks whom, and the pipes
+
+```
+ basic09-l2 (editor) ==pipes==> l2b09run ==pipes==> l2b09cc
+        (protocol unchanged)      (forks it on the first load)
+```
+
+- **The runtime forks the compiler,** not the editor. That keeps the editor/runtime protocol ([PROTOCOL.md](PROTOCOL.md)) as it is: the editor still sends `load <file>` and gets back `%CERR`, `%BERR` and `%READY`. `l2b09ctl` and every test keep working.
+- **The compiler is forked once,** on the first `load`, and stays alive. When the runtime exits, the compiler's command pipe ends, and it exits too.
+- **One pipe each way.** `F$Fork` passes only paths 0-2, so the compiler gets the command pipe on stdin and the data pipe on stdout.
+- **Messages go through the runtime.** The compiler doesn't write to the editor's pipe directly: the runtime forwards its text lines. Then nothing else in the system interleaves, and the runtime always knows where a load stands.
+
+### The runtime → compiler direction
+
+Plain text lines, like the current protocol:
+- `load <file>`: compile every procedure in the file. The compiler opens the file itself, with the same current directory as the runtime; it gets the runtime's `chd` and `chx` before each load.
+- `bye`: exit.
+
+### The compiler → runtime direction
+
+Lines, plus one binary frame:
+- **Any text line** (`%CERR ...`, `%BERR ...`, an error listing) is forwarded unchanged to the runtime's own output.
+- **`%PROC <bytes>`,** followed by exactly that many raw bytes: one finished procedure. Pipes carry raw bytes: the runtime reads the line with `I$ReadLn`, then the body with `I$Read`.
+- **`%DONE`:** the load is finished. The runtime then prints its own `%READY`.
+
+### How the runtime handles a received procedure
+
+- **An existing procedure of the same name** is killed first, as LOAD does now.
+- **No room in the workspace:** the runtime reports ERROR #032 as today, so the editor's Make still grows the workspace and retries.
+- **A procedure with errors:** the compiler sends it too, with the error bit set in `P.STAT`, as stock Basic09 keeps it, so RUN refuses it with "procedure errors". The `LIST12` path that rebinds a procedure to show its errors (`comand.asm:1955`) is not needed: the compiler already sent the errors.
+
+## What stays in `l2b09run`
+
+- **The interpreter:** stmts, exprsn and cnvio.
+- **The commands it still runs itself:** LIST, SAVE (the decompiler), RUN, KILL, MEM and PACK in the overlay, with `UNBIND`, which PACK uses.
+- **The routines that run while a program runs:** `MOVDWN` (record assignment, `stmts.asm:1016`), plus `NAMSYM` and `SEARC0` for command lines. About 190 bytes; the survey of 2026-10-15 lists them.
+- **The receiver:** the fork, `%PROC` reading, and forwarding. About 150 bytes, estimated.
+
+## The compile-time work that happens while running
+
+These call the compiler today. Each one needs a route:
+
+1. **`run <proc>(<args>)`** compiles and binds the argument list each time (`CPRM`/`BPRM`, `comand.asm:2075-2087`).
+   - **Route:** send the argument text to the compiler and get back a bound parameter block, framed like `%PROC`.
+   - The editor's Run sends no arguments, but tests and `l2b09ctl` do.
+2. **The debugger:** PRINT, LET, Evaluate and watches compile a statement against the paused procedure's symbols, then the runtime executes it (`X$ISTM`).
+   - **Route:** the runtime sends the paused procedure's image (from the workspace or the far store) and the text. The compiler returns the bound snippet.
+   - **Watches** are re-evaluated at every stop, so the runtime keeps each watch's compiled snippet and asks again only when the procedure changes.
+   - **Open:** what a snippet may change. For example, an unknown name today can add to the symbol table.
+3. **Breakpoints** (`bp`) take line numbers and need no compiler.
+
+Until 1 and 2 are moved, compil and binder can't leave the runtime. That shapes the order of the steps below.
+
+## What it costs
+
+- **A process:** its code is about 8-10K by estimate (compil, binder, LOAD's line reader, and the conversion and search helpers it calls). Its data is enough for the largest procedure plus the compiler's tables. It never takes a slot in the runtime's map.
+- **Time:**
+  - a fork on the first load;
+  - per procedure, one pipe copy, about the size of the procedure;
+  - per debugger PRINT, one pipe round trip, a few milliseconds by estimate.
+- **Pipes:** two more. The pipe modules are already in OS9Boot for the editor.
+- **When the compiler is missing:** `load` fails with 216, as PACK does without the overlay.
+
+## Steps
+
+1. **Build `l2b09cc`** from the same sources (compil, binder, the LOAD path of comand, and the helpers it needs), the way `src/overlay.asm` assembles `src/pack`. Stock builds stay byte-identical (`make check`).
+2. **Both paths side by side.**
+   - `l2b09run` learns `%PROC`, but keeps its own compiler.
+   - A test option compiles each loaded procedure both ways and compares the bytes, which must be identical. That proves the compiler process before anything depends on it.
+3. **Move `run` arguments and the debugger's snippets** to the compiler (routes 1 and 2), with tests for each. p2, p6 and p7 use the debugger's PRINT; no test yet uses its LET or a command-line `run <proc>(<args>)`, so those need new tests.
+4. **Remove compil and binder from `l2b09run`.**
+   - Measure, then re-check the slot-7 placement. Code at or under 23,808 bytes should let `#40k` start.
+   - Update PROTOCOL.md (216 for `load`), CLAUDE.md and the tests' `modules` files.
+5. **Then use the room,** and the compiler's own 64K: GLOBAL storage, labels, `MODULE.Procedure` syntax, and better error messages (ARCHITECTURE.md lists them).
+
+## Open questions
+
+- **Keep the compiler running?** It could stay alive with a copy of every procedure it compiled, so the debugger doesn't need to send the image, or start fresh each time to save memory.
+- **Which helpers to copy:** which comand and cnvio routines the compiler needs (number conversion for constants, name search, the I/O buffer), and whether to copy them or share one source file.
+- **Error-line mapping:** whether `%CERR`/`%BERR` line numbers need any change once the compiler reads the file itself. They shouldn't: the same code produces them.
+- **The banked-procedure limit:** a banked procedure is limited to 8K. The compiler could check that before sending, instead of the runtime finding out.
