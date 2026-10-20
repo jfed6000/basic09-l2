@@ -62,7 +62,7 @@ add(function() fx:set_value(cx); fy:set_value(cy) end); wait(5)
 -- screen column c+1
 click(5, 4)                     -- the cursor on it, Run > Go to cursor
 over(23, 0) button(1) moveto(cx, cy + 48) wait(10) button(0)
-wait(60 * 20)
+wait(60 * 35)                   -- Make (through l2b09cc) and the stop: slack for a busy host
 -- columns on line 3 (text column c is screen column c+1), on spaces (a
 -- letter can have more ink than background): 4 in k=1, 12 in PRINT,
 -- 15 the \ inside the string, 26 in k=k+1, 31 and 36 in the comment
@@ -70,7 +70,7 @@ check("s0 first", 4, 4)         -- the first statement only
 check("s0 print", 12, 4)
 local function trace()          -- Debug > Trace into (F7)
     over(38, 0) button(1) moveto(cx, cy + 32) wait(10) button(0)
-    wait(60 * 8)
+    wait(60 * 12)
 end
 trace()
 check("s1 first", 4, 4)

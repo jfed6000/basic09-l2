@@ -63,6 +63,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Esc | Cancel (menu, dialog, selection) | P5.2a/b |
 | ^B | Make (load the changed procedures) | P5.3 |
 | ^R | Run (Make, then run the first procedure); continue when stopped | P5.3/P5.4 |
+| Shift+RUN/STOP | The same as ^R (2026-10-20). The K2 driver sends `$05` for RUN/STOP with or without Shift (its only cancel key: the K2 has no Esc), with Shift in `SS.KySns`; plain RUN/STOP stays Esc. On the PS/2 it is Shift+Esc. `make p5ytest` | — |
 | ^N | Next message (and its line) | P5.3 |
 | F5 | User screen (the program's window) | P5.3 |
 | F6 | Into the message window, and back | P5.3 |

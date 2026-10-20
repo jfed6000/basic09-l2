@@ -62,6 +62,7 @@ Search ({Find}, {Replace})
 Make, Run and debug
   ^B                       {Make}
   ^R                       {Run|Running}; continue when stopped
+  Shift+RUN/STOP           the same as ^R (Shift+Esc on a PS/2 keyboard)
   ^N                       next message
   F6                       into the {Message window} and back
   F5                       the program's screen
@@ -201,7 +202,8 @@ nothing, so ^R goes on with the old code. Esc does neither.
 {Run|Running} makes first, so you seldom need Make on its own.
 
 == Running | Run the program
-Run (^R, Run > Run) makes, then runs the first procedure in the text.
+Run (^R, Shift+RUN/STOP, Run > Run) makes, then runs the first
+procedure in the text.
 
 Run does a {Make} first, then runs the first PROCEDURE in the file.
 {DEFTYPE} blocks are never started. Each run starts on a clear

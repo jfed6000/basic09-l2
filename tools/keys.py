@@ -11,6 +11,7 @@ comment):
     sup sdown sleft sright          Shift+arrows
     swleft swright                  Ctrl+Shift+Left/Right
     home bs del esc enter tab
+    srun          Shift+RUN/STOP (K2) or Shift+Esc (PS/2): Run, as ^R
     f1 ... f8
     ^a ... ^z     Ctrl+letter
     s^a ... s^z   Ctrl+Shift+letter (s^l find previous; the K2 driver's
@@ -53,7 +54,7 @@ NAMED = {
     'sleft': pfx(LEFT | SHF, 0x08), 'sright': pfx(RIGHT | SHF, 0x09),
     'top': pfx(UP | CTRL | SHF, 0x0C), 'bottom': pfx(DOWN | CTRL | SHF, 0x0A),
     'swleft': pfx(LEFT | CTRL | SHF, 0x08), 'swright': pfx(RIGHT | CTRL | SHF, 0x09),
-    'home': b'\x01', 'bs': b'\x08', 'del': pfx(SHF, 0x18), 'esc': b'\x05',
+    'home': b'\x01', 'bs': b'\x08', 'del': pfx(SHF, 0x18), 'esc': b'\x05', 'srun': pfx(SHF, 0x05),
     'enter': b'\x0d', 'tab': b'\x09',
     '^1': pfx(CTRL, 0x31), '^2': pfx(CTRL, 0x32),   # line spacing (K2: the digit)
     'ps2^1': pfx(CTRL, 0xD1), 'ps2^2': pfx(CTRL, 0xD2),   # (PS/2: the digit - $60)

@@ -212,7 +212,11 @@ kn8                 cmpa      #$05                Esc/BREAK; Ctrl+E stays $05
                     bne       kn9
                     bitb      #KB.CTRL
                     bne       kn_ret
-                    lda       #EK.ESC
+                    bitb      #KB.SHF             Shift+RUN/STOP (K2; Shift+Esc on
+                    beq       kn8a                the PS/2): Run, as ^R (the K2's
+                    lda       #$12                load-and-run key, as on Commodores)
+                    rts
+kn8a                lda       #EK.ESC
                     rts
 kn9                 cmpa      #$01                K2 Home; Ctrl+A stays $01
                     bne       kn10
