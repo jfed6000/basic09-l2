@@ -1270,7 +1270,20 @@ INPS30 bsr STROUT
  bne INPS35
  lda I.IPTH
  sta I.CNCH
-INPS35 ldb #V$INLN Get input line code
+INPS35 equ *
+ ifne L2B09
+ lda I.CNCH reading the program's terminal (not a file)?
+ cmpa I.IPTH
+ bne INPS36
+ pshs X,Y
+ clrb tell the editor: it shows the program's screen
+ ldy #0 while a step waits for this
+ leax L2INPE,PCR "%INPUT"
+ lbsr J$L2EV
+ puls X,Y
+INPS36 equ *
+ endc
+ ldb #V$INLN Get input line code
  lbsr J$CVIO Call conversion & I/O
  bcc INPS40 ..continue if no error
  cmpb #S$Intrpt Keyboard interrupt?
@@ -1828,6 +1841,7 @@ DEBUG equ *
  lbra J$DBUG call debugger; then return
  ifne L2B09
 L2ERRE fcs "%ERROR"
+L2INPE fcs "%INPUT"
  endc
  else
  lbsr J$KALL kill all external procs

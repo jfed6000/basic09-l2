@@ -1,0 +1,1 @@
+PROCEDURE p8dinpDIM n:STRING[10]INPUT "name? ",nPRINT "hi ";nEND

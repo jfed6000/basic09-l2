@@ -409,9 +409,14 @@ rw4                 leay      ev_dbg,pcr
                     bne       rw5
                     lbsr      ev_where
                     lbra      dbg_at
-rw5                 leay      ev_ask,pcr
+rw5                 leay      ev_inp,pcr
                     lbsr      ev_is
-                    bne       rw1
+                    bne       rw5i
+                    lbsr      u_inp               it waits for INPUT: show its screen
+                    lbra      rw1
+rw5i                leay      ev_ask,pcr
+                    lbsr      ev_is
+                    lbne      rw1
                     pshs      x                   the question, as a 0-terminated string
 rw5a                lda       ,x+
                     cmpa      #C$CR
@@ -460,6 +465,7 @@ ev_cerr             fcn       "CERR "
 ev_berr             fcn       "BERR "
 ev_dbg              fcn       "DEBUG "
 ev_ask              fcn       "ASK "
+ev_inp              fcn       "INPUT"
 
 * ev_is: Z if the event at X is Y (then X is past it)
 ev_is               pshs      x
@@ -1689,6 +1695,11 @@ runcm               fcn       "run "
 contcm              fcc       "cont"
                     fcb       C$CR
 
+* u_inp: show the program's terminal, once per dbg_go (ushown)
+u_inp               ldx       <base
+                    tst       ushown,x
+                    bne       ush9
+                    inc       ushown,x
 * u_show: show the program's terminal
 u_show              tst       <uterm
                     beq       ush9
@@ -1763,11 +1774,15 @@ uk_rd               lda       <upath
 u_back              tst       <uterm
                     beq       ubk9
                     lbsr      t_flush
-                    leax      selwin,pcr
+                    bsr       ubk_sel
+                    ldx       #2                  and again a moment later: a switch
+                    os9       F$Sleep             to the program's terminal can come
+                    bsr       ubk_sel             after ours, behind its output
+                    lbra      rd_all
+ubk_sel             leax      selwin,pcr
                     ldy       #2
                     lda       <scpath
                     os9       I$Write
-                    lbra      rd_all
 ubk9                rts
 selwin              fcb       $1B,$21             select this terminal
 

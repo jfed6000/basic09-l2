@@ -4,3 +4,5 @@ term.out  args: 3 4. ab
 # and with none: the error comes from the module itself (PACK took the
 # line numbers out, so no line is checked)
 r.err     %ERROR 56 p8args
+# INPUT on the program's terminal: %INPUT first
+i.err     %INPUT

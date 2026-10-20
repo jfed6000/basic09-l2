@@ -219,6 +219,8 @@ cursor goes to the line. The program stays stopped there, so you can
 RUN/STOP (or ^C) stops the program in the debugger, even when the
 editor had the keyboard last. ^P then ends it.
 
+Stepping (F7, F8) keeps the editor's screen; the program's screen comes
+up only when a statement waits for INPUT, until the program stops again.
 F5 (Run > User screen) shows the program's screen until you press a
 key. With -t=<file> there is no user screen.
 

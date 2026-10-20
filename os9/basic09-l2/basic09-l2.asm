@@ -295,6 +295,7 @@ memful              rmb       1                   Make's load ran out of memory 
 muwh                rmb       1                   SS.MsWheel answers (mouse.asm)
 muwst               rmb       2                   EK.WHEEL: its steps (signed)
 nopaus              rmb       1                   Options: no pause after a run (0 = pause)
+ushown              rmb       1                   dbg_go: the program's terminal is shown
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

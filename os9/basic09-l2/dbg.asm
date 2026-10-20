@@ -76,18 +76,30 @@ dbg_go              lbsr      ms_clear
                     lbsr      v_hint
                     lbsr      t_flush
 dg1                 lbsr      rt_cmd
-                    bcs       dg9
+                    lbcs      dg9
                     inc       <running
-                    lbsr      u_show
-                    lbsr      rt_wait
+                    ldx       <base               a step (F7, F8): our screen stays,
+                    leax      rline,x             unless the program waits for
+                    ldd       ,x                  INPUT (%INPUT, in rt_wait: u_inp)
+                    cmpd      #$7374              "st"ep
+                    beq       dg1a
+                    cmpd      #$6F76              "ov"er
+                    beq       dg1a
+                    lbsr      u_inp
+dg1a                lbsr      rt_wait
                     pshs      cc
                     clr       <running
                     bcs       dg2                 (the runtime has gone)
                     tst       <dbgon              it ended, not stopped: wait for a
                     bne       dg2                 key on its screen first
+                    lbsr      u_inp
                     lbsr      u_pause
-dg2                 lbsr      u_back
-                    puls      cc
+dg2                 ldx       <base
+                    tst       ushown,x
+                    beq       dg2a
+                    clr       ushown,x
+                    lbsr      u_back
+dg2a                puls      cc
                     bcs       dg9
                     lbsr      bp_tmpclr
                     bcs       dg9

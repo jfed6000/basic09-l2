@@ -1,0 +1,4 @@
+load p8dinp.b09
+run p8dinp
+q
+bye

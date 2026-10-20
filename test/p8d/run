@@ -8,3 +8,8 @@ load /dd/l2b09/p8dpk
 echo >term.out
 /dd/l2b09/l2b09run #16k -t=/dd/l2b09/term.out <r.cmds >r.out >>r.err
 unlink p8main p8args
+* %INPUT: sent as INPUT reads the program's terminal (here an empty
+* file, so the read then ends with error 211), so a stepping editor can
+* show the program's screen
+echo >tin.txt
+/dd/l2b09/l2b09run -t=/dd/l2b09/tin.txt <i.cmds >i.out >>i.err
