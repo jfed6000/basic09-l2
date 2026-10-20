@@ -121,7 +121,7 @@ Details:
 
 **`l2b09run` is built with `-DL2B09RT=1`.** The build script then assembles compil and binder in their RunB form (`-DINCLUDED=6` for those two only): compil keeps `NAMSYM`, `SEARC0`, `MOVDWN` and the literal-only `CMPRAM` (635 bytes), binder keeps an empty `PRPRAM` (19). `l2b09run` went from 23,945 to 19,477 bytes, so its code can use slot 7: `#40k` starts and runs (`make p8ctest`). Stock builds are unchanged (`make check`).
 
-**At start-up** `L2CCST` forks `l2b09cc` with our workspace size (at most 32K, below) and our `-b`, with pipe A as its stdin and pipe B as its stdout; its stderr is ours. Both pipe paths are kept in `L2CCP`. Without `l2b09cc`, LOAD gives ERROR #216.
+**At start-up** `L2CCST` forks `l2b09cc` with our workspace size and our `-b`, with pipe A as its stdin and pipe B as its stdout; its stderr is ours. Both pipe paths are kept in `L2CCP`. Without `l2b09cc`, LOAD gives ERROR #216.
 
 **What goes to the compiler** (`L2FWD` sends a line, `L2CCLP` reads its answers until `%DONE`):
 - **LOAD** sends `load <file>`; `%PROC` frames go into the workspace as in step 2 (an old procedure of the same name is killed through `KILL0`, by directory entry), with `-b` banking.
@@ -141,7 +141,7 @@ Details:
 **Speed:** loading startrek (`make loadtime`) takes about 4 s against 3 s with the built-in compiler: the fork of `l2b09cc` and the pipe copy. Programs run as fast as before.
 
 **Still open:**
-- **`l2b09cc` is 24,283 bytes,** too big for slot 7, so its workspace is capped at 32K (it holds only the procedures, not the program's variables and stacks). Trimming what it never uses (the interpreter's debugger commands, RUN, LIST) would let it grow too.
+- **`l2b09cc` was 24,425 bytes, too big for slot 7** (fixed 2026-10-20): its workspace was capped at 32K. Its exprsn is now assembled without the trig package (`-DINCLUDED=3` for that module only; the compiler evaluates nothing, and cnvio's number conversion needs only the real arithmetic), 5,592 → 4,009 bytes, so `l2b09cc` is 22,842 bytes, its code can use slot 7, and it gets the runtime's workspace, 40K included (`make p8ctest` loads startrek at `#40k`).
 - **RUN of an external (packed) module with arguments** (fixed 2026-10-20): the compiler did not know the module and refused the arguments (error 51). `CCPRM` now uses a stand-in header holding the name, since the binder only marks errors in it; `make p8dtest` runs a PACKed module with constants and expressions.
 - **Room:** `l2b09run` has 4,331 bytes left below 23,808 (5,099 below 24,576), for step 5.
 

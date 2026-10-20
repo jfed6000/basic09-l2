@@ -1,0 +1,4 @@
+#!/bin/sh
+# the startrek sample, from test/loadtime (gen output is copied as is,
+# so the line ends become CR here)
+tr '\n' '\r' < "$(dirname "$0")/../loadtime/startrek.b09" > "$1/startrek.b09"

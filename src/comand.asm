@@ -213,271 +213,324 @@ OPRTR equ 5
 
 ***************
 * Keyword Table
+*   Sorted by name (tools/kwsort.py): every name in the source is
+*   looked up here first.  l2b09cc has KWIDX, a first-letter index:
+*   each letter's first entry (from KEYTAB) and how many there are.
 
- ifeq INCLUDED&MATHPAK
-* If MATHPAK is not included in BASIC09, the following
-* statements/functions are NOT recognized:
-
-DEG equ *
-RAD equ *
-PI equ *
-SIN equ *
-COS equ *
-TAN equ *
-ASN equ *
-ACS equ *
-ATN equ *
-EXP equ *
-LOG equ *
-LOG10 equ *
- fcs "???"
- fdb 103 Number of entries, when trig functions aren't used
- fcb 2
-
- else
- fdb 115 Number of entries in keytab (with FAR)
- fcb 2 number of skip bytes per entry
+ ifne L2B09CC
+KWIDX equ *
+ fdb KW.A-KEYTAB
+ fcb 7 A
+ fdb KW.B-KEYTAB
+ fcb 4 B
+ fdb KW.C-KEYTAB
+ fcb 7 C
+ fdb KW.D-KEYTAB
+ fcb 7 D
+ fdb KW.E-KEYTAB
+ fcb 12 E
+ fdb KW.F-KEYTAB
+ fcb 5 F
+ fdb KW.G-KEYTAB
+ fcb 3 G
+ fdb 0
+ fcb 0 H
+ fdb KW.I-KEYTAB
+ fcb 4 I
+ fdb 0
+ fcb 0 J
+ fdb KW.K-KEYTAB
+ fcb 1 K
+ fdb KW.L-KEYTAB
+ fcb 10 L
+ fdb KW.M-KEYTAB
+ fcb 2 M
+ fdb KW.N-KEYTAB
+ fcb 2 N
+ fdb KW.O-KEYTAB
+ fcb 3 O
+ fdb KW.P-KEYTAB
+ fcb 9 P
+ fdb 0
+ fcb 0 Q
+ fdb KW.R-KEYTAB
+ fcb 10 R
+ fdb KW.S-KEYTAB
+ fcb 13 S
+ fdb KW.T-KEYTAB
+ fcb 9 T
+ fdb KW.U-KEYTAB
+ fcb 3 U
+ fdb KW.V-KEYTAB
+ fcb 1 V
+ fdb KW.W-KEYTAB
+ fcb 2 W
+ fdb KW.X-KEYTAB
+ fcb 1 X
+ fdb 0
+ fcb 0 Y
+ fdb 0
+ fcb 0 Z
+KWISZ equ *-KWIDX
+ ifne KWISZ-26*3
+ error KWIDX must be 26*3 bytes (compil's KWSRCH)
  endc
+ endc
+ fdb 115 Number of entries in keytab
+ fcb 2 number of skip bytes per entry
 
 KEYTAB equ *
- fcb T.PRAM,STMBEG
-PARAM fcs "PARAM"
- fcb T.TYPE,STMBEG
-TYP fcs "TYPE"
- fcb T.DIM,STMBEG
-DIM fcs "DIM"
- fcb T.DATA,STMBEG
-DATAA fcs "DATA"
- fcb T.STOP,STMBEG
-STOP fcs "STOP"
- fcb T.BYE,STMBEG
-BYE fcs "BYE"
- fcb T.TRON,STMBEG
-TRON fcs "TRON"
- fcb T.TROF,STMBEG
-TROF fcs "TROFF"
- fcb T.PAUS,STMBEG
-PAUSE fcs "PAUSE"
-
- ifne INCLUDED&MATHPAK
- fcb T.DEG,STMBEG
-DEG fcs "DEG"
- fcb T.RAD,STMBEG
-RAD fcs "RAD"
- endc
-
- fcb T.RETN,STMBEG
-RETURN fcs "RETURN"
- fcb T.LET,STMBEG
-LET fcs "LET"
- fcb T.POKE,STMBEG
-POKE fcs "POKE"
- fcb T.IF,STMBEG
-IF fcs "IF"
- fcb T.ELSE,STMBEG
-ELSE fcs "ELSE"
- fcb T.EIF,STMBEG
-ENDIF fcs "ENDIF"
- fcb T.FOR,STMBEG
-FOR fcs "FOR"
- fcb T.NEXT,STMBEG
-NEXT fcs "NEXT"
- fcb T.WHIL,STMBEG
-WHILE fcs "WHILE"
- fcb T.EWHL,STMBEG
-ENDWHL fcs "ENDWHILE"
- fcb T.REPT,STMBEG
-REPEAT fcs "REPEAT"
- fcb T.UNTL,STMBEG
-UNTIL fcs "UNTIL"
- fcb T.LOOP,STMBEG
-LOOP fcs "LOOP"
- fcb T.ELOP,STMBEG
-ENDLUP fcs "ENDLOOP"
- fcb T.EXIF,STMBEG
-EXITIF fcs "EXITIF"
- fcb T.EEXT,STMBEG
-ENDEXT fcs "ENDEXIT"
- fcb T.ON,STMBEG
-ON fcs "ON"
- fcb T.EROR,STMBEG
-ERROR fcs "ERROR"
- fcb T.GOTO,STMBEG
-GOTO fcs "GOTO"
- fcb T.GOSB,STMBEG
-GOSUB fcs "GOSUB"
- fcb T.RUN,STMBEG
-RUN fcs "RUN"
- fcb T.KILL,STMBEG
-KILL fcs "KILL"
- fcb T.INPT,STMBEG
-INPUT fcs "INPUT"
- fcb T.PRNT,STMBEG
-PRINT fcs "PRINT"
- fcb T.CHD,STMBEG
-CHD fcs "CHD"
- fcb T.CHX,STMBEG
-CHX fcs "CHX"
- fcb T.CRET,STMBEG
-CREATE fcs "CREATE"
- fcb T.OPEN,STMBEG
-OPEN fcs "OPEN"
- fcb T.SEEK,STMBEG
-SEEK fcs "SEEK"
- fcb T.READ,STMBEG
-READ fcs "READ"
- fcb T.WRIT,STMBEG
-WRITE fcs "WRITE"
- fcb T.GET,STMBEG
-GET fcs "GET"
- fcb T.PUT,STMBEG
-PUT fcs "PUT"
- fcb T.CLOS,STMBEG
-CLOSE fcs "CLOSE"
- fcb T.REST,STMBEG
-RESTOR fcs "RESTORE"
- fcb T.DELT,STMBEG
-DELETE fcs "DELETE"
- fcb T.CHIN,STMBEG
-CHAIN fcs "CHAIN"
- fcb T.SYS,STMBEG
-SHELL fcs "SHELL"
- fcb T.BAS0,STMBEG
-BASE fcs "BASE"
- fcb T.REM1,STMBEG
-REM fcs "REM"
- fcb T.END,STMBEG
-END fcs "END"
- fcb T.BYTE,RESRVD
-BYTE fcs "BYTE"
- fcb T.INT,RESRVD
-INTGER fcs "INTEGER"
- fcb T.REAL,RESRVD
-REAL fcs "REAL"
- fcb T.BOOL,RESRVD
-BOOL fcs "BOOLEAN"
- fcb T.STR,RESRVD
-STRING fcs "STRING"
- fcb T.THEN,RESRVD
-THEN fcs "THEN"
- fcb T.TO,RESRVD
-TO fcs "TO"
- fcb T.STEP,RESRVD
-STEP fcs "STEP"
- fcb T.DO,RESRVD
-DO fcs "DO"
- fcb T.USNG,RESRVD
-USING fcs "USING"
- fcb T.ERRL,RESRVD
- fcs "PROCEDURE"
- fcb T.ADDR,FNCREF
-ADDR fcs "ADDR"
- fcb T.LENG,FNCREF
-LENG fcs "SIZE"
- fcb T.POS,FNCREF
-POS fcs "POS"
- fcb T.ERR,FNCREF
-ERRR fcs "ERR"
- fcb T.MOD,FNCREF
-MOD fcs "MOD"
- fcb T.RND,FNCREF
-RND fcs "RND"
- fcb T.SUBS,FNCREF
-SUBSTR fcs "SUBSTR"
-
- ifne INCLUDED&MATHPAK
- fcb T.PI,FNCREF
-PI fcs "PI"
- fcb T.SIN,FNCREF
-SIN fcs "SIN"
- fcb T.COS,FNCREF
-COS fcs "COS"
- fcb T.TAN,FNCREF
-TAN fcs "TAN"
- fcb T.ASN,FNCREF
-ASN fcs "ASN"
- fcb T.ACS,FNCREF
-ACS fcs "ACS"
- fcb T.ATN,FNCREF
-ATN fcs "ATN"
- fcb T.EXP,FNCREF
-EXP fcs "EXP"
- fcb T.LN,FNCREF
-LOG fcs "LOG"
- fcb T.LOG,FNCREF
-LOG10 fcs "LOG10"
- endc
-
- fcb T.SGN,FNCREF
-SGN fcs "SGN"
+KW.A equ *
  fcb T.ABS,FNCREF
 ABS fcs "ABS"
- fcb T.SQR,FNCREF
-SQRT fcs "SQRT"
- fcb T.SQR,FNCREF
-SQR fcs "SQR"
- fcb T.INTF,FNCREF
-INTF fcs "INT"
+ fcb T.ACS,FNCREF
+ACS fcs "ACS"
+ fcb T.ADDR,FNCREF
+ADDR fcs "ADDR"
+ fcb T.AND,OPRTR
+AND fcs "AND"
+ fcb T.ASC,FNCREF
+ASC fcs "ASC"
+ fcb T.ASN,FNCREF
+ASN fcs "ASN"
+ fcb T.ATN,FNCREF
+ATN fcs "ATN"
+KW.B equ *
+ fcb T.BAS0,STMBEG
+BASE fcs "BASE"
+ fcb T.BOOL,RESRVD
+BOOL fcs "BOOLEAN"
+ fcb T.BYE,STMBEG
+BYE fcs "BYE"
+ fcb T.BYTE,RESRVD
+BYTE fcs "BYTE"
+KW.C equ *
+ fcb T.CHIN,STMBEG
+CHAIN fcs "CHAIN"
+ fcb T.CHD,STMBEG
+CHD fcs "CHD"
+ fcb T.CHR,FNCREF
+CHR$ fcs "CHR$"
+ fcb T.CHX,STMBEG
+CHX fcs "CHX"
+ fcb T.CLOS,STMBEG
+CLOSE fcs "CLOSE"
+ fcb T.COS,FNCREF
+COS fcs "COS"
+ fcb T.CRET,STMBEG
+CREATE fcs "CREATE"
+KW.D equ *
+ fcb T.DATA,STMBEG
+DATAA fcs "DATA"
+ fcb T.DATE,FNCREF
+DATE$ fcs "DATE$"
+ fcb T.DEG,STMBEG
+DEG fcs "DEG"
+ fcb T.DELT,STMBEG
+DELETE fcs "DELETE"
+ fcb T.DIM,STMBEG
+DIM fcs "DIM"
+ fcb T.DIR,RESRVD
+DIRECT fcs "DIR"
+ fcb T.DO,RESRVD
+DO fcs "DO"
+KW.E equ *
+ fcb T.ELSE,STMBEG
+ELSE fcs "ELSE"
+ fcb T.END,STMBEG
+END fcs "END"
+ fcb T.EEXT,STMBEG
+ENDEXT fcs "ENDEXIT"
+ fcb T.EIF,STMBEG
+ENDIF fcs "ENDIF"
+ fcb T.ELOP,STMBEG
+ENDLUP fcs "ENDLOOP"
+ fcb T.EWHL,STMBEG
+ENDWHL fcs "ENDWHILE"
+ fcb T.EOF,FNCREF
+EOF fcs "EOF"
+ fcb T.ERR,FNCREF
+ERRR fcs "ERR"
+ fcb T.EROR,STMBEG
+ERROR fcs "ERROR"
+ fcb T.EXEC,RESRVD
+EXEC fcs "EXEC"
+ fcb T.EXIF,STMBEG
+EXITIF fcs "EXITIF"
+ fcb T.EXP,FNCREF
+EXP fcs "EXP"
+KW.F equ *
+ fcb T.FALS,FNCREF
+FALSELit fcs "FALSE"
+ fcb T.FAR,RESRVD
+FARKW fcs "FAR"
  fcb T.FIX,FNCREF
 FIX fcs "FIX"
  fcb T.FLOT,FNCREF
 FLOAT fcs "FLOAT"
- fcb T.SQ,FNCREF
-SQ fcs "SQ"
- fcb T.PEEK,FNCREF
-PEEK fcs "PEEK"
- fcb T.NNOT,FNCREF
-NUMNOT fcs "LNOT"
- fcb T.VAL,FNCREF
-VAL fcs "VAL"
- fcb T.LEN,FNCREF
-LEN fcs "LEN"
- fcb T.ASC,FNCREF
-ASC fcs "ASC"
+ fcb T.FOR,STMBEG
+FOR fcs "FOR"
+KW.G equ *
+ fcb T.GET,STMBEG
+GET fcs "GET"
+ fcb T.GOSB,STMBEG
+GOSUB fcs "GOSUB"
+ fcb T.GOTO,STMBEG
+GOTO fcs "GOTO"
+KW.I equ *
+ fcb T.IF,STMBEG
+IF fcs "IF"
+ fcb T.INPT,STMBEG
+INPUT fcs "INPUT"
+ fcb T.INTF,FNCREF
+INTF fcs "INT"
+ fcb T.INT,RESRVD
+INTGER fcs "INTEGER"
+KW.K equ *
+ fcb T.KILL,STMBEG
+KILL fcs "KILL"
+KW.L equ *
  fcb T.NAND,FNCREF
 NUMAND fcs "LAND"
+ fcb T.LEFT,FNCREF
+LEFT$ fcs "LEFT$"
+ fcb T.LEN,FNCREF
+LEN fcs "LEN"
+ fcb T.LET,STMBEG
+LET fcs "LET"
+ fcb T.NNOT,FNCREF
+NUMNOT fcs "LNOT"
+ fcb T.LN,FNCREF
+LOG fcs "LOG"
+ fcb T.LOG,FNCREF
+LOG10 fcs "LOG10"
+ fcb T.LOOP,STMBEG
+LOOP fcs "LOOP"
  fcb T.NOR,FNCREF
 NUMOR fcs "LOR"
  fcb T.NXOR,FNCREF
 NUMXOR fcs "LXOR"
- fcb T.TRUE,FNCREF
-TRUELit fcs "TRUE"
- fcb T.FALS,FNCREF
-FALSELit fcs "FALSE"
- fcb T.EOF,FNCREF
-EOF fcs "EOF"
- fcb T.TRIM,FNCREF
-TRIM$ fcs "TRIM$"
+KW.M equ *
  fcb T.MID,FNCREF
 MID$ fcs "MID$"
- fcb T.LEFT,FNCREF
-LEFT$ fcs "LEFT$"
- fcb T.RGHT,FNCREF
-RIGHT$ fcs "RIGHT$"
- fcb T.CHR,FNCREF
-CHR$ fcs "CHR$"
- fcb T.STRF,FNCREF
-STR$ fcs "STR$"
- fcb T.DATE,FNCREF
-DATE$ fcs "DATE$"
- fcb T.TAB,FNCREF
-TAB fcs "TAB"
+ fcb T.MOD,FNCREF
+MOD fcs "MOD"
+KW.N equ *
+ fcb T.NEXT,STMBEG
+NEXT fcs "NEXT"
  fcb T.NOT,OPRTR
 NOT fcs "NOT"
- fcb T.AND,OPRTR
-AND fcs "AND"
+KW.O equ *
+ fcb T.ON,STMBEG
+ON fcs "ON"
+ fcb T.OPEN,STMBEG
+OPEN fcs "OPEN"
  fcb T.OR,OPRTR
 OR fcs "OR"
- fcb T.XOR,OPRTR
-XOR fcs "XOR"
+KW.P equ *
+ fcb T.PRAM,STMBEG
+PARAM fcs "PARAM"
+ fcb T.PAUS,STMBEG
+PAUSE fcs "PAUSE"
+ fcb T.PEEK,FNCREF
+PEEK fcs "PEEK"
+ fcb T.PI,FNCREF
+PI fcs "PI"
+ fcb T.POKE,STMBEG
+POKE fcs "POKE"
+ fcb T.POS,FNCREF
+POS fcs "POS"
+ fcb T.PRNT,STMBEG
+PRINT fcs "PRINT"
+ fcb T.ERRL,RESRVD
+ fcs "PROCEDURE"
+ fcb T.PUT,STMBEG
+PUT fcs "PUT"
+KW.R equ *
+ fcb T.RAD,STMBEG
+RAD fcs "RAD"
+ fcb T.READ,STMBEG
+READ fcs "READ"
+ fcb T.REAL,RESRVD
+REAL fcs "REAL"
+ fcb T.REM1,STMBEG
+REM fcs "REM"
+ fcb T.REPT,STMBEG
+REPEAT fcs "REPEAT"
+ fcb T.REST,STMBEG
+RESTOR fcs "RESTORE"
+ fcb T.RETN,STMBEG
+RETURN fcs "RETURN"
+ fcb T.RGHT,FNCREF
+RIGHT$ fcs "RIGHT$"
+ fcb T.RND,FNCREF
+RND fcs "RND"
+ fcb T.RUN,STMBEG
+RUN fcs "RUN"
+KW.S equ *
+ fcb T.SEEK,STMBEG
+SEEK fcs "SEEK"
+ fcb T.SGN,FNCREF
+SGN fcs "SGN"
+ fcb T.SYS,STMBEG
+SHELL fcs "SHELL"
+ fcb T.SIN,FNCREF
+SIN fcs "SIN"
+ fcb T.LENG,FNCREF
+LENG fcs "SIZE"
+ fcb T.SQ,FNCREF
+SQ fcs "SQ"
+ fcb T.SQR,FNCREF
+SQR fcs "SQR"
+ fcb T.SQR,FNCREF
+SQRT fcs "SQRT"
+ fcb T.STEP,RESRVD
+STEP fcs "STEP"
+ fcb T.STOP,STMBEG
+STOP fcs "STOP"
+ fcb T.STRF,FNCREF
+STR$ fcs "STR$"
+ fcb T.STR,RESRVD
+STRING fcs "STRING"
+ fcb T.SUBS,FNCREF
+SUBSTR fcs "SUBSTR"
+KW.T equ *
+ fcb T.TAB,FNCREF
+TAB fcs "TAB"
+ fcb T.TAN,FNCREF
+TAN fcs "TAN"
+ fcb T.THEN,RESRVD
+THEN fcs "THEN"
+ fcb T.TO,RESRVD
+TO fcs "TO"
+ fcb T.TRIM,FNCREF
+TRIM$ fcs "TRIM$"
+ fcb T.TROF,STMBEG
+TROF fcs "TROFF"
+ fcb T.TRON,STMBEG
+TRON fcs "TRON"
+ fcb T.TRUE,FNCREF
+TRUELit fcs "TRUE"
+ fcb T.TYPE,STMBEG
+TYP fcs "TYPE"
+KW.U equ *
+ fcb T.UNTL,STMBEG
+UNTIL fcs "UNTIL"
  fcb T.UPDT,RESRVD
 UPDATE fcs "UPDATE"
- fcb T.EXEC,RESRVD
-EXEC fcs "EXEC"
- fcb T.DIR,RESRVD
-DIRECT fcs "DIR"
- fcb T.FAR,RESRVD
-FARKW fcs "FAR"
+ fcb T.USNG,RESRVD
+USING fcs "USING"
+KW.V equ *
+ fcb T.VAL,FNCREF
+VAL fcs "VAL"
+KW.W equ *
+ fcb T.WHIL,STMBEG
+WHILE fcs "WHILE"
+ fcb T.WRIT,STMBEG
+WRITE fcs "WRITE"
+KW.X equ *
+ fcb T.XOR,OPRTR
+XOR fcs "XOR"
 
  ttl DECOMPILE Table
  pag
@@ -3319,10 +3372,7 @@ L2CCS1 lbsr PUTCR
  tfr D,Y
  lda G.WSPS our workspace size, in pages
  inca
- cmpa #$80 at most 32K: it holds only procedures, and
- bls L2CCS2 its code cannot use the top slot
- lda #$80
-L2CCS2 tfr A,B
+ tfr A,B
  clra
  OS9 F$Fork
  bcs L2CCSB

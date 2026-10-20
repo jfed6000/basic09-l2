@@ -1,4 +1,5 @@
 mem
+load startrek.b09
 load p8cprog.b09
 run p8cmain
 bye

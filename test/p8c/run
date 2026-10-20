@@ -7,6 +7,7 @@ chd /dd/l2b09
 echo >term.out
 /dd/l2b09/l2b09run #32k -t=/dd/l2b09/term.out <c.cmds >c.out >>c.err
 procs >procs.out
-* slot 7: l2b09run's code fits there now, so a 40K workspace starts
+* slot 7: l2b09run's and l2b09cc's code fit there now, so a 40K workspace
+* starts, and the compiler gets 40K too (startrek, then the program)
 echo >term40.out
 /dd/l2b09/l2b09run #40k -t=/dd/l2b09/term40.out <w.cmds >w.out >>w.err

@@ -64,6 +64,12 @@ def main():
             # l2b09run without the compiler (docs/COMPILER.md): compil and
             # binder keep only what the interpreter uses, as in RunB
             mdefs = defs + ['-DINCLUDED=6']
+        if '-DL2B09CC=1' in defs and module == 'exprsn':
+            # l2b09cc evaluates no expressions: its exprsn keeps the real
+            # arithmetic that cnvio's number conversion uses, without the
+            # trig package (MATHPAK), so that its code fits in three
+            # blocks below 23,808 bytes and can use the top slot
+            mdefs = defs + ['-DINCLUDED=3']
         obj = os.path.join(build, module)
         cmd = [
             'lwasm',

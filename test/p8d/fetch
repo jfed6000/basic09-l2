@@ -3,3 +3,6 @@ r.err
 term.out
 i.err
 s.err
+raw:stkb
+raw:stkc
+pc.err

@@ -16,3 +16,7 @@ echo >tin.txt
 * statements on one line: %DEBUG <proc> <line> <n> for the n+1th
 echo >ts.txt
 /dd/l2b09/l2b09run -t=/dd/l2b09/ts.txt <s.cmds >s.out >>s.err
+* the compiler against stock Basic09: the image's own basic09 and
+* l2b09cc PACK startrek into byte-identical modules
+/dd/cmds/basic09 #32k <pb.cmds >pb.out >>pb.err
+/dd/cmds/l2b09cc #32k <pc.cmds >pc.out >>pc.err

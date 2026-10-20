@@ -11,3 +11,5 @@ s.err     %DEBUG p8dms 2 1
 s.err     %DEBUG p8dms 2 2
 s.err     %DEBUG p8dms 2 3
 s.err     %DEBUG p8dms 3
+# stock basic09 and l2b09cc compile startrek to the same PACKed module
+same      stkb stkc

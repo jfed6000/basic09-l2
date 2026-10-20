@@ -1449,7 +1449,11 @@ ERUDVR lda #M$UDVR Error: undefined variable
 * Destroys: A,B,X,CC
 
 PRSNAM ldx KEYWORDS get keyword tbl ptr
+ ifne L2B09CC
+ lbsr KWSRCH .. and search its first letter's keywords
+ else
  lbsr SCHALL .. and search for a keyword (upper or lower case)
+ endc
  beq PRSNA2 not found; go look for variable name
  stx SYMPT save symbol ptr
  ldd  ,X get SYMTYP & token from table
@@ -1769,6 +1773,45 @@ MOVDW9 clr ,S++ discard temp, clear carry
 *          CC - Zero = not Found
 *               Non-Zero = Found
 
+
+***************
+ ifne L2B09CC
+* Subroutine KWSRCH
+*   SCHALL in the keyword table (X), for a name at (Y): only the entries
+*   with the name's first letter.  KEYTAB is sorted, and KWIDX (comand,
+*   tools/kwsort.py) sits in front of its 3-byte header: for A to Z, the
+*   offset of that letter's first entry and how many there are.  Not a
+*   letter: the whole table, as before.
+* Returns: as SCHALL
+
+KWISZ equ 26*3 (KWIDX's size; comand checks it)
+KWSRCH pshs U
+ lda  ,Y
+ anda #$DF upper case
+ suba #'A
+ cmpa #25
+ bhi KWSR8 ..not a letter
+ ldb #3
+ mul
+ leau -3-KWISZ,X the index
+ leau D,U its entry for the letter
+ ldd  ,U offset of the first one
+ leax D,X
+ ldb 2,U count
+ beq KWSR7 ..none: not found
+ clra
+ tfr D,U
+ bsr KWSR1
+ puls U,PC
+KWSR7 puls U (Z is set: not found)
+ rts
+KWSR8 puls U
+ bra SCHALL
+KWSR1 lda #$20 match upper and lower case
+ pshs A,X,Y,U as SEARC0, for (U) entries from (X)
+ ldb #2 skip bytes: token, type
+ bra SEARC1
+ endc
 
 SCHALL lda #$20 Entry point to match upper and lower case
 SEARC0 pshs A,X,Y,U Save regs

@@ -11,3 +11,4 @@ c.err     PROCEDURE RAND8I
 # #40k: the workspace (slots 0-4) and our code (5-7) fill the map
 w.err     40935
 term40.out main done
+w.err     STARTREK

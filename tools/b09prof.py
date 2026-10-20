@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Profile l2b09run in MAME: count every read from its code, by routine.
+"""Profile l2b09run (or l2b09cc, B09PROF_CC=1) in MAME: count every read
+from its code, by routine.
 
   b09prof.py lua <counts file>  > <testdir>/lua
       Write a MAME autoboot script for a test directory (tools/emu-wildbits.sh).
@@ -24,7 +25,10 @@ import sys
 import tempfile
 
 TOP = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-RUN = os.path.join(TOP, 'build', 'l2b09run')
+# B09PROF_CC=1: profile the compiler, l2b09cc, instead of l2b09run
+CC = os.environ.get('B09PROF_CC') == '1'
+RUN = os.path.join(TOP, 'build', 'l2b09cc' if CC else 'l2b09run')
+FLAGS = ['-DCOMMUNITY=1', '-DL2B09CC=1' if CC else '-DL2B09RT=1', '-DLevel=2']
 MODS = ['comand', 'compil', 'binder', 'stmts', 'exprsn', 'cnvio']
 
 LUA = '''local hdr = {%(hdr)s}
@@ -60,12 +64,12 @@ def labels():
     """(address in l2b09run, module:label) for every code label."""
     nitros9 = os.environ.get('NITROS9DIR', os.path.join(TOP, 'build', 'main', 'src', 'nitros9'))
     tmp = tempfile.mkdtemp(prefix='b09prof')
-    out = os.path.join(tmp, 'l2b09run')
-    subprocess.run([sys.executable, os.path.join(TOP, 'src', 'build-modular-basic09.py'), 'basic09', out,
-                    '-DCOMMUNITY=1', '-DL2B09=1', '-DLevel=2'], check=True, stdout=subprocess.DEVNULL,
+    out = os.path.join(tmp, os.path.basename(RUN))
+    subprocess.run([sys.executable, os.path.join(TOP, 'src', 'build-modular-basic09.py'), 'basic09', out]
+                   + FLAGS, check=True, stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL, env=dict(os.environ, NITROS9DIR=os.path.abspath(nitros9)))
     if open(out, 'rb').read() != open(RUN, 'rb').read():
-        sys.exit('the rebuilt l2b09run differs from build/l2b09run: run make first')
+        sys.exit('the rebuilt %s differs from build/: run make first' % os.path.basename(RUN))
     build = os.path.join(tmp, '.modular-build', 'basic09')
     syms, start = [], 0
     for m in MODS:
