@@ -108,12 +108,15 @@ vd0                 lda       <redraw             (bp_lines and sel_bounds use A
                     bita      #RD.ALL+RD.TEXT
                     beq       vd1
                     bita      #RD.ALL             a scroll leaves the frame alone
-                    beq       vd0a
+                    beq       vd0w
                     lbsr      v_frame
                     ldx       <base               (a partial redraw is above them)
                     tst       rdlim,x
                     bne       vd0a
-                    lbsr      w_draw
+vd0x                lbsr      w_draw
+                    bra       vd0a
+vd0w                bita      #RD.WIN             a stop: the watch window too
+                    bne       vd0x
 vd0a                equ       *
                     ldd       <tpos
                     std       <wp

@@ -158,6 +158,8 @@ rd_all              lda       #RD.ALL
                     bra       rd
 rd_text             lda       #RD.TEXT
                     bra       rd
+rd_stop             lda       #RD.TEXT+RD.WIN     a debugger stop: the text and the
+                    bra       rd                  watches, not the frame or scroll bar
 rd_below            lda       #RD.BELOW
                     bra       rd
 rd_line             lda       #RD.LINE

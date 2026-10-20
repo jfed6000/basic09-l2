@@ -159,10 +159,11 @@ dbg_show            lbsr      sel_off
                     ldd       <dbfl
                     lbsr      goto_line
                     lbsr      vs_cur
-                    lbra      rd_all
+                    lbra      rd_stop             (rd_all redrew the scroll bar too)
 dsh1                ldd       <dbfl
                     lbsr      goto_line
                     lbsr      vs_cur
+                    lbsr      rd_stop
                     lbra      v_center
 
 * c_step: one statement, into a called procedure (F7).  If the program
