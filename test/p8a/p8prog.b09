@@ -1,0 +1,1 @@
+PROCEDURE p8mainDIM i:INTEGERDIM r:REALDIM s:STRING[10]DIM a(3):REALTYPE pt=px,py:REALDIM p:pti=1r=1.5s="one"a(2)=2.5p.px=3PAUSEPRINT "after: ";i;" ";r;" ";s;" ";a(2);" ";p.pxENDPROCEDURE p8argsPARAM n:INTEGERPARAM x:REALPARAM t:STRING[8]PRINT "args: ";n;" ";x;" ";tEND

@@ -1,0 +1,10 @@
+* l2basic09 P8 reference: the compiler's work while a program runs,
+* which a separate compiler process (docs/COMPILER.md) must take over
+* with the same results.  The file is given on the command line, so
+* l2b09run runs its first procedure, p8main, which stops at PAUSE:
+* the debugger's PRINT and LET (conversions, arrays, a record field,
+* strings, errors), then RUN with arguments.
+-x
+chd /dd/l2b09
+echo >term.out
+/dd/l2b09/l2b09run -t=/dd/l2b09/term.out p8prog.b09 <p8.cmds >cmd.out >>cmd.err

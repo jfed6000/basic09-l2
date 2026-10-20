@@ -56,7 +56,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test loadtime clean k2main jr2main main mainsrc
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest loadtime clean k2main jr2main main mainsrc
 
 all: stock subs l2b09 tools
 
@@ -215,6 +215,11 @@ p6test: l2b09 $(BASEIMG)
 
 p7test: l2b09 $(BASEIMG)
 	EMU_SECONDS=300 tools/emu-wildbits.sh test/p7
+
+# The compiler's work while running (debugger PRINT/LET, RUN arguments):
+# the reference for the separate compiler (docs/COMPILER.md)
+p8atest: l2b09 $(BASEIMG)
+	tools/emu-wildbits.sh test/p8a
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09 $(BASEIMG)

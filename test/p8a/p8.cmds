@@ -1,0 +1,19 @@
+print i,r,s,a(2),p.px
+let i=7.6
+let r=i+0.25
+let s="seven"
+let a(2)=a(2)*2
+let p.px=p.px+1
+print i*100+23.5
+print i,r,s,a(2),p.px
+print nosuch
+let i="x"
+cont
+run p8args(3,2.5,"hi")
+run p8args(1+2,SQRT(16),"a"+"b")
+run p8args(5,1.5,"toolongstring")
+run p8args(2.9,1.5,"x")
+run p8args(4,7,"int2real")
+run p8args(3)
+q
+bye

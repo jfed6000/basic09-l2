@@ -1,0 +1,20 @@
+# the debugger: PRINT, then LET with conversions (7.6 to an INTEGER is 8)
+cmd.err   %DEBUG p8main 12
+cmd.err   1               1.5             one             2.5             3.
+cmd.err   823.5
+cmd.err   8               8.25            seven           5.              4.
+cmd.err   ERROR #049
+cmd.err   %BERR 71 p8main 1
+term.out  after: 8 8.25 seven 5. 4.
+# RUN with arguments: constants, expressions, a string cut to its size
+term.out  args: 3 2.5 hi
+term.out  args: 3 4. ab
+term.out  args: 5 1.5 toolongs
+# stock Basic09 does not check argument types: the callee reads the
+# bytes it is given (2.9's first two bytes as an INTEGER; an INTEGER
+# and what follows it as a REAL).  A separate compiler must pass the
+# same bytes.
+term.out  args: 697 1.5 x
+term.out  args: 4 -.027343999 int2real
+# too few arguments: the missing one fails when it is used
+cmd.err   %ERROR 56 p8args 4

@@ -95,7 +95,7 @@ Until 1 and 2 are moved, compil and binder can't leave the runtime. That shapes 
 2. **Both paths side by side.**
    - `l2b09run` learns `%PROC`, but keeps its own compiler.
    - A test option compiles each loaded procedure both ways and compares the bytes, which must be identical. That proves the compiler process before anything depends on it.
-3. **Move `run` arguments and the debugger's snippets** to the compiler (routes 1 and 2), with tests for each. p2, p6 and p7 use the debugger's PRINT; no test yet uses its LET or a command-line `run <proc>(<args>)`, so those need new tests.
+3. **Move `run` arguments and the debugger's snippets** to the compiler (routes 1 and 2), with tests for each. `make p8atest` is the reference: the debugger's PRINT and LET (conversions, arrays, a record field, strings, errors 49 and 71) and `run <proc>(<args>)` (expressions, a long string, too few arguments, and stock Basic09's unchecked argument types, whose bytes must stay the same).
 4. **Remove compil and binder from `l2b09run`.**
    - Measure, then re-check the slot-7 placement. Code at or under 23,808 bytes should let `#40k` start.
    - Update PROTOCOL.md (216 for `load`), CLAUDE.md and the tests' `modules` files.
