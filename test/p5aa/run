@@ -1,0 +1,11 @@
+* basic09-l2: Run with arguments, Build module (PACK), Procedure calls
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -t=/dd/l2b09/term.out -l=ed.log pk.b09 <keys.bin >/vt3 >>ed.err
+echo == one done
+load pk
+amain >pk.out
+echo >term2.out
+/dd/l2b09/basic09-l2 -h -t=/dd/l2b09/term2.out st.b09 <keys2.bin >/term

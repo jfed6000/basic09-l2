@@ -115,12 +115,14 @@ Run
   Go to cursor      F4      run to the cursor line ({Debugger})
   Program reset     ^P      end the stopped program ({Debugger})
   User screen       F5      show the program's screen ({Running})
+  With arguments...         run a procedure with arguments ({Running})
 Compile
   Make              ^B      load the changed procedures ({Make})
   Next error        ^N      go to the next message ({Message window})
   Messages          F6      into the message window ({Message window})
   Pretty print              tidy the procedure at the cursor ({Pretty print})
   All: pretty print ^Space  tidy every procedure ({Pretty print})
+  Build module...           PACK: a module for RunB ({Running})
 Debug
   Trace into        F7      step, into called procedures ({Debugger})
   Step over         F8      step, running calls whole ({Debugger})
@@ -130,6 +132,7 @@ Debug
   Delete watch...           remove a watch or all of them ({Watches})
   Breakpoint        ^T      on or off on this line ({Breakpoints})
   Clear breakpoints         remove them all ({Breakpoints})
+  Procedure calls           where it stopped, and the callers
 Options
   Auto indent               Enter indents like the line above, on or off
   Match case                searches match case, on or off ({Find})
@@ -252,6 +255,10 @@ debugger keys.
 Debug > Until return asks for the name of a procedure in the call chain.
 The next ^R runs until the program returns to it. Give the caller's
 name to step out of a procedure.
+
+Debug > Procedure calls lists the procedure the program stopped in and
+the ones that called it, in the {Message window}. Enter on one goes to
+its PROCEDURE line.
 
 A stop in a procedure that is not in the text says "Stopped in <proc>
 line <n>".

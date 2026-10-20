@@ -382,6 +382,27 @@ sli1                cmpx      ,s
                     bra       sli1
 sli9                puls      u,pc
 
+* c_stack: Debug > Call stack: the debugger's STATE, the stopped
+*   procedure and its callers, in the message window (Enter on one goes
+*   to its PROCEDURE line)
+c_stack             tst       <dbgon
+                    lbeq      c_notst
+                    lbsr      ms_clear
+                    ldx       <base
+                    inc       stkcap,x
+                    leax      statecm,pcr
+                    leay      nostr,pcr
+                    lbsr      dbg_ask
+                    ldx       <base
+                    clr       stkcap,x
+                    lbsr      w_show
+                    leax      stackms,pcr
+                    stx       <msgp
+                    lbra      rd_all
+statecm             fcn       "state"
+nostr               fcb       0
+stackms             fcn       "Procedure calls: Enter goes to one"
+
 * c_retbrk: stop when the program returns to a procedure (the Basic09
 * debugger's BREAK <procedure>)
 c_retbrk            tst       <dbgon

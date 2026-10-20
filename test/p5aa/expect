@@ -1,0 +1,9 @@
+ed.log > run asub(5,"hi")
+term.out n=5 t=hi
+ed.log > pack* pk
+ed.log > run amain
+term.out go
+pk.out n=3 t=xy
+mame.log == 1:1 ==
+mame.log Stopped in asub
+mame.log   called by amain

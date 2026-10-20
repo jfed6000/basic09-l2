@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""basic09-l2: Run > With arguments..., Compile > Build module... (PACK)
+and Debug > Procedure calls (STATE in the message window).
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+prog = '''PROCEDURE amain
+PRINT "go"
+RUN asub(3,"xy")
+END
+PROCEDURE asub
+PARAM n:INTEGER; t:STRING
+PRINT "n="; n; " t="; t
+END
+'''
+# Session 1: run asub with arguments, then again (the last one is kept),
+# build pk (PACK), then Run: Make loads everything again after the PACK
+keys = '''
+alt-r "w" "asub(5,\\"hi\\")" enter    # the dialog starts with amain: typing replaces it
+alt-r "w" enter                     # the last one again
+alt-c "b" enter                     # pk: the file's name without .b09
+^r                                  # Make (all again), run amain
+^q
+'''
+# Session 2 keeps its screen (-h): stopped in asub, the procedure calls,
+# then Enter on "called by amain" moves the cursor to its PROCEDURE line
+keys2 = '''
+f7 f7 f7 alt-d "p" f6 down enter
+'''
+with open(os.path.join(out, 'pk.b09'), 'w', newline='') as f:
+    f.write(prog.replace('\n', '\r'))
+with open(os.path.join(out, 'st.b09'), 'w', newline='') as f:
+    f.write(prog.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
+with open(os.path.join(out, 'keys2.bin'), 'wb') as f:
+    f.write(compile_keys(keys2))

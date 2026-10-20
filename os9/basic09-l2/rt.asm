@@ -439,6 +439,7 @@ rw5b                lbsr      a_rline
                     lbsr      rt_cmd
                     lbra      rw1
 rw_text             leax      -1,x                keep it, and count "ERROR #" lines
+                    lbsr      stk_add             (Call stack: into the message window)
                     lbsr      col_chk             (before out_keep: the line before)
                     lbsr      out_keep            (a load failure has one without an
 rwt1                leay      errtx,pcr           event)
@@ -1708,10 +1709,13 @@ crn0                leax      runcm,pcr
 run_first           pshs      x
                     lbsr      bp_sync
                     bcs       crn8
-                    ldy       #0                  the procedure with the lowest line
+                    bsr       pr_first
+                    lbra      crn3
+* pr_first: Y = the first procedure in the text (0: none)
+pr_first            ldy       #0                  the procedure with the lowest line
                     clrb                          (not a DEFTYPE block)
 crn2                cmpb      <nproc
-                    bhs       crn3
+                    bhs       crn2r
                     lbsr      pt_at
                     pshs      b
                     lda       PR.FLAG,x
@@ -1726,13 +1730,14 @@ crn2a               tfr       x,y
 crn2b               puls      b
                     incb
                     bra       crn2
+crn2r               rts
 crn3                cmpy      #0
                     bne       crn3a
                     leax      noprms,pcr
                     stx       <msgp
 crn8                puls      x
 crn9                rts
-crn3a               bsr       u_cls
+crn3a               lbsr      u_cls
                     lbsr      a_rline             "run <name>"
                     exg       x,y
                     pshs      x
@@ -1744,6 +1749,185 @@ crn3a               bsr       u_cls
                     lda       #C$CR
                     sta       ,y
                     lbra      dbg_go
+* c_runa: Run with arguments (Run > Run with arguments...): ask for
+*   "<procedure>(<arguments>)" (the last one, or the first procedure),
+*   Make, then run it as Run does
+c_runa              tst       <dbgon              stopped: reset it first
+                    beq       cra1
+cra0                leax      rsfms,pcr
+                    stx       <msgp
+                    rts
+cra1                lbsr      c_make
+                    bcs       cra9
+                    ldx       <base               the last one, or the first
+                    leay      inbuf,x             procedure's name
+                    leax      rargs,x
+                    tst       ,x
+                    bne       cra2
+                    pshs      y
+                    lbsr      pr_first
+                    tfr       y,x
+                    puls      y
+                    cmpx      #0
+                    beq       cra3
+                    leax      PR.NAME,x
+cra2                lbsr      s_cpy
+cra3                clr       ,y
+                    leax      ratl,pcr
+                    lbsr      dlg_inp
+                    bcs       cra9
+                    lbsr      a_inbx
+                    tst       ,x
+                    beq       cra9
+                    ldy       <base               keep it for next time
+                    leay      rargs,y
+                    ldb       #60
+cra4                lda       ,x+
+                    sta       ,y+
+                    beq       cra5
+                    decb
+                    bne       cra4
+                    clr       ,y
+cra5                lbsr      bp_sync
+                    bcs       cra9
+                    lbsr      u_cls
+                    lbsr      a_rline             "run <what was typed>"
+                    tfr       x,y
+                    leax      runcm,pcr
+                    lbsr      s_cpy
+                    lbsr      a_inbx
+                    lbsr      s_cpy
+                    lda       #C$CR
+                    sta       ,y
+                    lbra      dbg_go
+cra9                rts
+ratl                fcn       "Run procedure(arguments)"
+rsfms               fcn       "Reset the program first (^P)"
+
+* c_pack: Compile > Pack...: Make, ask for the file (the source's name
+*   without .b09), then "pack* <file>": a packed module for RunB.  PACK
+*   strips the compiler's copies of the procedures, so the next Make
+*   loads them all again.
+c_pack              tst       <dbgon              stopped: reset it first
+                    lbne      cra0
+                    lbsr      c_make
+                    lbcs      cpk9
+                    ldx       <base               the source's name, without .b09
+                    leay      inbuf,x
+                    leax      fname,x
+                    lbsr      s_cpy
+                    clr       ,y
+                    lbsr      a_inbx
+                    tfr       x,y
+cpk1                lda       ,y+                 the last "." after the last "/"
+                    beq       cpk2
+                    cmpa      #'/
+                    bne       cpk1a
+                    tfr       y,x
+cpk1a               cmpa      #'.
+                    bne       cpk1
+                    leax      -1,y
+                    bra       cpk1
+cpk2                lda       ,x
+                    cmpa      #'.
+                    bne       cpk3
+                    clr       ,x
+cpk3                leax      packtl,pcr
+                    lbsr      dlg_inp
+                    bcs       cpk9
+                    lbsr      a_inbx
+                    tst       ,x
+                    beq       cpk9
+                    lbsr      a_rline             "pack* <file>"
+                    tfr       x,y
+                    leax      packcm,pcr
+                    lbsr      s_cpy
+                    lbsr      a_inbx
+                    lbsr      s_cpy
+                    lda       #C$CR
+                    sta       ,y
+                    clr       <nerrl
+                    clr       <lderr
+                    lbsr      rt_cmd
+                    bcs       cpk9
+                    lbsr      rt_wait
+                    bcs       cpk9
+                    clrb                          its copies are stripped: all of
+cpk4                cmpb      <nproc              them again at the next Make
+                    bhs       cpk5
+                    lbsr      pt_at
+                    lda       PR.FLAG,x
+                    ora       #PF.ERR
+                    sta       PR.FLAG,x
+                    incb
+                    bra       cpk4
+cpk5                ldb       <lderr              "ERROR #<n>": say so
+                    beq       cpk6
+                    stb       <msgerr
+                    clr       <msgp
+                    clr       <msgp+1
+                    rts
+cpk6                leax      packms,pcr
+                    stx       <msgp
+cpk9                rts
+packtl              fcn       "Build a module for RunB"
+packcm              fcn       "pack* "
+packms              fcn       "Packed: a module for RunB"
+
+* stk_add: (Call stack) text line X from "state", "PROCEDURE <name>"
+*   or "called by <name>", as a message pointing at that procedure
+stk_add             ldy       <base
+                    tst       stkcap,y
+                    beq       ska9
+                    pshs      d,x,y,u
+                    leau      stktx1,pcr          "PROCEDURE "?
+                    leay      stkhd1,pcr
+                    bsr       ska_is
+                    beq       ska1
+                    leau      stktx2,pcr          "called by "?
+                    leay      stkhd2,pcr
+                    bsr       ska_is
+                    bne       ska8
+ska1                pshs      x                   (X)=the name
+                    lbsr      ms_new
+                    puls      y
+                    bcs       ska8
+                    pshs      x                   ,s = the message
+                    leax      MS.TEXT,x
+                    exg       x,y                 Y = its text, X = the name
+                    pshs      x
+                    tfr       u,x
+                    lbsr      s_cpy               the words
+                    puls      x
+                    pshs      y                   where the name starts
+ska2                lda       ,x+                 the name, to its CR
+                    cmpa      #C$CR
+                    beq       ska3
+                    sta       ,y+
+                    bra       ska2
+ska3                clr       ,y
+                    puls      y
+                    lbsr      pt_find             one of ours? its PROCEDURE line
+                    puls      x
+                    bcs       ska8
+                    ldd       PR.LINE,y
+                    std       MS.LINE,x
+ska8                puls      d,x,y,u
+ska9                rts
+* ska_is: Z if the line at X starts with the string at Y; X past it
+ska_is              pshs      x
+skai1               lda       ,y+
+                    beq       skai9
+                    cmpa      ,x+
+                    beq       skai1
+                    puls      x,pc                Z clear
+skai9               leas      2,s
+                    orcc      #Zero
+                    rts
+stkhd1              fcn       "PROCEDURE "
+stkhd2              fcn       "called by "
+stktx1              fcn       "Stopped in "
+stktx2              fcn       "  called by "
 noprms              fcn       "No procedures"
 runcm               fcn       "run "
 contcm              fcc       "cont"

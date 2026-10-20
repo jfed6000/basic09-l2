@@ -303,6 +303,8 @@ evstm               rmb       1                   event: statement on the line (
 vseg                rmb       1                   vs_char: the statement drawn now on the stopped line
 vlast               rmb       1                   vs_char: the character before
 colhnt              rmb       1                   rw_text: a compile error's ^ is under a ":" (col_chk)
+stkcap              rmb       1                   rw_text: "state" lines go to the message window
+rargs               rmb       61                  Run with arguments: the last one
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

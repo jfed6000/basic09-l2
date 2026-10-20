@@ -100,6 +100,9 @@ rstms               fcn       "Program reset"     also dbg.asm's message
                     fdb       c_user-cmdtab
                     fcn       "User screen"
                     fcn       "F5"
+                    fdb       c_runa-cmdtab
+                    fcn       "With arguments..."
+                    fcn       ""
                     fdb       $FFFF
 mcomp               fdb       c_make-cmdtab
                     fcn       "Make"
@@ -117,6 +120,9 @@ mcomp               fdb       c_make-cmdtab
                     fdb       c_ppall-cmdtab
                     fcn       "All: pretty print"
                     fcn       "^Space"
+                    fdb       c_pack-cmdtab
+                    fcn       "Build module..."
+                    fcn       ""
                     fdb       $FFFF
 mdbg                fdb       c_step-cmdtab
                     fcn       "Trace into"
@@ -142,6 +148,9 @@ mdbg                fdb       c_step-cmdtab
                     fcn       "^T"
                     fdb       c_bpclr-cmdtab
                     fcn       "Clear breakpoints"
+                    fcn       ""
+                    fdb       c_stack-cmdtab
+                    fcn       "Procedure calls"
                     fcn       ""
                     fdb       $FFFF
 mopt                fdb       c_indent-cmdtab
