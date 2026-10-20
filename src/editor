@@ -1398,6 +1398,19 @@ INSERT tst G.VARS enough memory to compile?
  lda  ,X
  cmpa #T.LREF Does it have a line number?
  bne INSER3 ..no; go insert line
+ ifne L2B09
+* LOAD (the only caller in l2b09run) appends at the end; a line
+* numbered above every line so far goes there, without the two
+* searches.  P.EXEC holds the highest number until the binder
+* clears it (the procedure is new, so it starts at 0).
+ ldd 1,X the line number entered
+ ldy I.APRC
+ cmpd P.EXEC,Y above the highest so far?
+ bls INSER0 ..no; search as before
+ std P.EXEC,Y
+ bra INSER3
+INSER0 equ *
+ endc
  clra
  clrb
  sta ,-S
@@ -1977,12 +1990,21 @@ REPLAC pshs D,X,Y,U Save caller's registers
  ldd I.STBG
  subd  ,S (d)=length of I-Code following inserted stuff
  beq REPLA1
+ ifne L2B09
+ lbsr L2FLUP Move new below old I-Code where it goes
+ else
  lbsr FLOTUP Move new below old I-Code where it goes
+ endc
 REPLA1 ldd ICDPTR
  ldu  ,S First byte to move
  subd ,S++ (d)=number of bytes to move down
  bls REPLA2
  ldy 4,S Original I-Code ptr
+ ifne L2B09
+ pshs U nothing deleted (an insertion): it is
+ cmpy ,S++ in place already, so skip the copy
+ beq REPLA2 of everything above onto itself
+ endc
  lbsr J$MVDN Accomplish the deletion by moving down
 REPLA2 ldd ICDPTR
  subd I.STBG (d)=number of bytes added
@@ -1998,6 +2020,59 @@ REPLA2 ldd ICDPTR
  subd  ,S
  std G.VARS Update free space count
  puls D,X,Y,U,PC Return
+
+***************
+ ifne L2B09
+* Subroutine L2FLUP
+*   FLOTUP for a short insertion (the binder's conversion tokens are
+*   one byte): keep the new bytes on the stack, block-move the
+*   I-Code above the insertion up over them (MOVUP, 4 bytes a loop),
+*   and put them in the gap.  FLOTUP rotates in place a byte at a
+*   time, about 60 cycles a byte, so a whole-procedure move for each
+*   inserted token made binding quadratic.  Longer insertions still
+*   go to FLOTUP.
+
+* Passed: as FLOTUP: (D)=Size of the I-Code to float up
+*         (X)=Its address (the insertion point)
+*         (Y)=End of the new bytes, which follow it
+* Destroys: None
+
+L2FLMX equ 8 longest insertion kept on the stack
+L2FLUP pshs D,X,Y,U
+ tfr Y,D
+ subd 2,S
+ subd  ,S (D)=number of new bytes
+ beq L2FLU9 ..none
+ cmpd #L2FLMX
+ bhi L2FLU8 ..too many; FLOTUP
+ leas -L2FLMX,S room for them
+ pshs B count, at 0,S; the bytes at 1,S
+ ldx L2FLMX+1+4,S end of the new bytes
+ negb
+ leax B,X their start
+ leay 1,S
+ ldb  ,S
+L2FLU1 lda ,X+ keep them
+ sta ,Y+
+ decb
+ bne L2FLU1
+ ldy L2FLMX+1+2,S from: the insertion point
+ ldb  ,S
+ leau B,Y to: as many bytes higher
+ ldd L2FLMX+1,S count: the I-Code above
+ lbsr MOVUP
+ ldx L2FLMX+1+2,S
+ leay 1,S
+ ldb  ,S
+L2FLU2 lda ,Y+ the new bytes into the gap
+ sta ,X+
+ decb
+ bne L2FLU2
+ leas L2FLMX+1,S
+L2FLU9 puls D,X,Y,U,PC
+L2FLU8 puls D,X,Y,U
+ lbra FLOTUP
+ endc
 
 ***************
 * Subroutine MOVUP

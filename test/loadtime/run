@@ -2,5 +2,5 @@
 -x
 chd /dd/l2b09
 date -t
-/dd/l2b09/l2b09run #40k <load.cmds >>load.err
+/dd/l2b09/l2b09run #32k <load.cmds >>load.err
 date -t

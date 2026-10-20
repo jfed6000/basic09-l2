@@ -45,7 +45,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
 - **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `basic09-l2/` is the editor, `basic09-l2` (formerly `l2b09ed`; P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`. `l2b09help/` is the help browser (docs/HELP.md); it includes the editor's `term.asm` and `keys.asm`.
 - **`help/`:** the help pages (`*.txt`), compiled by `tools/mkhelp.py` into `build/basic09-l2.hlp`, which checks that every Basic09 keyword and error has a page.
-- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, `edmodel.py`, a Python model of the editor's commands used to generate expected files, and `mkkw.py`, which regenerates the editor's keyword table `os9/basic09-l2/kwtab.asm` from `KEYTAB`).
+- **`tools/`:** host tools (the emulator runner, `bootfile-add.py`, `keys.py` for editor key scripts, `edmodel.py`, a Python model of the editor's commands used to generate expected files, `mkkw.py`, which regenerates the editor's keyword table `os9/basic09-l2/kwtab.asm` from `KEYTAB`, and `b09prof.py`, a MAME read-tap profiler for `l2b09run`: `b09prof.py lua <counts> > <testdir>/lua`, run the test, then `b09prof.py report <counts>`).
 
 ## Gotchas learned the hard way
 

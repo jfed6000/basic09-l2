@@ -65,6 +65,7 @@ nav ul { padding-left: 18px; }
 <li><a href="#banking">Code banking</a></li>
 <li><a href="#pascal">OS-9 Pascal compared</a></li>
 <li><a href="#compiler">The compiler, and a separate compiler process</a></li>
+<li><a href="#speed">Compiler speed-ups (a log)</a></li>
 </ul></nav>
 
 <h2 id="glance">The system at a glance</h2>
@@ -87,7 +88,7 @@ nav ul { padding-left: 18px; }
 <div class="tablewrap"><table>
 <tr><th>Part</th><th>Size</th><th>What it is</th></tr>
 <tr><td><code>basic09-l2</code><br>the editor</td><td class="num">22,779 bytes<br>(1,797 left of 3 blocks)</td><td>Full-screen editor with Turbo C-style menus. A paged text buffer (2K pages in a swap file, a few cached), so files can be larger than 64K. Undo/redo, find and replace, clipboard, syntax colours, mouse with wheel and scroll bar, double spacing, 80x60. Drives the runtime: Make (only changed procedures), Run, the debugger UI (step, step over, breakpoints, watches, evaluate), pretty print, <code>DEFTYPE</code>/<code>USE</code>. <a href="EDITOR.md">EDITOR.md</a></td></tr>
-<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">23,852 bytes<br>(724 left below 24,576)</td><td>Microware's Basic09 compiler, binder and interpreter, built from the original modular source: comand 6.7K, exprsn 5.6K, binder 3.6K, stmts 3.1K, cnvio 2.6K, compil 2.2K. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor, DIR and RENAME are removed (the editor does not use them).</td></tr>
+<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">23,945 bytes<br>(631 left below 24,576)</td><td>Microware's Basic09 compiler, binder and interpreter, built from the original modular source: comand 6.7K, exprsn 5.6K, binder 3.6K, stmts 3.1K, cnvio 2.6K, compil 2.2K. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor, DIR and RENAME are removed (the editor does not use them).</td></tr>
 <tr><td><code>l2b09ovl</code><br>the overlay</td><td class="num">566 bytes</td><td>Cold code the runtime links only when needed: PACK, and at start-up <code>-b</code>'s set-up and the banner. It needs a free 8K slot while it runs.</td></tr>
 <tr><td><code>l2b09help</code><br><code>basic09-l2.hlp</code></td><td class="num">3,631 bytes<br>92K data</td><td>The help browser and its 253 pages (editor, every statement and function, every error). Its own process, forked from F1; built from the editor's screen and keyboard code. <a href="HELP.md">HELP.md</a></td></tr>
 <tr><td><code>farmem</code>, <code>syscall</code>, <code>inkey</code></td><td class="num">644, 99, 95 bytes</td><td>Subroutine modules: far memory by explicit calls (mostly superseded by far arrays; <a href="FARMEM.md">FARMEM.md</a>), system calls, single keys.</td></tr>
@@ -192,6 +193,54 @@ nav ul { padding-left: 18px; }
 <li><strong>The first step is safe:</strong> receive procedures from the compiler while keeping the built-in compiler, and compare the two byte for byte.</li>
 </ul>
 <p>The full note is <a href="COMPILER.md">COMPILER.md</a>.</p>
+
+<h2 id="speed">Compiler speed-ups (a log)</h2>
+<p>This section records how fast the compiler is, why, and each change made to it, with before and after measurements. Newest entries go at the end.</p>
+
+<h3>Why</h3>
+<ul>
+<li><strong>The editor compiles whole procedures every time.</strong> Each Make sends every changed procedure to <code>l2b09run</code> as source. Stock Basic09 compiled one line at a time as you typed it in its line editor, so its slow parts went unnoticed.</li>
+<li><strong>The cost grew with the square of a procedure's length.</strong> Doubling a procedure tripled its compile time, so long procedures hurt most.</li>
+<li><strong>It is stock behaviour,</strong> from 1980: the same files gave the same times with <code>l2b09run</code> and stock <code>basic09</code>.</li>
+</ul>
+
+<h3>How it is measured</h3>
+<ul>
+<li><strong>Time:</strong> in MAME (<code>wbjr2</code>), with the guest's clock (<code>date -t</code> before and after <code>l2b09run</code> loads a file), so the seconds are those of the real machine at 6.29 MHz. They include starting <code>l2b09run</code> (under a second).</li>
+<li><strong>Where the time goes:</strong> a MAME Lua read tap on <code>l2b09run</code>'s code counts every byte the CPU reads from it, mapped to routines with the assembler listings. Reads are close to time spent.</li>
+<li><strong>Test files:</strong> startrek (937 lines in 8 procedures, 20.7K of source); one procedure of 800 lines <code>a=a+1</code> (u800); the same with line numbers (n800); 8 procedures of 100 numbered lines (m800).</li>
+</ul>
+
+<h3>2026-10-19: the baseline, and what was slow</h3>
+<div class="tablewrap"><table>
+<tr><th>File</th><th>Time</th><th>Where the time went</th></tr>
+<tr><td>startrek</td><td class="num">9 s</td><td><code>FLOTUP</code> 54%, keyword and name searches 18%, line-number search about 12%</td></tr>
+<tr><td>u800</td><td class="num">15 s</td><td><code>FLOTUP</code> 80%</td></tr>
+<tr><td>n800</td><td class="num">33 s</td><td><code>FLOTUP</code> 48%, line-number search about 30%</td></tr>
+<tr><td>m800</td><td class="num">6 s</td><td>(the same 800 numbered lines, split into 8 procedures)</td></tr>
+</table></div>
+<ol>
+<li><strong>The binder patched the procedure one token at a time.</strong> When types are mixed (in <code>a=a+1</code>, <code>a</code> is REAL and <code>1</code> an integer), it inserts a conversion token (<code>INSTOK</code>, <code>binder.asm</code>). Each insertion went through <code>REPLAC</code> to <code>FLOTUP</code>, which moves the rest of the procedure up by rotating it in place, a byte at a time, at about 60 cycles a byte. One insertion per statement made binding quadratic. The design needs no buffer, which mattered in 1980.</li>
+<li><strong><code>REPLAC</code> then copied the rest of the procedure onto itself.</strong> Its "delete" step moved everything above the insertion down by the number of bytes deleted, even when that number was zero.</li>
+<li><strong>Each numbered line searched the procedure from the start</strong> (<code>SCHLIN</code>), statement by statement, to find where it belonged or which line it replaced. The line editor needed that, because <code>150 PRINT x</code> could be typed at any time. A file loaded from top to bottom does not.</li>
+</ol>
+
+<h3>2026-10-20: change 1, faster inserts and no needless searches</h3>
+<ul>
+<li><strong><code>L2FLUP</code></strong> (<code>src/editor</code>): when an insertion is 8 bytes or fewer (the binder's are 1), keep the new bytes on the stack, block-move the I-code above up with <code>MOVUP</code> (4 bytes a loop, about 9 cycles a byte), and put the bytes in the gap. Longer insertions still use <code>FLOTUP</code>.</li>
+<li><strong><code>REPLAC</code></strong> skips the "delete" copy when nothing was deleted.</li>
+<li><strong><code>INSERT</code></strong>: a numbered line above every line so far goes straight to the end, without the two searches. The highest number so far is kept in the new procedure's <code>P.EXEC</code>, which is 0 for a new procedure and which the binder clears before using. A lower or repeated number still takes the old path, so out-of-order files load as before.</li>
+<li><strong>Cost:</strong> 93 bytes of <code>l2b09run</code> (23,852 → 23,945). All three changes are behind <code>ifne L2B09</code>, and stock builds stay byte-identical.</li>
+<li><strong>Checked:</strong> the old and new runtimes PACK byte-identical modules for startrek, u800, n800, m800, a file with out-of-order and repeated line numbers, and one with many conversions (fix, float, subscripts). All the emulator tests pass.</li>
+</ul>
+<div class="tablewrap"><table>
+<tr><th>File</th><th>Before</th><th>After</th><th>Speed-up</th></tr>
+<tr><td>startrek</td><td class="num">9 s</td><td class="num">4 s</td><td class="num">2.3&times;</td></tr>
+<tr><td>u800</td><td class="num">15 s</td><td class="num">4 s</td><td class="num">3.8&times;</td></tr>
+<tr><td>n800</td><td class="num">33 s</td><td class="num">5 s</td><td class="num">6.6&times;</td></tr>
+<tr><td>m800</td><td class="num">6 s</td><td class="num">2 s</td><td class="num">3&times;</td></tr>
+</table></div>
+<p><strong>What is left (startrek, 29.6M reads instead of 96.5M):</strong> the keyword and name searches (<code>SEARC*</code> in compil) are now about 60%, and the block moves about 18%. The searches are linear. An index or a hash would cut them, but that costs more bytes than <code>l2b09run</code> has to spare, so it belongs in the separate compiler (<a href="COMPILER.md">COMPILER.md</a>), as does a binder that adds its tokens in one pass.</p>
 </main>
 </body>
 </html>
