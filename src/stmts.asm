@@ -1264,15 +1264,18 @@ INPS36 equ *
  ldb #V$INLN Get input line code
  lbsr J$CVIO Call conversion & I/O
  bcc INPS40 ..continue if no error
+ cmpb #S$Abort keyboard abort (RUN/STOP): a break too, as in
+ beq INPS3B INTCPT
  cmpb #S$Intrpt Keyboard interrupt?
  lbne EXCER1
- lbsr DEBUG print line, call debugger
+INPS3B clr I.ERR a break, not an error (stock printed the line,
+ lbsr J$DBUG "ERROR #003" and %ERROR): the debugger, as a BREAK
  clr I.ERR
  bra INPS10 Re-issue input request
 
 INPS40 bsr INPVAR Call variable input
  bcc INPS50 bra if no error
- leax <INERST,PCR
+ leax INERST,PCR
  bsr STROUT Print error msg
  bra INPS10
 INPS50 ldb ,X+ Get next TOKEN

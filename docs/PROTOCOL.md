@@ -115,6 +115,6 @@ A BREAK typed on the program's terminal goes to the last process that used that 
 
 ## Not yet covered
 
-- **BREAK during INPUT.** Not tested automatically. The stock INPUT code stops in the debugger on a keyboard interrupt and asks again afterwards; any other signal (the abort, before it was made a break) is an error exit (error 2), as seen on hardware with startrek.
+- **BREAK during INPUT** (fixed and tested 2026-10-20, `make p8etest`). A signal ends the terminal read with the signal as its error code, past INTCPT. Stock INPUT turned the interrupt (3) into a debugger stop, but reported it as "ERROR #003" and `%ERROR` first, and any other code (the abort, 2) was a program error. Now both are a plain break: `BREAK: PROCEDURE ...` and `%DEBUG`, no error, and the INPUT asks again after `cont`.
 - **Output on path 2.** Output the program writes to path 2 (`PRINT #2`) arrives on the command channel as free text.
 - **No read timeout.** Pipes cannot be polled on NitrOS-9 (`pipeman` has no `SS.Ready`), so an editor that must not block needs its own design (for example, a reader process).

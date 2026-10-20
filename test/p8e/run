@@ -1,0 +1,5 @@
+* l2basic09: RUN/STOP at an INPUT stops in the debugger, as ^C does
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+/dd/l2b09/l2b09ctl <script.ctl >ctl.out >>ctl.err

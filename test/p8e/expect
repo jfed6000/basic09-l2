@@ -1,0 +1,3 @@
+ctl.out   < BREAK: PROCEDURE p8einp line 3
+ctl.out   < %DEBUG p8einp 3
+ctl.out   > send cont

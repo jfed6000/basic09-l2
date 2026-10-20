@@ -1,0 +1,1 @@
+PROCEDURE p8einpDIM a:STRING[20]PRINT "ready"INPUT "Command ",aPRINT "got ";aEND
