@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+# startrek (from test/loadtime) and a 200-line numbered procedure with
+# conversions; gen output is copied as is, so lines end in CR here
+import os, sys
+d = sys.argv[1]
+src = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'loadtime', 'startrek.b09')
+open(os.path.join(d, 'startrek.b09'), 'wb').write(open(src, 'rb').read().replace(b'\n', b'\r'))
+lines = ['PROCEDURE n200', 'DIM i:INTEGER', 'DIM r(10):REAL']
+lines += ['%d i=i+1.5 \\ r(i/20+1)=i*2' % (10 * (k + 1)) for k in range(200)]
+lines += ['PRINT i', 'END', '']
+open(os.path.join(d, 'n200.b09'), 'wb').write('\r'.join(lines).encode())

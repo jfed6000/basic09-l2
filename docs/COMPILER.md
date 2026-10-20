@@ -1,6 +1,6 @@
 # A separate compiler process (design note)
 
-Status (2026-10-20): step 1 is built on the branch `separate_compiler`: `l2b09cc` compiles and sends procedures (`make p8btest`); `l2b09run` does not use it yet. It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
+Status (2026-10-20): steps 1 and 2 are built on the branch `separate_compiler`: `l2b09cc` compiles and sends procedures (`make p8btest`), and `l2b09run` takes them in with CCLOAD, or compares them with its own with CCCMP (`make p8ctest`). It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
 
 ## The idea
 
@@ -47,7 +47,7 @@ Plain text lines, like the current protocol:
 ### The compiler → runtime direction (stdout)
 
 Lines, plus one binary frame:
-- **`%PROC <name> <bytes>`,** followed by exactly that many raw bytes: one finished procedure, as it is in the compiler's workspace (module header, I-code, symbol and description tables; the error bit set in `P.STAT` if it has errors). Pipes carry raw bytes: the runtime reads the line with `I$ReadLn`, then the body with `I$Read`.
+- **`%PROC <bytes> <name>`** (name last, so LOAD's own code can kill by it), followed by exactly that many raw bytes: one finished procedure, as it is in the compiler's workspace (module header, I-code, symbol and description tables; the error bit set in `P.STAT` if it has errors). Pipes carry raw bytes: the runtime reads the line with `I$ReadLn`, then the body with `I$Read`.
 - **`%DONE`:** the compiler is ready for a command: once at start-up, and after each command (so after a load has sent all its procedures).
 
 ### How the runtime handles a received procedure
@@ -99,10 +99,28 @@ It keeps every procedure it compiled in its own workspace, as LOAD does, so a la
 
 `make p8btest` loads startrek and a file with a compile error into `l2b09cc`, then checks the frames with `tools/ccframes.py`: each must start with a module header whose size and name match its `%PROC` line (`-x <dir>` writes the procedures out). The emulator harness fetches binary results unchanged with `raw:<file>` in a test's `fetch` file.
 
+## How `l2b09run` takes procedures in (step 2)
+
+Two commands, for now beside LOAD (`comand.asm`, after the protocol code):
+- **`ccload <file>`** starts `l2b09cc` the first time (`L2CCST`), sends it `load <file>`, and puts each procedure it sends in the workspace, as LOAD would: an old one of the same name is killed first, and with `-b` it goes to the far store (`L2BANK`). With no room (the procedure plus 256 bytes), the rest of that frame is read away and ERROR #032 is reported once the compiler sends `%DONE`, so the pipe never gets out of step.
+- **`cccmp <file>`** does the same, but compares each procedure with the one of that name that LOAD put here, and prints `%SAME <bytes> <name>` or `%DIFF <bytes> <name>`.
+
+Details:
+- **Starting the compiler:** our paths 0 and 1 are set aside, two pipes are opened as paths 0 and 1, `l2b09cc` is forked with 32K (it inherits them, and our stderr), and our paths are put back. A copy of each pipe stays open; both path numbers fit in the last free direct-page byte (`L2CCP`). The compiler's first `%DONE` is read into free space, because the command line is still in the I/O buffer.
+- **When `l2b09run` exits,** the compiler's command pipe ends and it exits too (`procs` shows no `l2b09cc` afterwards).
+- **The name in a `%PROC` line** goes through `J$NAME`, which marks its last character as directory names are; `DIRSCH` compares that bit too.
+
+**Result:** every procedure tried is byte-identical in both processes (`make p8ctest`: a 200-line numbered procedure with conversions, one with a compile error, and a two-procedure program with a call, DATA and arrays). So a bound procedure holds no addresses that depend on where it sits, which is what the design rests on. CCLOADed procedures run, list, and replace older ones.
+
+**Open items found in step 2:**
+- **The compiler's copies fill its workspace.** It keeps every procedure it compiled, but nothing tells it when the runtime kills one, and its 32K is fixed. Loading startrek after other files failed in the compiler with 32 and then bind errors. Step 3 should pass `kill` on and grow the compiler's memory (or start from the runtime's size).
+- **The current directories** are the runtime's at the moment of the first fork; a later `chd` or `chx` in the runtime does not reach the compiler yet.
+- **Size:** the receiver costs about 500 bytes, so `l2b09run` is 24,480 bytes, 96 below the limit. Step 3 needs room before it can add the run-argument and debugger routes: CCCMP can go once LOAD itself uses the compiler, and compil and binder are the big win (step 4).
+
 ## Steps
 
 1. **Build `l2b09cc`** from the same sources. Done 2026-10-20 (above).
-2. **Both paths side by side.**
+2. **Both paths side by side** (done 2026-10-20, above).
    - `l2b09run` learns `%PROC`, but keeps its own compiler.
    - A test option compiles each loaded procedure both ways and compares the bytes, which must be identical. That proves the compiler process before anything depends on it.
 3. **Move `run` arguments and the debugger's snippets** to the compiler (routes 1 and 2), with tests for each. `make p8atest` is the reference: the debugger's PRINT and LET (conversions, arrays, a record field, strings, errors 49 and 71) and `run <proc>(<args>)` (expressions, a long string, too few arguments, and stock Basic09's unchecked argument types, whose bytes must stay the same).

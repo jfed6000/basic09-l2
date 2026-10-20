@@ -56,7 +56,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest p8btest loadtime clean k2main jr2main main mainsrc
+.PHONY: all stock subs l2b09 tools pipes k2img jr2img check p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p6test p7test p8atest p8btest p8ctest loadtime clean k2main jr2main main mainsrc
 
 all: stock subs l2b09 tools
 
@@ -231,6 +231,10 @@ p8atest: l2b09 $(BASEIMG)
 p8btest: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/p8b
 	tools/ccframes.py build/emu/p8b/cc.out
+
+# Step 2: l2b09run forks l2b09cc; CCCMP compares, CCLOAD loads through it
+p8ctest: l2b09 $(BASEIMG)
+	tools/emu-wildbits.sh test/p8c
 
 # Benchmark: time l2b09run compiling the 937-line startrek sample
 loadtime: l2b09 $(BASEIMG)

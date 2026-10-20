@@ -1,0 +1,1 @@
+PROCEDURE p8cmainDIM i,t:INTEGERDIM r(5):REALt=0FOR i=1 TO 5r(i)=i/2t=t+iNEXT iRUN p8csub(t,r(4))RESTOREREAD iPRINT "data: ";iDATA 42PRINT "main done"ENDPROCEDURE p8csubPARAM n:INTEGERPARAM x:REALPRINT "sub: ";n;" ";x*2END

@@ -448,6 +448,7 @@ WINLIM rmb 2 Usable size of the code window
 GRDBLK rmb 2 Block keeping the top slot filled (0 = no guard)
 L2NBP rmb 1 Breakpoints set (the table is at G.DIRA+$100)
 L2OVRU rmb 2 Step over: storage of the procedure to stop in (MSB 0 = none)
+L2CCP rmb 1 l2b09cc's pipes: path to write <<4 + path to read (0 = not started)
  endc
 
  pag

@@ -1,8 +1,8 @@
 # the messages stay on stderr
 cc.err    STARTREK
 cc.err    %CERR 37 bad 1
-cc.out    %PROC STARTREK
-cc.out    %PROC RANDOMIZE
-cc.out    %PROC good
-cc.out    %PROC bad
+cc.out    %PROC 16076 STARTREK
+cc.out    %PROC 201 RANDOMIZE
+cc.out    %PROC 62 good
+cc.out    %PROC 49 bad
 cc.out    %DONE

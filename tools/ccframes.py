@@ -18,7 +18,7 @@ def frames(data):
         if line == '%DONE':
             out.append(('done', None, None))
             continue
-        tag, name, size = line.split()
+        tag, size, name = line.split()
         if tag != '%PROC':
             raise ValueError('unexpected line %r' % line)
         size = int(size)

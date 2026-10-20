@@ -1041,13 +1041,19 @@ CMDVRB equ *
  fcb V$CR+$80
 
  ifne L2B09
- fdb 13 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP)
+ fdb 15 number of alphabetic entries (no EDIT/E, DIR, RENAME; BP, BC, STEP, CCLOAD, CCCMP)
  else
  fdb 14 number of alphabetic entries
  endc
  fcb 2 number of skip bytes per entry
  fdb BYEBYE-*
  fcs "BYE"
+ ifne L2B09
+ fdb CCLOAD-*
+ fcs "CCLOAD"
+ fdb CCCMP-*
+ fcs "CCCMP"
+ endc
  ifeq L2B09
  fdb DIR-*
  fcs "DIR"
@@ -1817,6 +1823,7 @@ L2OVL8 leas 4,S error: the command line and entry go
  puls U
  OS9 F$UnLink
  lbra EXIT on to the previous trap
+
 * L2OVLK: link l2b09ovl, or load it from the execution directory:
 * (Y)=entry, (U)=module; carry set, (B)=error on failure
 L2OVLK leax L2OVNM,PCR
@@ -2773,7 +2780,7 @@ L2FRE9 puls D,X,U,PC
 * with L2B09CC, so that it compiles exactly as l2b09run does.  Its
 * messages (%CERR, %BERR, listings) go to stderr as before; stdout
 * carries each procedure LOAD has bound, as a line
-*   %PROC <name> <bytes>
+*   %PROC <bytes> <name>
 * followed by exactly that many bytes (the procedure as it is in the
 * workspace), and a line %DONE whenever it is ready for a command.
 
@@ -2783,12 +2790,14 @@ L2SEND pshs D,X,Y,U
  leax L2PRTX,PCR
  lbsr STRSPC
  ldx I.APRC
- ldd M$NAME,X
- leax D,X
- lbsr STRSPC
- ldx I.APRC
  ldd P.SIZE,X
  lbsr ItoA
+ lda #V$SPAC
+ lbsr PUTCHR
+ ldx I.APRC
+ ldd M$NAME,X
+ leax D,X
+ lbsr CPYSTR
  bsr L2WRLN the line
  ldx I.APRC
  ldy P.SIZE,X
@@ -2930,6 +2939,256 @@ L2INSR pshs D,X where this line goes
  puls Y
 L2INS9 puls D,X,PC
 L2CERR fcs "%CERR"
+ endc
+
+***************
+ ifne L2B09
+* CCLOAD <file>: load through the separate compiler l2b09cc
+*   (docs/COMPILER.md, step 2): start it the first time, send it
+*   "load <file>", and put each procedure it sends in the workspace,
+*   as LOAD would (an old one of the same name is killed first).
+* CCCMP <file>: the same, but compare each procedure it sends with
+*   the one of that name already here (loaded with LOAD), and print
+*   "%SAME <bytes> <name>" or "%DIFF <bytes> <name>".
+
+* Passed: (Y)=File name
+
+CCLOAD clrb load
+ fcb $8C (cmpx #: skip the ldb)
+CCCMP ldb #1 compare
+ clra no error yet
+ pshs D,Y 0,S=error, 1,S=mode, 2,S=file name
+ lbsr L2BPZ procedures move: breakpoints go
+ lbsr L2CCST
+ lbcs L2CCER
+ leax L2LDTX,PCR "load "
+ ldy #5
+ lbsr L2CCWR
+ lbcs L2CCER
+ ldx 2,S the file name, to its CR
+ ldy #256
+ lda L2CCP
+ lsra
+ lsra
+ lsra
+ lsra
+ OS9 I$WritLn
+ lbcs L2CCER
+L2CC1 ldx I.IOBG a line from the compiler
+ ldy #256
+ lbsr L2CCRL
+ lbcs L2CCER
+ lda 1,X
+ cmpa #'P %PROC?
+ lbne L2CC9 ..no: %DONE
+ leay 6,X past "%PROC "
+L2CC2 lda ,Y+ past the size
+ cmpa #V$SPAC
+ bne L2CC2
+ lbsr J$NAME the name, its last char marked as in a directory
+ pshs Y
+ tst 3,S compare?
+ bne L2CC3
+ lbsr DIRSCH an old one?
+ bcs L2CC3
+ ldy  ,S
+ leay -1,Y (KILLER wants the space before)
+ lbsr KILLER
+L2CC3 ldx I.STBG the module header, into free space
+ ldy #4
+ lbsr L2CCRD
+ lbcs L2CCE2
+ ldd 2,X its size
+ addd #256
+ cmpd G.VARS room for it?
+ lbhi L2CC7 ..no; read it away
+ ldd 2,X
+ subd #4
+ tfr D,Y
+ leax 4,X the rest
+ lbsr L2CCRD
+ lbcs L2CCE2
+ ldy ,S++ the name
+ lbsr DIRSCH (X)=its directory entry, or the end
+ ldu I.STBG the procedure
+ tst 1,S
+ bne L2CC5 compare
+ bcc L2CC1 (still there: KILLER refused it)
+ tfr X,D
+ cmpb #-2 directory full?
+ lbeq L2CC8
+ stu  ,X
+ ldd P.SIZE,U
+ pshs D
+ addd G.PRCS
+ std G.PRCS
+ ldd G.VARS
+ subd  ,S
+ std G.VARS
+ ldd I.STBG
+ addd ,S++
+ std I.STBG
+ stu I.APRC
+ lbsr L2BANK -b: to the far store
+ lbra L2CC1
+L2CC5 ldd #'D*256+'I "%DIFF"
+ bcs L2CC6 ..not here
+ ldx  ,X
+ ldy P.SIZE,U
+ cmpy P.SIZE,X
+ bne L2CC6
+L2CC51 lda ,U+ the same bytes?
+ cmpa ,X+
+ bne L2CC55
+ leay -1,Y
+ bne L2CC51
+ ldd #'S*256+'A "%SAME"
+ bra L2CC6
+L2CC55 ldd #'D*256+'I
+L2CC6 ldx I.IOBG the line, now %SAME or %DIFF
+ std 1,X
+ cmpa #'S
+ bne L2CC60
+ ldd #'M*256+'E
+ bra L2CC61
+L2CC60 ldd #'F*256+'F
+L2CC61 std 3,X
+L2CC62 lda ,X (the name's last char was marked)
+ anda #$7F
+ sta ,X+
+ cmpa #V$CR
+ bne L2CC62
+ ldx I.IOBG
+ ldy #256
+ lda #CMDOUT
+ OS9 I$WritLn
+ lbra L2CC1
+L2CC7 ldd 2,X no room: read the rest away
+ subd #4
+L2CC71 ldx I.IOBG
+ ldy #256
+ cmpd #256
+ bhs L2CC72
+ tfr D,Y
+L2CC72 pshs D
+ lbsr L2CCRD
+ puls D
+ lbcs L2CCE2
+ pshs Y
+ subd ,S++
+ bne L2CC71
+L2CC8 ldb #M$MFUL
+ stb 2,S remembered, reported at %DONE
+ leas 2,S
+ lbra L2CC1
+L2CCE2 leas 2,S
+L2CCER stb  ,S
+L2CC9 ldb ,S error?
+ leas 4,S
+ lbne ERREXT
+ clra
+ rts
+
+* L2CCWR: (X),(Y) to the compiler; L2CCRL/L2CCRD: a line, or (Y) bytes
+L2CCWR lda L2CCP
+ lsra
+ lsra
+ lsra
+ lsra
+ OS9 I$Write
+ rts
+L2CCRL lda L2CCP
+ anda #$0F
+ OS9 I$ReadLn
+ rts
+L2CCRD lda L2CCP
+ anda #$0F
+ pshs Y
+ OS9 I$Read
+ bcs L2CCR9
+ cmpy  ,S all of it?
+ beq L2CCR9
+ ldb #E$EOF ..no
+ coma
+L2CCR9 leas 2,S
+ rts
+
+***************
+* Subroutine L2CCST
+*   Start l2b09cc if it is not running: pipe A becomes its stdin,
+*   pipe B its stdout; its stderr is ours (the editor's pipe), so its
+*   messages need no forwarding.  We keep a path to each pipe.
+* Returns: carry set, (B)=error on failure
+
+L2CCST tst L2CCP
+ bne L2CCS9 ..running
+ clra set our paths 0 and 1 aside
+ OS9 I$Dup
+ bcs L2CCS9
+ pshs A
+ lda #1
+ OS9 I$Dup
+ pshs A 1,S=our 0, ,S=our 1
+ clra pipe A as path 0
+ bsr L2CCPP
+ bcs L2CCSB
+ lsla
+ lsla
+ lsla
+ lsla
+ sta L2CCP
+ lda #1 pipe B as path 1
+ bsr L2CCPP
+ bcs L2CCSB
+ ora L2CCP
+ sta L2CCP
+ leax L2CCNM,PCR
+ leau L2CCCR,PCR parameters: none
+ ldy #1
+ ldd #$0080 32K
+ OS9 F$Fork
+ bcs L2CCSB
+ ldx I.STBG its first %DONE: it is up (into free
+* space: the command line is in the I/O buffer)
+ ldy #256
+ lbsr L2CCRL
+L2CCSB tfr CC,A put our own paths back
+ pshs D
+ clra
+ OS9 I$Close
+ lda 3,S
+ OS9 I$Dup
+ lda 3,S
+ OS9 I$Close
+ lda #1
+ OS9 I$Close
+ lda 2,S
+ OS9 I$Dup
+ lda 2,S
+ OS9 I$Close
+ puls D
+ leas 2,S
+ tfr A,CC
+ bcc L2CCS9
+ clr L2CCP failed: not started
+L2CCS9 rts
+
+* L2CCPP: close path (A), open a pipe there, and return a copy of it
+L2CCPP pshs A
+ OS9 I$Close
+ leax L2PIPE,PCR
+ lda #UPDAT.
+ OS9 I$Open
+ puls A
+ bcs L2CCP9
+ OS9 I$Dup
+L2CCP9 rts
+
+L2CCNM fcc "l2b09cc"
+L2CCCR fcb V$CR
+L2PIPE fcc "/pipe"
+ fcb V$CR
+L2LDTX fcc "load "
  endc
 
 * End of Command routines

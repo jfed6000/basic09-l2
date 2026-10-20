@@ -1,0 +1,8 @@
+* l2basic09 P8 step 2: l2b09run forks l2b09cc and takes in its
+* procedures.  CCCMP compares each with the one LOAD made (byte for
+* byte); CCLOAD puts them in the workspace, to run and list.
+-x
+chd /dd/l2b09
+echo >term.out
+/dd/l2b09/l2b09run #32k -t=/dd/l2b09/term.out <c.cmds >c.out >>c.err
+procs >procs.out

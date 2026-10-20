@@ -1,0 +1,13 @@
+# CCCMP: each procedure from l2b09cc is byte for byte the one LOAD made,
+# also with a compile error (bad) and with conversions (n200)
+c.err     %SAME 8472 n200
+c.err     %SAME 62 good
+c.err     %SAME 49 bad
+c.err     %SAME 207 p8cmain
+c.err     %SAME 83 p8csub
+# CCLOAD: they run, list, and replace the old ones
+term.out  sub: 15 4.
+term.out  data: 42
+term.out  main done
+c.err     PRINT "sub: "; n; " "; x*2
+c.err     PROCEDURE RAND8I
