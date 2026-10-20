@@ -1,0 +1,14 @@
+-- p5z: the answer to the INPUT, typed on the live keyboard: it goes to the
+-- window on display, which l2b09run selected for the read
+local steps = {}
+local function add(f) steps[#steps + 1] = f end
+local function wait(n) for _ = 1, n do add(function() end) end end
+wait(60 * 60)                   -- the editor has stepped onto the INPUT by then
+add(function() manager.machine.natkeyboard:post("bob\r") end)
+wait(60 * 10)
+add(function() print("p5z: typed") end)
+local i = 0
+s_sub = emu.add_machine_frame_notifier(function()
+    i = i + 1
+    if steps[i] then steps[i]() end
+end)

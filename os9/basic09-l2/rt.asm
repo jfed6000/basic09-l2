@@ -414,8 +414,9 @@ rw4                 leay      ev_dbg,pcr
 rw5                 leay      ev_inp,pcr
                     lbsr      ev_is
                     bne       rw5i
-                    lbsr      u_inp               it waits for INPUT: show its screen
-                    lbra      rw1
+                    ldx       <base               it waits for INPUT, and has shown its
+                    inc       ushown,x            screen itself (we cannot: our write
+                    lbra      rw1                 would wait for its read); back at the stop
 rw5i                leay      ev_ask,pcr
                     lbsr      ev_is
                     lbne      rw1

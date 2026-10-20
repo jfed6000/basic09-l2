@@ -52,7 +52,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all subs l2b09 tools pipes k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p6test p7test p8atest p8btest p8ctest p8dtest p8etest loadtime clean k2main jr2main main mainsrc
+.PHONY: all subs l2b09 tools pipes k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p6test p7test p8atest p8btest p8ctest p8dtest p8etest loadtime clean k2main jr2main main mainsrc
 
 all: subs l2b09 tools
 
@@ -208,6 +208,10 @@ p5xtest: l2b09 tools pipes $(BASEIMG)
 p5ytest: l2b09 tools pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p5y
 	@[ $$(grep -c 'shift run' build/emu/p5y/term.out) -eq 1 ] || { echo "p5y: FAILED (not run exactly once)"; exit 1; }
+
+# Stepping onto an INPUT: the program's window comes up, the answer gets there
+p5ztest: l2b09 tools pipes $(BASEIMG)
+	EMU_SECONDS=120 tools/emu-wildbits.sh test/p5z
 
 p6test: l2b09 $(BASEIMG)
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6

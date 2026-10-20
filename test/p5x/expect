@@ -2,4 +2,3 @@ mame.log Line 3, col: Error 31 - use \ between statements, not :
 mame.log Line 4, col: Error 31 - use \ between statements, not :
 # a ":" in a type, and in a string, keep their own message, or none
 mame.log Line 5, col: Error 24 Illegal Type Suffix
-mame.log Make: 3 error(s)

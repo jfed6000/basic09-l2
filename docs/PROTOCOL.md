@@ -41,7 +41,7 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 | `%CERR <code> <proc> <line>` | Compile error while loading. The line is kept as an error line, and loading continues. |
 | `%BERR <code> <proc> <line>` | Bind error when a procedure finishes loading, for example an undefined line number or unmatched control structure. |
 | `%ASK Rewrite?` | SAVE/PACK target exists. Answer `y` or `n`. |
-| `%INPUT` | The program is about to wait in `INPUT` for a line from its terminal (not from a file). An editor that keeps its own screen while stepping shows the program's terminal now. `GET` and other reads do not send it. Older editors ignore it, as any `%` line they do not know. |
+| `%INPUT` | The program is about to wait in `INPUT` for a line from its terminal (not from a file). `l2b09run` then selects that window itself (`ESC !`, only on a windowing terminal, one with `SS.ScSiz`), because an editor cannot: the terminal manager lets one process at a time use a device, so the editor's write would wait for the program's read. An editor that keeps its own screen while stepping just notes it, to show its own again at the next stop. `GET` and other reads do not send it. Older editors ignore it, as any `%` line they do not know. |
 
 - **Codes** are Basic09 error numbers (see the Basic09 manual or the `errmsg` file).
 - **Line numbers** are counted within the procedure: line 1 is the line after `PROCEDURE <proc>`. Every source line becomes exactly one I-code line, including blank and comment lines. So:

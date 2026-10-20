@@ -1,0 +1,4 @@
+ed.log    < %INPUT
+ed.log    < %DEBUG inp 4
+ed.log    < %DEBUG inp 5
+ed.log    > bye

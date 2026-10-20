@@ -1240,8 +1240,8 @@ INPS10 ldx  ,S Restore I-Code ptr
  ldx 1,Y Get ptr to string
  bra INPS30
 INPS20 pshs X Save I-Code ptr
- leax <PROMPT,PCR Get address of PROMPT
-INPS30 bsr STROUT
+ leax PROMPT,PCR Get address of PROMPT
+INPS30 lbsr STROUT
  puls X Restore I-Code ptr
 
 * Call CNVIO for the Input Line
@@ -1259,7 +1259,17 @@ INPS35 equ *
  ldy #0 while a step waits for this
  leax L2INPE,PCR "%INPUT"
  lbsr J$L2EV
- puls X,Y
+* and select the window it reads, ourselves: the editor cannot (one
+* process at a time on a device: its write would wait for our read)
+ lda I.CNCH
+ ldb #SS.ScSiz a windowing terminal (not a file, not a line)?
+ OS9 I$GetStt
+ bcs INPS37
+ lda I.CNCH
+ leax L2SELW,PCR
+ ldy #2
+ OS9 I$Write (an error does not matter)
+INPS37 puls X,Y
 INPS36 equ *
  ldb #V$INLN Get input line code
  lbsr J$CVIO Call conversion & I/O
@@ -1807,6 +1817,7 @@ DEBUG equ *
  lbra J$DBUG call debugger; then return
 L2ERRE fcs "%ERROR"
 L2INPE fcs "%INPUT"
+L2SELW fcb $1B,$21 select this window (VTIO)
  else
  lbsr J$KALL kill all external procs
  ldb I.ERR Get error code

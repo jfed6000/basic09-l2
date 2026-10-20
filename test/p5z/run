@@ -1,0 +1,6 @@
+* l2basic09: stepping onto an INPUT shows the program's window (selected by
+* l2b09run for the read); the answer typed there reaches the program
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+/dd/l2b09/basic09-l2 -l=ed.log inp.b09 <keys.bin >/vt3 >>ed.err
