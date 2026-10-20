@@ -313,6 +313,10 @@ a bound is missing after a comma.
 
   WHILE i<10 DO
 
+Basic09 also gives this error for a ":" between two statements, as in
+PRINT 1 : PRINT 2.  Basic09 separates statements with a backslash:
+PRINT 1 \ PRINT 2.  The editor's message then says so.
+
 == Error 32 | Error 32: Memory Full
 There is no room left in the workspace for the procedure being
 compiled, or for a program's variables when it runs.

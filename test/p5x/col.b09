@@ -1,0 +1,7 @@
+PROCEDURE col
+DIM k:INTEGER
+PRINT 1 : PRINT 2
+k:=3 : PRINT k
+DIM a,b : PRINT 3
+PRINT "a:b"
+END

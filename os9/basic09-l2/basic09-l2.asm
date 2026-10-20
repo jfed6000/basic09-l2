@@ -301,6 +301,7 @@ ushown              rmb       1                   dbg_go: the program's terminal
 evstm               rmb       1                   event: statement on the line (%DEBUG's 3rd number)
 vseg                rmb       1                   vs_char: the statement drawn now on the stopped line
 vlast               rmb       1                   vs_char: the character before
+colhnt              rmb       1                   rw_text: a compile error's ^ is under a ":" (col_chk)
 mu_end              equ       .
 optsav              rmb       32                  terminal options on entry
 optraw              rmb       32                  terminal options while editing

@@ -364,6 +364,8 @@ lg9                 andcc     #^Carry
 * message window, unless quiet is set.  The last line of text is kept
 * in lastout.  Carry if the runtime has gone.
 rt_wait             clr       <evcode
+                    ldx       <base
+                    clr       colhnt,x
 rw1                 bsr       rt_line
                     bcc       rw1a
 rw_gone             lbsr      rt_gone
@@ -436,6 +438,7 @@ rw5b                lbsr      a_rline
                     lbsr      rt_cmd
                     lbra      rw1
 rw_text             leax      -1,x                keep it, and count "ERROR #" lines
+                    lbsr      col_chk             (before out_keep: the line before)
                     lbsr      out_keep            (a load failure has one without an
 rwt1                leay      errtx,pcr           event)
                     pshs      x
@@ -548,10 +551,51 @@ mse4                ldd       #$3A20              ": "
                     lbsr      n_dec
                     ldu       ,s                  the text ends with the message
                     leau      MS.SIZE-1,u
-                    bsr       er_text
+                    ldy       <base
+                    tst       colhnt,y            or with a hint, if the error is at
+                    beq       mse5                a ":" (col_chk)
+                    clr       colhnt,y
+                    leay      colhtx,pcr
+                    lbsr      s_str
+                    bra       mse6
+mse5                bsr       er_text
+mse6                equ       *
                     clr       ,x
                     puls      x
 mse9                rts
+
+colhtx              fcn       " - use \ between statements, not :"
+
+* col_chk: is text line X a compile error's "^" line (spaces, then ^)
+* pointing at a ":" (not ":=") in the line before (lastout)?  Then the
+* next error message gives a hint (colhnt): Basic09 separates
+* statements with "\", and "PRINT 1 : PRINT 2" is error 31 (Missing DO)
+col_chk             pshs      d,x,y
+                    clrb
+cck1                lda       ,x+
+                    cmpa      #C$SPAC
+                    bne       cck2
+                    incb
+                    cmpb      #LASTMAX-2
+                    blo       cck1
+                    bra       cck9
+cck2                cmpa      #'^
+                    bne       cck9
+                    lda       ,x
+                    cmpa      #C$CR
+                    bne       cck9
+                    ldy       <base
+                    leay      lastout,y
+                    lda       b,y
+                    cmpa      #':
+                    bne       cck9
+                    incb
+                    lda       b,y
+                    cmpa      #'=
+                    beq       cck9
+                    ldy       <base
+                    inc       colhnt,y
+cck9                puls      d,x,y,pc
 
 linetx              fcn       "Line "
 errtx2              equ       lderms+6            "Error "

@@ -1,0 +1,21 @@
+-- ^B (Make): the compile errors go to the message window, which the
+-- screen snapshot at the end of mame.log shows
+local ports = manager.machine.ioport.ports
+local function key(name)
+    for _, p in pairs(ports) do if p.fields[name] then return p.fields[name] end end
+end
+local ctrl, kb = key("Ctrl"), key("b  B")
+local steps = {}
+local function add(f) steps[#steps + 1] = f end
+local function wait(n) for _ = 1, n do add(function() end) end end
+local function hold(f, v) add(function() f:set_value(v) end); wait(6) end
+local function tap(f) hold(f, 1); hold(f, 0) end
+wait(60 * 50)
+hold(ctrl, 1) tap(kb) hold(ctrl, 0)
+wait(60 * 20)
+add(function() print("p5x: done") end)
+local i = 0
+p5x_sub = emu.add_machine_frame_notifier(function()
+    i = i + 1
+    if steps[i] then steps[i]() end
+end)
