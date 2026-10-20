@@ -5,7 +5,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **Design and roadmap:** `docs/ARCHITECTURE.md`. It records what each phase (P0–P7) did and what was found.
 - **Reference specs:** `docs/PROTOCOL.md` (the editor/runtime protocol), `docs/FARMEM.md` and `docs/FARARRAYS.md`.
 - **Proposals and decisions not built yet:** see "Risks and open questions" and the naming plan under "Name" in `docs/ARCHITECTURE.md`. They cover the cold-command overlay, the automatic workspace size, `runb-l2`, and the multi-language editor as a separate project.
-- **Repository:** https://github.com/jfed6000/basic09-l2. Besides `main`: `p5.6` (merged) and `mouse-wip` (the first mouse attempt, superseded by P5.7).
+- **Repository:** https://github.com/jfed6000/basic09-l2. Besides `main`: `p5.6` (merged) and `mouse-wip` (the first mouse attempt, superseded by P5.7); the separate compiler was built on the local branch `separate_compiler`, merged 2026-10-20.
 
 ## Ground rules
 
@@ -41,8 +41,8 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `compil`, `binder`, `exprsn` and `cnvio` are the compiler, binder, expression interpreter, and conversion/I/O.
   - Direct-page variables are in `b09defs`; `L2B09` variables go after `BufOvf`.
   - `L2B09` builds also get `-DLevel=2`.
-  - The runtime's direct page is full (the last byte, `$FF`, is `L2CCP` on the branch `separate_compiler`). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
-- **`l2b09cc`** (branch `separate_compiler`, docs/COMPILER.md): the separate compiler, `l2b09run`'s source built with `-DL2B09CC=1`; LOAD sends each bound procedure to stdout as `%PROC <bytes> <name>` plus the bytes. In `l2b09run`, `ccload`/`cccmp <file>` fork it and load or compare through it (step 2; the two pipe paths are in the last direct-page byte, `L2CCP`). `tools/ccframes.py` checks that output; in a test's `fetch` file, `raw:<file>` fetches a binary file unchanged.
+  - The runtime's direct page is full (the last byte, `$FF`, is `L2CCP`). Put new tables in the workspace, as the breakpoint table at `G.DIRA+$100` is (ARCHITECTURE.md, P5.5).
+- **`l2b09cc`** (docs/COMPILER.md): the separate compiler, `l2b09run`'s source built with `-DL2B09CC=1`; LOAD sends each bound procedure to stdout as `%PROC <bytes> <name>` plus the bytes. In `l2b09run`, `ccload`/`cccmp <file>` fork it and load or compare through it (step 2; the two pipe paths are in the last direct-page byte, `L2CCP`). `tools/ccframes.py` checks that output; in a test's `fetch` file, `raw:<file>` fetches a binary file unchanged.
 - **`modules/`:** Basic09 subroutine modules (`farmem`, `syscall`, `inkey`).
 - **`os9/`:** OS-9 tools. `l2b09ctl` is a scripted editor stand-in for the protocol. `basic09-l2/` is the editor, `basic09-l2` (formerly `l2b09ed`; P5, docs/EDITOR.md); it builds without `undefextern` and without `--6309`. `l2b09help/` is the help browser (docs/HELP.md); it includes the editor's `term.asm` and `keys.asm`.
 - **`help/`:** the help pages (`*.txt`), compiled by `tools/mkhelp.py` into `build/basic09-l2.hlp`, which checks that every Basic09 keyword and error has a page.
@@ -79,6 +79,6 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
   - `F$Link` keeps a module out of slot 7 once the module passes 23,808 bytes. `l2b09run` is past that, which is why `L2GARD` exists (ARCHITECTURE.md, P7).
   - Watch `build/l2b09run`'s size: getting it back under the limit frees a slot.
   - **Hard limit: 24,576 bytes** (three 8K blocks). Past it the code takes a fourth slot, and `make p7test` fails with 207 (`#24k -b=64` has no slot left for the data window). P5.5 hit this; `make` prints a warning.
-- **Branch `separate_compiler`: `l2b09run` has no compiler** (built with `-DL2B09RT=1`; compil and binder in RunB form). It forks `l2b09cc` at start-up; every test that runs `l2b09run` needs `l2b09cc /CMDS/l2b09cc` in `modules` and the pipe modules in `bootmods`. `HALT` must not close the pipes (`L2CCPA`); see docs/COMPILER.md, "How it works now".
+- **`l2b09run` has no compiler** (built with `-DL2B09RT=1`; compil and binder in RunB form). It forks `l2b09cc` at start-up; every test that runs `l2b09run` needs `l2b09cc /CMDS/l2b09cc` in `modules` and the pipe modules in `bootmods`. `HALT` must not close the pipes (`L2CCPA`); see docs/COMPILER.md, "How it works now".
 - **PACK is in an overlay; `l2b09run` has no DIR or RENAME.** `l2b09run` loads `l2b09ovl` (`src/overlay.asm` around `src/pack`) from the execution directory when PACK is typed, and at start-up for `-b` (the far store, `L2STOR`) and the banner (skipped if the overlay cannot be linked). MEM is resident (the editor grows the workspace with it). Every test that runs `l2b09run` has `l2b09ovl /CMDS/l2b09ovl` in its `modules` file, so the banner is there for the logs. The overlay needs a free 8K slot while it runs. The overlay reaches the runtime through `X$` exports; adding a command to it means an entry `LBRA` there, a `ldb #n` stub before `DUMP` in `comand.asm`, and exports for what it calls (or a copy, if it is small).
 - **Record field names share the symbol table** with variables. `TYPE pt=x,y:REAL` makes `x` unusable as a variable in that procedure (error 76).

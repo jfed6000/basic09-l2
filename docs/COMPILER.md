@@ -1,6 +1,6 @@
 # A separate compiler process (design note)
 
-Status (2026-10-20): steps 1 to 4 are built on the branch `separate_compiler`. `l2b09run` has no compiler any more (19,477 bytes, down from 23,945): it forks `l2b09cc` at start-up and LOAD, the arguments of RUN, the debugger's statements and PACK go to it. All tests pass, and a 40K workspace starts (`make p8ctest`). Step 5 (using the room) is next. It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
+Status (2026-10-20): steps 1 to 4 are built, on `main` (developed on the branch `separate_compiler`, merged 2026-10-20). `l2b09run` has no compiler any more (19,477 bytes, down from 23,945): it forks `l2b09cc` at start-up and LOAD, the arguments of RUN, the debugger's statements and PACK go to it. All tests pass, and a 40K workspace starts (`make p8ctest`). Step 5 (using the room) is next. It refines "A separate compiler" in [ARCHITECTURE.md](ARCHITECTURE.md), "Risks and open questions". The compiler is `l2b09cc`.
 
 ## The idea
 

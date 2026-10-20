@@ -89,8 +89,8 @@ nav ul { padding-left: 18px; }
 <div class="tablewrap"><table>
 <tr><th>Part</th><th>Size</th><th>What it is</th></tr>
 <tr><td><code>basic09-l2</code><br>the editor</td><td class="num">23,306 bytes<br>(1,270 left of 3 blocks)</td><td>Full-screen editor with Turbo C-style menus. A paged text buffer (2K pages in a swap file, a few cached), so files can be larger than 64K. Undo/redo, find and replace, clipboard, syntax colours, mouse with wheel and scroll bar, double spacing, 80x60. Drives the runtime: Make (only changed procedures), Run, the debugger UI (step, step over, breakpoints, watches, evaluate), pretty print, <code>DEFTYPE</code>/<code>USE</code>. <a href="EDITOR.md">EDITOR.md</a></td></tr>
-<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">19,566 bytes<br>(4,242 left below 23,808)</td><td>Microware's Basic09 interpreter and commands, built from the original modular source (on the branch <code>separate_compiler</code>: comand 7.4K, exprsn 5.6K, stmts 3.1K, cnvio 2.6K, and compil and binder in their RunB form, 0.6K); it forks <code>l2b09cc</code> to compile. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor, DIR and RENAME are removed (the editor does not use them).</td></tr>
-<tr><td><code>l2b09cc</code><br>the compiler</td><td class="num">24,425 bytes</td><td>The separate compiler (branch <code>separate_compiler</code>, <a href="COMPILER.md">COMPILER.md</a>): <code>l2b09run</code>'s own source built with <code>L2B09CC</code>. It compiles and binds, keeps a copy of every procedure, and answers over two pipes.</td></tr>
+<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">19,566 bytes<br>(4,242 left below 23,808)</td><td>Microware's Basic09 interpreter and commands, built from the original modular source (comand 7.4K, exprsn 5.6K, stmts 3.1K, cnvio 2.6K, and compil and binder in their RunB form, 0.6K); it forks <code>l2b09cc</code> to compile. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor, DIR and RENAME are removed (the editor does not use them).</td></tr>
+<tr><td><code>l2b09cc</code><br>the compiler</td><td class="num">24,425 bytes</td><td>The separate compiler (<a href="COMPILER.md">COMPILER.md</a>): <code>l2b09run</code>'s own source built with <code>L2B09CC</code>. It compiles and binds, keeps a copy of every procedure, and answers over two pipes.</td></tr>
 <tr><td><code>l2b09ovl</code><br>the overlay</td><td class="num">566 bytes</td><td>Cold code the runtime links only when needed: PACK, and at start-up <code>-b</code>'s set-up and the banner. It needs a free 8K slot while it runs.</td></tr>
 <tr><td><code>l2b09help</code><br><code>basic09-l2.hlp</code></td><td class="num">3,631 bytes<br>92K data</td><td>The help browser and its 253 pages (editor, every statement and function, every error). Its own process, forked from F1; built from the editor's screen and keyboard code. <a href="HELP.md">HELP.md</a></td></tr>
 <tr><td><code>farmem</code>, <code>syscall</code>, <code>inkey</code></td><td class="num">644, 99, 95 bytes</td><td>Subroutine modules: far memory by explicit calls (mostly superseded by far arrays; <a href="FARMEM.md">FARMEM.md</a>), system calls, single keys.</td></tr>
@@ -126,7 +126,7 @@ nav ul { padding-left: 18px; }
 <li><strong>Largest workspace:</strong> 32K with nothing else; 24K with <code>-b</code> (the code window takes a slot), or with far arrays and <code>-b</code> together.</li>
 <li><strong>The workspace holds everything:</strong> the I-code of every loaded procedure, the variables of the running calls, the stacks and Basic09's tables. So a program's I-code must fit in somewhat less than 32K, unless it is banked.</li>
 <li><strong>Each module a program <code>RUN</code>s</strong> (<code>WILD</code>, <code>farmem</code> ...) and the overlay while it runs need a free slot too.</li>
-<li><strong>Getting slot 7 back</strong> needs l2b09run at or under 23,808 bytes and everything that must work at the largest workspace resident (the overlay needs a slot while it runs). A kernel change to keep <code>F$MapBlk</code> out of slot 7 was declined, as it interferes with another project. <strong>Done on the branch <code>separate_compiler</code>:</strong> without the compiler, l2b09run is 19,477 bytes and a 40K workspace starts.</li>
+<li><strong>Getting slot 7 back</strong> needs l2b09run at or under 23,808 bytes and everything that must work at the largest workspace resident (the overlay needs a slot while it runs). A kernel change to keep <code>F$MapBlk</code> out of slot 7 was declined, as it interferes with another project. <strong>Done (2026-10-20):</strong> without the compiler, l2b09run is 19,477 bytes and a 40K workspace starts.</li>
 </ul>
 
 <h2 id="far">How far memory works</h2>
@@ -174,14 +174,14 @@ nav ul { padding-left: 18px; }
 
 <h2 id="compiler">The compiler, and a separate compiler process</h2>
 <h3>How the compiler works</h3>
-<p>On <code>main</code> the compiler is part of <code>l2b09run</code>, as it is in stock Basic09; on the branch <code>separate_compiler</code> the same code runs in <code>l2b09cc</code> (Progress, below). LOAD reads the source a line at a time:</p>
+<p>In stock Basic09 the compiler is part of the program; in basic09-l2 the same code runs in <code>l2b09cc</code>, a process of its own (Progress, below). LOAD reads the source a line at a time:</p>
 <ol>
 <li><strong>compil</strong> (2,241 bytes) turns each line into I-code: keywords become tokens, constants become binary, names go into the procedure's symbol table. Line errors come back as <code>%CERR</code>.</li>
 <li><strong>binder</strong> (3,589 bytes) runs at the end of each procedure: it lays out the variables, resolves line numbers, and checks what needs the whole procedure. Its errors come back as <code>%BERR</code>.</li>
 <li>The source is thrown away. LIST and SAVE decompile the I-code and symbol table; PACK strips the symbol table for RunB.</li>
 </ol>
 <p>The compiler is also used while running: <code>run p(args)</code> compiles its arguments each time, and the debugger's PRINT, LET, Evaluate and watches compile statements against the paused procedure.</p>
-<h3>The design (built on the branch <code>separate_compiler</code>)</h3>
+<h3>The design (built, 2026-10-20)</h3>
 <pre>
  basic09-l2 (editor) ==pipes==&gt; l2b09run ==pipes==&gt; l2b09cc
         (protocol unchanged)      (forks it on the first load)
@@ -194,7 +194,7 @@ nav ul { padding-left: 18px; }
 <li><strong>What has to move first:</strong> <code>run</code> arguments and the debugger's statements, which go to the compiler as small requests.</li>
 <li><strong>The first step is safe:</strong> receive procedures from the compiler while keeping the built-in compiler, and compare the two byte for byte.</li>
 </ul>
-<h3>Progress (branch <code>separate_compiler</code>)</h3>
+<h3>Progress (developed on the branch <code>separate_compiler</code>, merged into <code>main</code> 2026-10-20)</h3>
 <ul>
 <li><strong>2026-10-20, the reference test:</strong> <code>make p8atest</code> (on <code>main</code>) records what the compiler does while a program runs: the debugger's PRINT and LET, and <code>run</code> with arguments, including stock Basic09's unchecked argument types.</li>
 <li><strong>2026-10-20, step 1:</strong> <code>l2b09cc</code> is <code>l2b09run</code>'s source built with <code>L2B09CC</code>, so it compiles exactly as <code>l2b09run</code> does. After LOAD binds each procedure, it writes a <code>%PROC &lt;name&gt; &lt;bytes&gt;</code> frame to stdout; <code>%DONE</code> marks each command's end. Its messages stay on stderr, which will be the editor's pipe, so the runtime does not have to forward them. <code>make p8btest</code> checks the frames. <code>l2b09run</code> is unchanged.</li>
