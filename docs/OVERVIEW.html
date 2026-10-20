@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>basic09-l2 Overview</title>
+<style>
+:root {
+  --bg: #fbfaf7; --fg: #1f2328; --muted: #5a616b; --line: #d9d6cf;
+  --card: #ffffff; --accent: #1f5fa8; --code: #f1efe9; --warn: #8a5a00;
+  --slot-code: #dbe7f6; --slot-ws: #e3f1df; --slot-win: #f6ecd6; --slot-free: #eeeeee;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16181c; --fg: #e6e6e3; --muted: #a2a8b0; --line: #343840;
+    --card: #1e2126; --accent: #7fb0ec; --code: #262a30; --warn: #e0b45a;
+    --slot-code: #24384f; --slot-ws: #26402a; --slot-win: #4a3c1f; --slot-free: #2c2f35;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16181c; --fg: #e6e6e3; --muted: #a2a8b0; --line: #343840;
+  --card: #1e2126; --accent: #7fb0ec; --code: #262a30; --warn: #e0b45a;
+  --slot-code: #24384f; --slot-ws: #26402a; --slot-win: #4a3c1f; --slot-free: #2c2f35;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 1.9rem; margin: 0 0 4px; }
+h2 { font-size: 1.35rem; margin: 40px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+p.lede { color: var(--muted); margin-top: 0; }
+a { color: var(--accent); }
+code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code); padding: 1px 4px; border-radius: 4px; }
+pre { background: var(--code); padding: 14px; border-radius: 8px; overflow-x: auto; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; font-size: 0.95rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.note { border-left: 3px solid var(--warn); padding: 6px 12px; color: var(--muted); margin: 12px 0; }
+nav ul { padding-left: 18px; }
+.slots { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 8px 0 4px; }
+.slot { border: 1px solid var(--line); border-radius: 6px; padding: 8px 4px; text-align: center; font-size: 0.78rem; line-height: 1.25; min-height: 64px; }
+.slot b { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+.code { background: var(--slot-code); } .ws { background: var(--slot-ws); }
+.win { background: var(--slot-win); } .free { background: var(--slot-free); }
+.caption { color: var(--muted); font-size: 0.85rem; margin: 0 0 18px; }
+@media (max-width: 560px) { .slot { font-size: 0.68rem; padding: 6px 2px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<main>
+<h1>basic09-l2: the parts</h1>
+<p class="lede">An overview of the l2basic09 system for NitrOS-9 Level 2 on the Wildbits, how its parts fit together, the address-space limits that shape it, and a comparison with how OS-9 Pascal runs programs larger than memory. Written 2026-10-19; sizes are as of commit <code>61544ee</code>. The detailed design is in <a href="ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
+
+<nav><ul>
+<li><a href="#glance">The system at a glance</a></li>
+<li><a href="#device">On the Wildbits</a></li>
+<li><a href="#host">On the host</a></li>
+<li><a href="#slots">The address space</a></li>
+<li><a href="#far">How far memory works</a></li>
+<li><a href="#banking">Code banking</a></li>
+<li><a href="#pascal">OS-9 Pascal compared</a></li>
+</ul></nav>
+
+<h2 id="glance">The system at a glance</h2>
+<pre>
+          you
+           | keys, mouse
+   +-------v--------+  fork + 2 pipes   +--------------+   links/loads   +----------+
+   |  basic09-l2    | ----------------> |  l2b09run    | --------------> | l2b09ovl |
+   |  (the editor)  | <---------------- |  (runtime)   |                 | (overlay)|
+   +-------+--------+  text + %events   +------+-------+                 +----------+
+           | F1: fork                          | RUN &lt;module&gt;
+   +-------v--------+                    +-----v------------------+
+   |  l2b09help     |&lt;-- basic09-l2.hlp  | farmem, syscall, inkey,|
+   | (help browser) |                    | WILD (NitrOS-9) ...    |
+   +----------------+                    +------------------------+
+</pre>
+<p>The editor forks the runtime once and talks to it over two pipes (<a href="PROTOCOL.md">PROTOCOL.md</a>): commands go down, and text plus <code>%</code> events (<code>%READY</code>, <code>%CERR</code>, <code>%DEBUG</code> ...) come back. The program runs on its own terminal. F1 forks the help browser on the editor's terminal and waits for it.</p>
+
+<h2 id="device">On the Wildbits (CMDS and SYS)</h2>
+<div class="tablewrap"><table>
+<tr><th>Part</th><th>Size</th><th>What it is</th></tr>
+<tr><td><code>basic09-l2</code><br>the editor</td><td class="num">22,779 bytes<br>(1,797 left of 3 blocks)</td><td>Full-screen editor with Turbo C-style menus. A paged text buffer (2K pages in a swap file, a few cached), so files can be larger than 64K. Undo/redo, find and replace, clipboard, syntax colours, mouse with wheel and scroll bar, double spacing, 80x60. Drives the runtime: Make (only changed procedures), Run, the debugger UI (step, step over, breakpoints, watches, evaluate), pretty print, <code>DEFTYPE</code>/<code>USE</code>. <a href="EDITOR.md">EDITOR.md</a></td></tr>
+<tr><td><code>l2b09run</code><br>the runtime</td><td class="num">23,842 bytes<br>(734 left below 24,576)</td><td>Microware's Basic09 compiler, binder and interpreter, built from the original modular source: comand 6.7K, exprsn 5.6K, binder 3.6K, stmts 3.1K, cnvio 2.6K, compil 2.2K. The l2basic09 additions: the pipe protocol and events, breakpoints and step over, code banking (<code>-b</code>), far arrays (<code>DIM ... FAR</code>), and the top-slot guard. The line editor is removed.</td></tr>
+<tr><td><code>l2b09ovl</code><br>the overlay</td><td class="num">969 bytes</td><td>Cold code the runtime links only when needed: PACK, DIR, RENAME, MEM, and at start-up <code>-b</code>'s set-up and the banner. It needs a free 8K slot while it runs.</td></tr>
+<tr><td><code>l2b09help</code><br><code>basic09-l2.hlp</code></td><td class="num">3,631 bytes<br>92K data</td><td>The help browser and its 253 pages (editor, every statement and function, every error). Its own process, forked from F1; built from the editor's screen and keyboard code. <a href="HELP.md">HELP.md</a></td></tr>
+<tr><td><code>farmem</code>, <code>syscall</code>, <code>inkey</code></td><td class="num">644, 99, 95 bytes</td><td>Subroutine modules: far memory by explicit calls (mostly superseded by far arrays; <a href="FARMEM.md">FARMEM.md</a>), system calls, single keys.</td></tr>
+<tr><td><code>l2b09ctl</code></td><td class="num">654 bytes</td><td>A scripted stand-in for the editor, for driving <code>l2b09run</code> in tests.</td></tr>
+</table></div>
+
+<h2 id="host">On the host (development)</h2>
+<div class="tablewrap"><table>
+<tr><th>Part</th><th>What it is</th></tr>
+<tr><td><code>src/</code></td><td>The Microware Basic09 source. Every l2basic09 change sits behind <code>ifne L2B09</code>, so the stock builds stay byte-identical (<code>make check</code>).</td></tr>
+<tr><td><code>os9/basic09-l2/</code>, <code>os9/l2b09help/</code></td><td>The editor (18 files, about 10,900 lines) and the help browser.</td></tr>
+<tr><td><code>help/*.txt</code>, <code>tools/mkhelp.py</code></td><td>The help pages and their compiler, which checks that every keyword and error has a page and every link a target.</td></tr>
+<tr><td><code>tools/</code></td><td>The emulator runner (<code>emu-wildbits.sh</code>), key scripts (<code>keys.py</code>), the editor model for expected files (<code>edmodel.py</code>), the keyword table generator (<code>mkkw.py</code>), <code>bootfile-add.py</code>.</td></tr>
+<tr><td><code>test/</code></td><td>31 emulator tests in MAME (p1-p7, p5a-p5v, loadtime).</td></tr>
+<tr><td><code>recipes/</code></td><td>Builds the SD card images in an export of the NitrOS-9 tree.</td></tr>
+<tr><td><code>docs/</code></td><td>ARCHITECTURE (phases and decisions), EDITOR, PROTOCOL, FARARRAYS, FARMEM, HELP, and this page.</td></tr>
+</table></div>
+
+<h2 id="slots">The address space</h2>
+<p>A Level 2 process sees 64K as eight 8K slots; the MMU maps any 8K block of physical RAM into any slot. Everything below competes for those eight.</p>
+<div class="slots" aria-label="l2b09run's eight slots">
+<div class="slot ws"><b>0</b>workspace</div>
+<div class="slot ws"><b>1</b>workspace</div>
+<div class="slot ws"><b>2</b>workspace</div>
+<div class="slot ws"><b>3</b>workspace</div>
+<div class="slot code"><b>4</b>l2b09run code</div>
+<div class="slot code"><b>5</b>l2b09run code</div>
+<div class="slot code"><b>6</b>l2b09run code</div>
+<div class="slot win"><b>7</b>guard / window</div>
+</div>
+<p class="caption">l2b09run with a 32K workspace. Slot 7 is only good for 7,424 bytes on Wildbits ($FD00-$FFFF are fixed to I/O), so a module over 23,808 bytes cannot use it; l2b09run's code sits in slots 4-6 and the guard (<code>L2GARD</code>) keeps slot 7 filled unless a window uses it.</p>
+<ul>
+<li><strong>Largest workspace:</strong> 32K with nothing else; 24K with <code>-b</code> (the code window takes a slot), or with far arrays and <code>-b</code> together.</li>
+<li><strong>The workspace holds everything:</strong> the I-code of every loaded procedure, the variables of the running calls, the stacks and Basic09's tables. So a program's I-code must fit in somewhat less than 32K, unless it is banked.</li>
+<li><strong>Each module a program <code>RUN</code>s</strong> (<code>WILD</code>, <code>farmem</code> ...) and the overlay while it runs need a free slot too.</li>
+<li><strong>Getting slot 7 back</strong> needs l2b09run at or under 23,808 bytes and everything that must work at the largest workspace resident (the overlay needs a slot while it runs). A kernel change to keep <code>F$MapBlk</code> out of slot 7 was declined, as it interferes with another project.</li>
+</ul>
+
+<h2 id="far">How far memory works</h2>
+<p>"Far" memory is RAM that is allocated but not mapped: blocks reserved with <code>F$AllRAM</code>, then mapped one at a time into a window slot with <code>F$MapBlk</code> and taken out with <code>F$ClrBlk</code>. A block change costs a couple of system calls (about 0.3-0.4 ms).</p>
+<div class="tablewrap"><table>
+<tr><th></th><th>What is far</th><th>How it is used</th><th>Window</th></tr>
+<tr><td><strong>farmem</strong> (P4)</td><td>data, as records</td><td>explicit <code>RUN farmem("alloc"/"put"/"get"/"free",...)</code>; must be freed</td><td>one slot, held between calls</td></tr>
+<tr><td><strong>Far arrays</strong> (P7)</td><td>array elements</td><td><code>DIM big(14000):FAR REAL</code>, then normal syntax; blocks on first use, freed on return</td><td>the data window</td></tr>
+<tr><td><strong>Banking</strong> (P6)</td><td>procedure code</td><td>nothing in the program: <code>-b</code> at start</td><td>the code window, one fixed slot</td></tr>
+</table></div>
+<p>Far memory removes the limit on how much data or code a program can have, not on how much is visible at once: one 8K window per kind instead of the whole 64K.</p>
+
+<h2 id="banking">Code banking (<code>-b</code>)</h2>
+<ol>
+<li><strong>At start-up</strong> <code>-b=&lt;kb&gt;</code> allocates a far store (today all of it at once) and reserves an 8K code window, the highest free slot.</li>
+<li><strong>At load</strong> each procedure is compiled and bound as usual, then copied into the store; the workspace keeps a 34-byte stub (header, name, a banked flag, the block and offset). Small procedures are packed into blocks in load order.</li>
+<li><strong>A call</strong> maps the callee's block into the window and runs it there; the return maps the caller's back. Within one block no cost; across blocks about 0.8 ms each way.</li>
+<li><strong>The window never moves</strong>, because the runtime keeps pointers into running code; a remap that does not land in the same slot fails with 207.</li>
+</ol>
+<p><strong>Limits:</strong> 8K per procedure (7,424 if the window is slot 7); the store is never reused; PACK refuses banked procedures; <code>DIR</code> shows stub sizes. <code>make p6test</code> loads about 48K of compiled code in a 24K workspace.</p>
+<h3>Ideas discussed</h3>
+<ul>
+<li><strong>Allocate the store on demand</strong>, one block at a time: the stubs already hold absolute block numbers, so only the final free needs a table. <code>-b=&lt;kb&gt;</code> becomes a maximum. About 60-100 bytes.</li>
+<li><strong>Bank automatically:</strong> set up the window at the first load that runs out of workspace (nothing is running then), after Make's workspace growth has reached 24K; keep <code>-b</code> as an override.</li>
+<li><strong>Packed banked programs (<code>runb-l2</code>):</strong> PACK writes procedures as separate modules or one file; <code>runb-l2</code> reads them into far RAM and runs them through the code window.</li>
+</ul>
+
+<h2 id="pascal">OS-9 Pascal compared</h2>
+<div class="note">The Pascal in nitros9-languages is the original Pascal 2.0 as disassembled code, without comments or documentation, so this section is from general knowledge of OS-9 Pascal, not checked against its source.</div>
+<p>OS-9 Pascal compiles to P-code, which an interpreter runs; the shell hands <code>Prgrm+PCode</code> modules to <code>PascalS</code>. The interpreters include <code>PascalN</code>, which loads the whole program into memory, and <code>PascalS</code>, which keeps the P-code on disk and reads procedures into a fixed buffer as they are called, replacing ones not used lately: virtual memory for code, done by the interpreter. <code>PascalT</code> translates P-code to native 6809 code.</p>
+<div class="tablewrap"><table>
+<tr><th></th><th>OS-9 Pascal (<code>PascalS</code>)</th><th><code>l2b09run -b</code></th></tr>
+<tr><td>Where the code lives</td><td>in the file on disk</td><td>in far RAM (8K blocks outside the 64K)</td></tr>
+<tr><td>How it gets in</td><td>read into a swap buffer</td><td>its block is mapped into the 8K code window</td></tr>
+<tr><td>A call to code not in memory</td><td>a disk read</td><td>four system calls (about 0.8 ms)</td></tr>
+<tr><td>Needs an MMU</td><td>no (works on Level 1)</td><td>yes (Level 2)</td></tr>
+<tr><td>Limit</td><td>disk and buffer size</td><td>far RAM; 8K per procedure</td></tr>
+</table></div>
+<p>For packed, banked Basic09 programs there are two matching routes:</p>
+<ol>
+<li><strong>The <code>PascalS</code> route:</strong> <code>runb-l2</code> opens the packed module as a file and reads a procedure's I-code into the window or a buffer when it is called. No far RAM, but slow calls to swapped-out code, especially from SD.</li>
+<li><strong>Our route:</strong> at start-up <code>runb-l2</code> reads the packed procedures from the file straight into far RAM, as <code>L2BANK</code> does after a load, and runs them through the code window as <code>l2b09run</code> does. The module never has to fit in the 64K.</li>
+</ol>
+<p>On Level 2 with plenty of RAM, route 2 fits better: it reuses the tested <code>L2RSLV</code>/<code>L2MAPW</code> code. <code>PascalS</code>'s model is the one to copy if Level 1, or a small-memory CoCo 3, ever matters.</p>
+</main>
+</body>
+</html>
