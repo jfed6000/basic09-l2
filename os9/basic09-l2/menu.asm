@@ -121,7 +121,7 @@ mcomp               fdb       c_make-cmdtab
                     fcn       "All: pretty print"
                     fcn       "^Space"
                     fdb       c_pack-cmdtab
-                    fcn       "Build module..."
+                    fcn       "Pack module..."
                     fcn       ""
                     fdb       $FFFF
 mdbg                fdb       c_step-cmdtab

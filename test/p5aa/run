@@ -1,4 +1,4 @@
-* basic09-l2: Run with arguments, Build module (PACK), Procedure calls
+* basic09-l2: Run with arguments, Pack module (PACK), Procedure calls
 -x
 chd /dd/l2b09
 load /dd/l2b09/l2b09run

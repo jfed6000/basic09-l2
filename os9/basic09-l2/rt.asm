@@ -1870,7 +1870,7 @@ cpk5                ldb       <lderr              "ERROR #<n>": say so
 cpk6                leax      packms,pcr
                     stx       <msgp
 cpk9                rts
-packtl              fcn       "Build a module for RunB"
+packtl              fcn       "Pack a module for RunB"
 packcm              fcn       "pack* "
 packms              fcn       "Packed: a module for RunB"
 
