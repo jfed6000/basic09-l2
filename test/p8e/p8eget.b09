@@ -1,0 +1,1 @@
+PROCEDURE p8egetDIM c:STRING[1]PRINT "ready"GET #0,cPRINT "got ";cEND

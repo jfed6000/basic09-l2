@@ -1251,26 +1251,7 @@ INPS30 lbsr STROUT
  lda I.IPTH
  sta I.CNCH
 INPS35 equ *
- lda I.CNCH reading the program's terminal (not a file)?
- cmpa I.IPTH
- bne INPS36
- pshs X,Y
- clrb tell the editor: it shows the program's screen
- ldy #0 while a step waits for this
- leax L2INPE,PCR "%INPUT"
- lbsr J$L2EV
-* and select the window it reads, ourselves: the editor cannot (one
-* process at a time on a device: its write would wait for our read)
- lda I.CNCH
- ldb #SS.ScSiz a windowing terminal (not a file, not a line)?
- OS9 I$GetStt
- bcs INPS37
- lda I.CNCH
- leax L2SELW,PCR
- ldy #2
- OS9 I$Write (an error does not matter)
-INPS37 puls X,Y
-INPS36 equ *
+ lbsr L2INPW %INPUT, and the window, for the program's terminal
  ldb #V$INLN Get input line code
  lbsr J$CVIO Call conversion & I/O
  bcc INPS40 ..continue if no error
@@ -1597,9 +1578,23 @@ WRTS30 lbra PRTST6
 
 * Same as INPSTM
 
-GETSTM bsr GPSET do get/put setup
+GETSTM pshs X (the statement again after a break)
+ bsr GPSET do get/put setup
+ lbsr L2INPW %INPUT, and the window, for the program's terminal
  OS9 I$Read
+ bcc GETS9
+ cmpb #S$Abort a break key while it waits: a break, as INPUT's
+ beq GETS2
+ cmpb #S$Intrpt
+ beq GETS2
+ orcc #Carry (an error)
+GETS9 leas 2,S
  bra PUTSTM90
+GETS2 clr I.ERR
+ lbsr J$DBUG
+ clr I.ERR
+ puls X
+ bra GETSTM
 
 ***************
 * Subroutine PUTSTM
@@ -1788,7 +1783,7 @@ EXCER1 ldu I.ASTR Get storage address
  lbra STMLUP
 
 EXCER2 bsr DEBUG print offending line; call debugger
- bsr TOFSTM Turn trace off
+ lbsr TOFSTM Turn trace off
  lbra J$EXIT Abort
 
 EXCER4 lbsr J$EREX Print error message
@@ -1818,6 +1813,28 @@ DEBUG equ *
 L2ERRE fcs "%ERROR"
 L2INPE fcs "%INPUT"
 L2SELW fcb $1B,$21 select this window (VTIO)
+* L2INPW: before INPUT or GET waits on path I.CNCH: if that is the
+* program's terminal (not a file), tell the editor (%INPUT: it shows the
+* program's screen while a step waits for this), and select the window
+* ourselves: the editor cannot (one process at a time on a device: its
+* write would wait for our read).  Keeps every register.
+L2INPW pshs D,X,Y,U
+ lda I.CNCH
+ cmpa I.IPTH
+ bne L2INW9
+ clrb
+ ldy #0
+ leax L2INPE,PCR "%INPUT"
+ lbsr J$L2EV
+ lda I.CNCH
+ ldb #SS.ScSiz a windowing terminal (not a file, not a line)?
+ OS9 I$GetStt
+ bcs L2INW9
+ lda I.CNCH
+ leax L2SELW,PCR
+ ldy #2
+ OS9 I$Write (an error does not matter)
+L2INW9 puls D,X,Y,U,PC
  else
  lbsr J$KALL kill all external procs
  ldb I.ERR Get error code
@@ -1897,7 +1914,7 @@ SKPSTM leay  ,X Copy I-Code ptr
 *   Line With Compile Error
 
 ELNSTM ldb #M$ERST
- bra EXCERR
+ lbra EXCERR
 
 ***************
 * Subroutine DEGSTM

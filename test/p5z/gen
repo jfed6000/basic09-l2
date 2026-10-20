@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stepping onto an INPUT on the program's own terminal (no -t file):
+"""Stepping onto an INPUT, and a GET, on the program's own terminal (no -t file):
 l2b09run selects its window for the read (the editor cannot: its write
 would wait for the read), so the answer typed reaches the program.
 usage: gen <outdir>
@@ -11,13 +11,17 @@ from keys import compile_keys  # noqa: E402
 out = sys.argv[1]
 prog = '''PROCEDURE inp
 DIM a:STRING[10]
+DIM c:STRING[1]
 PRINT "ready"
 INPUT "name? ",a
 PRINT a
+GET #0,c
+PRINT "got "; c
 END
 '''
-# F7 to the INPUT; lua types the answer on the window then on display
-keys = 'f7 f7 f7 f7 f7 ^q'
+# F7 to the INPUT, then to the GET; lua types the answers on the window
+# then on display
+keys = 'f7 f7 f7 f7 f7 f7 f7 ^q'
 with open(os.path.join(out, 'inp.b09'), 'w', newline='') as f:
     f.write(prog.replace('\n', '\r'))
 with open(os.path.join(out, 'keys.bin'), 'wb') as f:

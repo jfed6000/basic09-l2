@@ -22,4 +22,18 @@ signal 3
 expect %DEBUG
 send q
 expect %READY
+* GET waits on the terminal too
+send load p8eget.b09
+expect %READY
+send run p8eget
+sleep 30
+signal 2
+expect %DEBUG
+send cont
+expect %INPUT
+sleep 20
+signal 3
+expect %DEBUG
+send q
+expect %READY
 send bye

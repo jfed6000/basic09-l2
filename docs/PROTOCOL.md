@@ -41,7 +41,7 @@ Output is plain text lines. Lines starting with `%` are events; everything else 
 | `%CERR <code> <proc> <line>` | Compile error while loading. The line is kept as an error line, and loading continues. |
 | `%BERR <code> <proc> <line>` | Bind error when a procedure finishes loading, for example an undefined line number or unmatched control structure. |
 | `%ASK Rewrite?` | SAVE/PACK target exists. Answer `y` or `n`. |
-| `%INPUT` | The program is about to wait in `INPUT` for a line from its terminal (not from a file). `l2b09run` then selects that window itself (`ESC !`, only on a windowing terminal, one with `SS.ScSiz`), because an editor cannot: the terminal manager lets one process at a time use a device, so the editor's write would wait for the program's read. An editor that keeps its own screen while stepping just notes it, to show its own again at the next stop. `GET` and other reads do not send it. Older editors ignore it, as any `%` line they do not know. |
+| `%INPUT` | The program is about to wait in `INPUT` for a line, or in `GET` for bytes, from its terminal (not from a file). `l2b09run` then selects that window itself (`ESC !`, only on a windowing terminal, one with `SS.ScSiz`), because an editor cannot: the terminal manager lets one process at a time use a device, so the editor's write would wait for the program's read. An editor that keeps its own screen while stepping just notes it, to show its own again at the next stop. Other reads (`READ` from a path, the `inkey` module, which never waits) do not send it. Older editors ignore it, as any `%` line they do not know. |
 
 - **Codes** are Basic09 error numbers (see the Basic09 manual or the `errmsg` file).
 - **Line numbers** are counted within the procedure: line 1 is the line after `PROCEDURE <proc>`. Every source line becomes exactly one I-code line, including blank and comment lines. So:
@@ -115,6 +115,6 @@ A BREAK typed on the program's terminal goes to the last process that used that 
 
 ## Not yet covered
 
-- **BREAK during INPUT** (fixed and tested 2026-10-20, `make p8etest`). A signal ends the terminal read with the signal as its error code, past INTCPT. Stock INPUT turned the interrupt (3) into a debugger stop, but reported it as "ERROR #003" and `%ERROR` first, and any other code (the abort, 2) was a program error. Now both are a plain break: `BREAK: PROCEDURE ...` and `%DEBUG`, no error, and the INPUT asks again after `cont`.
+- **BREAK during INPUT** (fixed and tested 2026-10-20, `make p8etest`). A signal ends the terminal read with the signal as its error code, past INTCPT. Stock INPUT turned the interrupt (3) into a debugger stop, but reported it as "ERROR #003" and `%ERROR` first, and any other code (the abort, 2) was a program error. Now both are a plain break: `BREAK: PROCEDURE ...` and `%DEBUG`, no error, and the INPUT asks again after `cont`. `GET` from the terminal is the same (2026-10-20): a break, then `cont` reads again.
 - **Output on path 2.** Output the program writes to path 2 (`PRINT #2`) arrives on the command channel as free text.
 - **No read timeout.** Pipes cannot be polled on NitrOS-9 (`pipeman` has no `SS.Ready`), so an editor that must not block needs its own design (for example, a reader process).

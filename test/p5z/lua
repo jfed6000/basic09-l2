@@ -7,6 +7,10 @@ wait(60 * 60)                   -- the editor has stepped onto the INPUT by then
 add(function() manager.machine.natkeyboard:post("bob\r") end)
 wait(60 * 10)
 add(function() print("p5z: typed") end)
+wait(60 * 30)                   -- then onto the GET
+add(function() manager.machine.natkeyboard:post("x") end)
+wait(60 * 10)
+add(function() print("p5z: key") end)
 local i = 0
 s_sub = emu.add_machine_frame_notifier(function()
     i = i + 1

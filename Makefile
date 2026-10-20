@@ -211,7 +211,7 @@ p5ytest: l2b09 tools pipes $(BASEIMG)
 
 # Stepping onto an INPUT: the program's window comes up, the answer gets there
 p5ztest: l2b09 tools pipes $(BASEIMG)
-	EMU_SECONDS=120 tools/emu-wildbits.sh test/p5z
+	EMU_SECONDS=160 tools/emu-wildbits.sh test/p5z
 
 p5aatest: l2b09 tools pipes $(BASEIMG)
 	EMU_SECONDS=120 tools/emu-wildbits.sh test/p5aa

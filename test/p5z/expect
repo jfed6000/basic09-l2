@@ -1,4 +1,5 @@
 ed.log    < %INPUT
-ed.log    < %DEBUG inp 4
 ed.log    < %DEBUG inp 5
+ed.log    < %DEBUG inp 7
+ed.log    < %DEBUG inp 8
 ed.log    > bye
