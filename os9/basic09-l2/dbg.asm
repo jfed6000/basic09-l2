@@ -449,7 +449,8 @@ wtf3                puls      b
                     incb
                     bra       wtf1
 wtf8                andcc     #^Carry
-                    lbra      rd_all
+                    lbra      rd_stop             the text and the watches (rd_all
+*                                                 redrew the scroll bar at each step)
 wtf_gone            puls      b,pc
 
 * wt_clear: the program ended: no values
