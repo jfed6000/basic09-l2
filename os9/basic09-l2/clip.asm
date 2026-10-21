@@ -302,7 +302,8 @@ chain_paste         stx       <pchain
                     ldd       <ua+1
                     std       <uoff+1
                     clr       <ulen
-                    ldd       #0
+                    clra
+                    clrb
                     std       <ulen+1
                     clr       <ptpat              is the window's top line here?
                     ldd       <tpos

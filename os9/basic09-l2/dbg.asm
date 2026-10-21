@@ -62,8 +62,7 @@ dbg_cmd             pshs      x
                     lbsr      bp_sync
                     puls      x
                     lbcs      dg9
-                    ldy       <base
-                    leay      rline,y
+                    lbsr      a_rliny
 dcm1                lda       ,x+
                     sta       ,y+
                     cmpa      #C$CR
@@ -204,8 +203,7 @@ crs9                rts
 * with an error number turned into its text) is in lastout.  Carry if
 * the runtime has gone.
 dbg_ask             pshs      y
-                    ldy       <base
-                    leay      rline,y
+                    lbsr      a_rliny
                     lbsr      s_cpy
                     puls      x
                     lbsr      s_cpy
@@ -255,8 +253,7 @@ breakcm             fcn       "break "
 
 * out_keep: the line at X (ending in CR) to lastout
 out_keep            pshs      d,x,y
-                    ldy       <base
-                    leay      lastout,y
+                    lbsr      a_lasty
                     ldb       #LASTMAX-1
 ok1                 lda       ,x+
                     cmpa      #C$CR
@@ -269,8 +266,7 @@ ok2                 clr       ,y
 
 * word_at: the word at the cursor (or just before it) to inbuf; Z if
 * there is none
-word_at             ldu       <base
-                    leau      wp,u
+word_at             lbsr      a_wpu
                     lbsr      cp_u
 wa1                 lbsr      p_prev              back to its start
                     bcs       wa2
@@ -360,8 +356,7 @@ cev6                leau      a,u
                     bsr       s_lim
                     puls      y
                     bsr       s_lim
-                    ldy       <base
-                    leay      lastout,y
+                    lbsr      a_lasty
                     bsr       s_lim
                     clr       ,x
                     lbsr      a_sbuf
@@ -407,7 +402,7 @@ stackms             fcn       "Procedure calls: Enter goes to one"
 * debugger's BREAK <procedure>)
 c_retbrk            tst       <dbgon
                     lbeq      c_notst
-                    leax      rettl,pcr
+                    leax      <rettl,pcr
                     lbsr      dlg_in
                     bcs       crb9
                     lbsr      a_inby
@@ -457,8 +452,7 @@ wtf1                cmpb      <nwatch
                     puls      x
                     bcs       wtf_gone
                     leax      WT.VAL,x
-                    ldy       <base
-                    leay      lastout,y
+                    lbsr      a_lasty
                     ldb       #WTVMAX-1
 wtf2                lda       ,y+
                     sta       ,x+
@@ -573,7 +567,7 @@ ww_draw             pshs      d,x,y,u
                     sta       <bx.st
                     lbsr      fr_on
                     lbsr      bx_draw
-                    leax      wttl,pcr
+                    leax      <wttl,pcr
                     lbsr      bx_title
                     lbsr      hl_norm
                     clrb
@@ -820,7 +814,7 @@ bpp1                cmpb      <nproc
                     ldd       PR.LINE,x
                     cmpd      1,s
                     bhs       bpp2                it starts at the line or after it
-                    cmpy      #0
+                    leay      ,y
                     beq       bpp1a
                     cmpd      PR.LINE,y
                     bls       bpp2                an earlier one than the best so far

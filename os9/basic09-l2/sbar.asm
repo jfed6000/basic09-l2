@@ -31,11 +31,12 @@ sb_geo              ldb       <wrows
                     addd      #1
                     subd      ,s++
                     bcc       sbg1
-                    ldd       #0
+                    clra
+                    clrb
 sbg1                tfr       d,x
                     ldb       <wrows
                     subb      #3
-                    andcc     #^Carry
+shok4               andcc     #^Carry             (shared: carry clear, return)
                     rts
 sbg_no              orcc      #Carry
                     rts
@@ -52,12 +53,10 @@ sb_pos              pshs      d
                     tfr       x,y
                     puls      x
                     lbsr      muldiv              top * (wrows-3) / highest
-                    andcc     #^Carry
-                    rts
+                    bra       shok4
 sbp_top             clrb
 sbp_end             leas      2,s
-                    andcc     #^Carry
-                    rts
+                    bra       shok4
 sbp_no              leas      2,s
                     rts
 
@@ -203,8 +202,7 @@ mdv3                leax      -1,x
 
 * cmu_sb: a press on the bar at window row B
 cmu_sb              ldx       <base
-                    lda       muev,x
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     bne       csb9
                     pshs      b
                     ldd       <topline
@@ -293,10 +291,7 @@ csd2                ldb       ,s
                     leas      4,s
                     lbsr      muldiv              highest * place / (positions - 1)
                     lbsr      goto_line
-                    ldd       <cpos               that line at the top
-                    std       <tpos
-                    ldd       <cpos+2
-                    std       <tpos+2
+                    lbsr      cp_tp
                     ldd       <curline
                     std       <topline
                     lbra      rd_text

@@ -223,7 +223,7 @@ mun_up              lda       #MV.UP
 mun_ev              sta       muev,u
                     lda       #REPTK
                     sta       murept,u
-                    orcc      #Carry
+shno1               orcc      #Carry              (shared: carry set, return)
                     rts
 mun_no              andcc     #^Carry
                     rts
@@ -256,7 +256,7 @@ mut1                tst       ,y
                     inc       ,s
                     bra       mut1
 mut_hit             puls      b
-                    andcc     #^Carry
+shok1               andcc     #^Carry             (shared: carry clear, return)
                     rts
 mut_no1             leas      1,s
 mut_no              orcc      #Carry
@@ -275,11 +275,9 @@ mu_inbox            pshs      d
                     cmpa      <mwid
                     bhs       mub_no
                     puls      d
-                    andcc     #^Carry
-                    rts
+                    bra       shok1
 mub_no              puls      d
-                    orcc      #Carry
-                    rts
+                    bra       shno1
 
 * mu_item: B = the open menu's item at column A, row B; carry if that is
 * not an item (or is a separator)
@@ -292,8 +290,7 @@ mu_item             bsr       mu_inbox
                     lbsr      m_item
                     ldx       ,x
                     beq       mui_no
-                    andcc     #^Carry
-                    rts
+                    bra       shok1
 mui_no              orcc      #Carry
                     rts
 
@@ -312,16 +309,14 @@ mu_msg              tst       <msgon
                     addb      <msgtop
                     cmpb      <nmsg
                     bhs       mum_no
-                    andcc     #^Carry
-                    rts
+                    bra       shok1
 mum_no              orcc      #Carry
                     rts
 
 * mu_out: A = EK.ESC and no carry if the event is a press outside the
 * box at bx.col, bx.row (bx.w by bx.h); carry otherwise
 mu_out              ldx       <base
-                    lda       muev,x
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     bne       muo_no
                     ldd       mux,x
                     suba      <bx.col
@@ -333,7 +328,7 @@ mu_out              ldx       <base
 muo_no              orcc      #Carry
                     rts
 muo_yes             lda       #EK.ESC
-                    andcc     #^Carry
+shok2               andcc     #^Carry             (shared: carry clear, return)
                     rts
 
 * mu_ch: A = the character of string X (a dialog's line, at column
@@ -357,8 +352,7 @@ much1               tst       ,x
                     deca
                     bra       much1
 much2               lda       ,x
-                    andcc     #^Carry
-                    rts
+                    bra       shok2
 much_no             orcc      #Carry
                     rts
 
@@ -386,8 +380,7 @@ cmu1                clr       mudrag,x            a press
                     ldd       mux,x
                     tstb
                     bne       cmu2
-                    lda       muev,x              the menu bar
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     bne       cmu9
                     lda       mux,x
                     lbsr      mu_title
@@ -431,8 +424,7 @@ cmu9                rts
 cmu5                ldb       muy,x               the message window
                     lbsr      mu_msg
                     bcs       cmu9
-                    lda       muev,x
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     bne       cmu9
                     stb       <msgsel
                     lbra      c_msgwin
@@ -502,8 +494,7 @@ mo_mouse            ldx       <base
                     bcs       mom_out
                     cmpb      <mcur
                     bne       mom1
-                    lda       muev,x
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     lbeq      mo_close
                     bra       mom_ign
 mom1                stb       <mcur
@@ -519,8 +510,7 @@ mom2                lbsr      mu_item
 mom3                lbsr      mu_inbox            the frame or a separator
                     bcc       mom_ign
 mom_out             ldx       <base
-                    lda       muev,x
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     lbeq      mo_close
 mom_ign             lbra      mo_draw
 
@@ -528,8 +518,7 @@ mom_ign             lbra      mo_draw
 * press on a message selects it, a double click goes to its line.  A
 * press anywhere else goes back to the text.
 cmw_mouse           ldx       <base
-                    lda       muev,x
-                    cmpa      #MV.DOWN
+                    lbsr      mu_isdn
                     lbne      cmw1
                     ldb       muy,x
                     lbsr      mu_msg

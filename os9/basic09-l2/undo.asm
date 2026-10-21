@@ -82,9 +82,7 @@ a2p3                stx       ,u
 a2p5                lda       ,y+
                     cmpa      #C$CR
                     bne       a2p6
-                    ldd       <tmpc
-                    addd      #1
-                    std       <tmpc
+                    lbsr      tmpc_inc
 a2p6                cmpy      ,s
                     blo       a2p5
                     leas      2,s

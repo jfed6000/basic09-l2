@@ -42,7 +42,7 @@ errnm               fcc       "/dd/sys/errmsg"
 
 * rt_init: the signal handler, the protocol log (-l) and the user
 * terminal: -t, or a free one from the /vt factory
-rt_init             leax      rt_icpt,pcr
+rt_init             leax      <rt_icpt,pcr
                     ldu       <base
                     os9       F$Icpt
                     lbsr      a_inbx
@@ -137,7 +137,7 @@ rt_stop             tst       <child
                     beq       rp0
                     lbsr      dbg_quit
                     bcs       rp9
-rp0                 leax      byecm,pcr
+rp0                 leax      <byecm,pcr
                     lbsr      rt_send
                     lda       <rpa
                     os9       I$Close
@@ -338,7 +338,7 @@ rt_line             clr       <gotsig
                     bcc       rl1
                     tst       <gotsig             a signal broke the wait: again
                     bne       rt_line
-                    orcc      #Carry
+shno2               orcc      #Carry              (shared: carry set, return)
                     rts
 rl1                 lda       #'<
 * lg_line: the line at X (ending in CR) to the log, after A and a space
@@ -369,8 +369,7 @@ rt_wait             clr       <evcode
 rw1                 bsr       rt_line
                     bcc       rw1a
 rw_gone             lbsr      rt_gone
-                    orcc      #Carry
-                    rts
+                    bra       shno2
 rw1a
                     lbsr      a_rline
                     lda       ,x+
@@ -586,8 +585,7 @@ cck2                cmpa      #'^
                     lda       ,x
                     cmpa      #C$CR
                     bne       cck9
-                    ldy       <base
-                    leay      lastout,y
+                    lbsr      a_lasty
                     lda       b,y
                     cmpa      #':
                     bne       cck9
@@ -690,13 +688,13 @@ pt_add              ldb       <nproc
                     bsr       pt_at
                     inc       <nproc
                     pshs      x
-                    ldy       <base
-                    leay      nbuf,y
+                    lbsr      a_nbufy
 pad1                lda       ,y+
                     sta       ,x+
                     bne       pad1
                     puls      y
-                    ldd       #0
+                    clra
+                    clrb
                     std       PR.H1,y
                     std       PR.H2,y
                     std       PR.LEN,y
@@ -803,14 +801,13 @@ cm7                 bne       cm8
                     leay      uptdms,pcr
 cm8                 lbsr      s_str
                     clr       ,x
-                    andcc     #^Carry
+shok7               andcc     #^Carry             (shared: carry clear, return)
                     rts
 cm_gone             orcc      #Carry
                     rts
 cm_keep             leax      keptms,pcr
                     stx       <msgp
-                    andcc     #^Carry
-                    rts
+                    bra       shok7
 
 * ws_kb: B = l2b09run's workspace in kilobytes (rtmem is in pages)
 ws_kb               ldb       <rtmem
@@ -864,8 +861,7 @@ rtm2                sta       <rtmem
                     lsra
                     cmpa      ,s+
                     blo       rtm_no1
-                    andcc     #^Carry
-                    rts
+                    bra       shok7
 rtm_no              leas      1,s
 rtm_no1             orcc      #Carry
                     rts
@@ -1067,8 +1063,7 @@ mks1                lbsr      mk_isproc           PROCEDURE <name>
 mks1p               clra
 mks1q               pshs      a
                     lbsr      mk_close
-                    ldy       <base
-                    leay      nbuf,y
+                    lbsr      a_nbufy
                     lbsr      pt_find
                     bcc       mks1a
                     lbsr      pt_add
@@ -1121,7 +1116,7 @@ mks2a               ldx       <base               END DEFTYPE?
                     clr       <curp
                     clr       <curp+1
                     lbra      mks1
-mks8                lbsr      mk_close
+mks8                bsr       mk_close
                     bsr       mk_uses
                     andcc     #^Carry
 mks9                rts
@@ -1172,8 +1167,7 @@ mu2                 bsr       us_xu               its lines, after PROCEDURE
                     bsr       us_xu
                     bsr       ln_use
                     bcs       mu2
-                    ldy       <base
-                    leay      nbuf,y
+                    lbsr      a_nbufy
                     lbsr      pt_find
                     bcs       mu6                 ..not there
                     lda       PR.FLAG,y
@@ -1254,8 +1248,7 @@ ln_enddef           bsr       ln_at
 lnw9                rts
 
 * ln_at: U = wp = a copy of the position at X
-ln_at               ldu       <base
-                    leau      wp,u
+ln_at               lbsr      a_wpu
                     ldd       ,x
                     std       ,u
                     ldd       2,x
@@ -1312,7 +1305,7 @@ lnn2                lbsr      p_char
 lnn3                clr       ,x
                     cmpb      #NAMEMAX-1
                     beq       lnw_no              no name
-                    andcc     #^Carry
+shok3               andcc     #^Carry             (shared: carry clear, return)
                     rts
 prockw              fcn       "PROCEDURE"
 usekw               fcn       "USE"
@@ -1352,10 +1345,10 @@ mkl1                 cmpy      2,s
                     ldu       DS.NEXT,x           past the page: the next one's start
                     beq       mkl2
                     stu       <mkp
-                    ldd       #0
+                    clra
+                    clrb
 mkl2                 std       <mkp+2
-                    andcc     #^Carry
-                    rts
+                    bra       shok3
 mkl_pend             bsr       mkl_len              the page ended within the line
                     leas      6,s
                     ldd       DS.NEXT,x
@@ -1421,8 +1414,7 @@ mbg9                rts
 
 * mk_kill: "kill <name>" for entry X; carry if the runtime has gone
 mk_kill             bsr       mk_bpgone
-                    ldy       <base
-                    leay      rline,y
+                    lbsr      a_rliny
                     pshs      x
                     leax      killcm,pcr
                     lbsr      s_cpy
@@ -1607,8 +1599,7 @@ hd_x                ldx       <base               X = hdrp
                     leax      hdrp,x
                     rts
 mk_types            pshs      y
-                    ldy       <base
-                    leay      nbuf,y
+                    lbsr      a_nbufy
                     lbsr      pt_find
                     tfr       y,x
                     puls      y
@@ -1682,8 +1673,7 @@ ty_put              pshs      x                   A to Y, while there is room
 typ9                rts
 
 * rt_send: send command X (ending in CR); carry if the runtime has gone
-rt_send             ldy       <base
-                    leay      rline,y
+rt_send             lbsr      a_rliny
 rsd1                lda       ,x+
                     sta       ,y+
                     cmpa      #C$CR
@@ -1710,7 +1700,7 @@ run_first           pshs      x
                     lbsr      bp_sync
                     bcs       crn8
                     bsr       pr_first
-                    lbra      crn3
+                    bra       crn3
 * pr_first: Y = the first procedure in the text (0: none)
 pr_first            ldy       #0                  the procedure with the lowest line
                     clrb                          (not a DEFTYPE block)
@@ -1721,7 +1711,7 @@ crn2                cmpb      <nproc
                     lda       PR.FLAG,x
                     bita      #PF.DEF
                     bne       crn2b
-                    cmpy      #0
+                    leay      ,y
                     beq       crn2a
                     ldd       PR.LINE,x
                     cmpd      PR.LINE,y
@@ -1765,10 +1755,10 @@ cra1                lbsr      c_make
                     tst       ,x
                     bne       cra2
                     pshs      y
-                    lbsr      pr_first
+                    bsr       pr_first
                     tfr       y,x
                     puls      y
-                    cmpx      #0
+                    leax      ,x
                     beq       cra3
                     leax      PR.NAME,x
 cra2                lbsr      s_cpy

@@ -43,9 +43,7 @@ ff_s1               cmpu      <fend
                     lda       ,u+
                     cmpa      #C$CR
                     bne       ff_s2
-                    ldd       <tmpc
-                    addd      #1
-                    std       <tmpc
+                    lbsr      tmpc_inc
                     bra       ff_s1
 ff_s2               bsr       fold
                     cmpa      <fch
@@ -137,9 +135,7 @@ fb_s1               ldd       <wp+2               the character before wp
                     lda       d,u
                     cmpa      #C$CR
                     bne       fb_s2
-                    ldd       <tmpc
-                    addd      #1
-                    std       <tmpc
+                    lbsr      tmpc_inc
                     bra       fb_s1
 fb_s2               lbsr      fold
                     cmpa      <fch
@@ -246,12 +242,13 @@ c_repl              ldx       <base
                     lbsr      strcpy
                     leax      withtl,pcr
                     lbsr      dlg_inp
-                    lbcs      crp9
+                    bcs       crp9
                     lbsr      a_inbx
                     ldy       <base
                     leay      rstr,y
                     lbsr      strcpy
-                    ldd       #0
+                    clra
+                    clrb
                     std       <frep
                     clr       <fall
 crp1                lbsr      find_fwd

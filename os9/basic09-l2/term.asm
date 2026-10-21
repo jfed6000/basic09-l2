@@ -91,7 +91,7 @@ ti4                 stb       <scrw
                     rts
 
 * t_done: put the terminal back
-t_done              lbsr      t_flush
+t_done              bsr       t_flush
                     lbsr      t_unglyph
                     tst       <kbterm
                     beq       td1

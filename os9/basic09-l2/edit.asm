@@ -181,8 +181,7 @@ c_full              leax      fullms,pcr
 
 * c_enter: new line, indented like the one it splits
 c_enter             lbsr      sel_del
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     lbsr      cp_u
                     lbsr      p_bol
                     ldx       #0                  leading spaces before the cursor
@@ -296,8 +295,7 @@ c_up                clr       <setwant
 cu9                 rts
 
 c_down              clr       <setwant
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     lbsr      cp_u
                     lbsr      p_nextln
                     bcs       cdn9
@@ -358,8 +356,7 @@ cpu2                lbsr      c_up
 c_pgdn              ldb       <wrows
                     decb
 cpd1                pshs      b
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     ldd       <tpos
                     std       ,u
                     ldd       <tpos+2
@@ -466,8 +463,7 @@ cwl1                bsr       prevch
 cwl9                rts
 
 * prevch: A = the character before the cursor; carry at the start
-prevch              ldu       <base
-                    leau      wp,u
+prevch              lbsr      a_wpu
                     lbsr      cp_u
                     lbsr      p_prev
                     bcs       pvc9

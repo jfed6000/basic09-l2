@@ -12,10 +12,7 @@ vf0                 ldd       <curline            above the window?
                     cmpd      <topline
                     bhs       vf1
                     std       <topline
-                    ldd       <cpos
-                    std       <tpos
-                    ldd       <cpos+2
-                    std       <tpos+2
+                    lbsr      cp_tp
                     ldu       <base
                     leau      tpos,u
                     lbsr      p_bol
@@ -25,10 +22,7 @@ vf1                 subd      <topline            below it?
                     bne       vf2
                     cmpb      <wrows
                     blo       vf3
-vf2                 ldd       <cpos               top line = wrows-1 lines above the cursor
-                    std       <tpos
-                    ldd       <cpos+2
-                    std       <tpos+2
+vf2                 lbsr      cp_tp
                     ldu       <base
                     leau      tpos,u
                     lbsr      p_bol
@@ -73,10 +67,7 @@ vf9                 rts
 
 * v_center: put the cursor line in the middle of the window (after a
 * jump, when the lines above the window may have changed)
-v_center            ldd       <cpos
-                    std       <tpos
-                    ldd       <cpos+2
-                    std       <tpos+2
+v_center            lbsr      cp_tp
                     ldd       <curline
                     std       <topline
                     ldu       <base
@@ -128,8 +119,7 @@ vd0a                equ       *
 vd1                 bita      #RD.BELOW+RD.LINE
                     beq       vd3
                     lbsr      cp_wp
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     lbsr      p_bol
                     ldd       <curline
                     subd      <topline
@@ -269,8 +259,7 @@ vl00                lbsr      t_ch
                     lbsr      vs_init             only its statement dbstm is red
 vl0                 clr       <hlst               syntax colours start afresh
                     clr       <hlrun
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     ldx       #0                  display column
 vl1                 lbsr      p_char
                     bcs       vl_eof
@@ -290,7 +279,7 @@ vl1a                cmpa      #C$TAB
                     lbsr      v_colput
 vl2                 leax      1,x
                     bra       vl3
-vl_tab              lbsr      v_selat
+vl_tab              bsr       v_selat
                     lbsr      v_synok
                     bne       vlt0
                     lbsr      hl_col

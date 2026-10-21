@@ -569,6 +569,25 @@ a_mbuf              ldx       <base               X = mbuf
 a_rline             ldx       <base               X = rline
                     leax      rline,x
                     rts
+a_rliny             ldy       <base               Y = rline
+                    leay      rline,y
+                    rts
+a_nbufy             ldy       <base               Y = nbuf
+                    leay      nbuf,y
+                    rts
+a_lasty             ldy       <base               Y = lastout
+                    leay      lastout,y
+                    rts
+a_wpu               ldu       <base               U = wp
+                    leau      wp,u
+                    rts
+tmpc_inc            ldd       <tmpc               tmpc + 1
+                    addd      #1
+                    std       <tmpc
+                    rts
+mu_isdn             lda       muev,x              Z if the mouse event (X = base) is MV.DOWN
+                    cmpa      #MV.DOWN
+                    rts
 
 * Copies of the cursor position
 cp_wp               ldd       <cpos               to wp
@@ -580,6 +599,11 @@ cp_u                ldd       <cpos               to ,u
                     std       ,u
                     ldd       <cpos+2
                     std       2,u
+                    rts
+cp_tp               ldd       <cpos               to tpos
+                    std       <tpos
+                    ldd       <cpos+2
+                    std       <tpos+2
                     rts
 
                     use       term.asm

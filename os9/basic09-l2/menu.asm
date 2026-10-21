@@ -391,7 +391,7 @@ mla1                ldd       ,x
                     cmpd      #0
                     beq       mla4
                     leay      2,x                 text + shortcut + 3 spaces + 2 borders
-                    lbsr      m_len
+                    bsr       m_len
                     pshs      b
                     bsr       strlen
                     addb      ,s+
@@ -515,7 +515,7 @@ mdb3                lda       #C$SPAC
                     leay      2,x                 text
                     tfr       y,x
                     lbsr      m_str
-                    lbsr      m_len               Y = the shortcut
+                    bsr       m_len               Y = the shortcut
                     pshs      b
                     tfr       y,x
                     lbsr      strlen
@@ -815,8 +815,7 @@ c_hkeys             leax      keystp,pcr          Help > Keys
 c_hcont             leax      keystp+4,pcr        Help > Contents: no topic
 * hlp_go: run "l2b09help -e [-n] <topic X>" and wait for it
 hlp_go              pshs      x
-                    ldy       <base
-                    leay      rline,y
+                    lbsr      a_rliny
                     leax      hlpe,pcr
                     lbsr      s_cpy
                     tst       <nocolr

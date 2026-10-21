@@ -26,11 +26,11 @@ c_sp                cmpa      <dblsp
                     lda       <dblsp              still not: back
                     eora      #1
                     bsr       sp_set
-                    leax      spsmall,pcr
+                    leax      <spsmall,pcr
                     bra       csp2
 csp1                lbsr      t_cls
                     lbsr      w_layout
-                    leax      spon1,pcr
+                    leax      <spon1,pcr
                     tst       <dblsp
                     beq       csp2
                     leax      spon2,pcr
@@ -99,7 +99,7 @@ cst3                lbsr      hl_set              DWSet changed the colours and
                     lbsr      t_cls               cleared in the terminal's
                     lbsr      w_layout
                     ldx       <base
-                    leax      scrm30,pcr
+                    leax      <scrm30,pcr
                     lda       <scrh
                     tst       <dblsp
                     beq       cst4

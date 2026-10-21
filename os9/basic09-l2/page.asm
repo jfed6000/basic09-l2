@@ -18,7 +18,8 @@ pg_init             pshs      d,x,y,u
                     ldu       #NDESC
 pi1                 sty       DS.SLOT,x
                     clr       DS.FLAG,x
-                    ldd       #0
+                    clra
+                    clrb
                     std       DS.CE,x
                     std       DS.PREV,x
                     std       DS.USED,x
@@ -65,7 +66,8 @@ da1
                     pshs      d
                     ldd       DS.NEXT,x
                     std       <freed
-                    ldd       #0
+                    clra
+                    clrb
                     std       DS.NEXT,x
                     std       DS.PREV,x
                     std       DS.USED,x
@@ -84,7 +86,8 @@ da9                 ldb       #E$MemFul
 d_free              pshs      d,y
                     ldy       DS.CE,x
                     beq       df1
-                    ldd       #0
+                    clra
+                    clrb
                     std       CE.DESC,y
                     std       CE.AGE,y
                     clr       CE.DIRT,y
@@ -99,7 +102,7 @@ df1                 ldd       #0
 pg_unlink           pshs      y,u
                     ldy       DS.PREV,x
                     ldu       DS.NEXT,x
-                    cmpy      #0
+                    leay      ,y
                     bne       pu1
                     stu       <first
                     bra       pu2
@@ -172,7 +175,7 @@ ce_get              pshs      d,x,u
                     ldy       #0
 cg1                 ldu       CE.DESC,x
                     beq       cg_free
-                    cmpy      #0
+                    leay      ,y
                     beq       cg2
                     pshs      b
                     ldd       CE.AGE,x
@@ -484,8 +487,7 @@ ptc9                stx       ,s
 * p_col: D = the display column of position U
 p_col               pshs      x,y,u
                     tfr       u,y
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     ldd       ,y
                     std       ,u
                     ldd       2,y
@@ -655,9 +657,7 @@ psp2                lda       ,y+
                     sta       ,u+
                     cmpa      #C$CR
                     bne       psp3
-                    ldd       <tmpc
-                    addd      #1
-                    std       <tmpc
+                    lbsr      tmpc_inc
 psp3                leax      -1,x
                     bne       psp2
                     ldx       <sn
@@ -677,7 +677,8 @@ psp3                leax      -1,x
                     std       <tm
                     ldd       <sn
                     std       <tt
-                    ldd       #0
+                    clra
+                    clrb
                     subd      <soff
                     std       <tk
                     lbsr      trk_move
@@ -813,7 +814,8 @@ pg_remove           pshs      d,x,y,u
                     cmpy      #0
                     beq       prm9
 prm1                stx       <tf
-                    ldd       #0
+                    clra
+                    clrb
                     std       <tm
                     cmpu      #0
                     beq       prm2
@@ -934,7 +936,7 @@ f_load              lbsr      d_alloc
                     bcc       fl0
                     cmpb      #E$PNNF
                     beq       fl_new
-                    orcc      #Carry
+shno4               orcc      #Carry              (shared: carry set, return)
                     rts
 fl0                 sta       <flpath
                     ldx       <first
@@ -966,15 +968,14 @@ fl_eof              cmpb      #E$EOF
 fl_done             lda       <flpath
                     os9       I$Close
 fl_new              clr       <modif
-                    andcc     #^Carry
+shok5               andcc     #^Carry             (shared: carry clear, return)
                     rts
 fl_err              pshs      b
                     lda       <flpath
                     os9       I$Close
                     clr       <modif
                     puls      b
-                    orcc      #Carry
-                    rts
+                    bra       shno4
 
 * f_save: write the text to fname; carry (B = error) on failure
 f_save              ldx       <base
@@ -1016,8 +1017,7 @@ fs3                 lda       <flpath
                     os9       I$Close
                     bcs       fs_err
                     clr       <modif
-                    andcc     #^Carry
-                    rts
+                    bra       shok5
 fs_errc0            sta       <flpath
 fs_errc             pshs      b
                     lda       <flpath

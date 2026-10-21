@@ -92,10 +92,7 @@ pg7                 lbsr      bp_back
                     ldx       <base               the window's top line
                     ldd       pptl,x
                     lbsr      goto_line
-                    ldd       <cpos
-                    std       <tpos
-                    ldd       <cpos+2
-                    std       <tpos+2
+                    lbsr      cp_tp
                     ldx       <base
                     ldd       pptl,x
                     std       <topline
@@ -148,7 +145,7 @@ po2                 lbsr      rt_line             the listing, up to %READY
                     bne       po3                 goes in as it is
                     inc       pphdr,x
                     inc       ppcont,x
-po3                 lbsr      pp_clean
+po3                 bsr       pp_clean
                     bcc       po2
                     bra       po_full             (read the rest first)
 po4                 lda       rline+1,x
@@ -175,14 +172,13 @@ po_full             lbsr      rt_line             no pages: read the rest, give 
 po_full0            leas      2,s
 po_fullm            leax      fullms,pcr
 po_msg              stx       <msgp
-                    orcc      #Carry
+shno3               orcc      #Carry              (shared: carry set, return)
                     rts
 po_gone1            ldx       <base
                     ldx       pprec+UR.CH,x
                     lbsr      chain_free
 po_gone             puls      y
-                    orcc      #Carry
-                    rts
+                    bra       shno3
 pperms              fcn       "The procedure has errors"
 listcm              fcn       "list "
 
@@ -508,7 +504,7 @@ pus8                ldu       <base
                     ldb       ,s+
                     stb       ppmid,u
                     tsta
-                    andcc     #^Carry
+shok6               andcc     #^Carry             (shared: carry clear, return)
                     rts
 pus_err             puls      a,pc
 pus_app             pshs      d,x                 A to the new text
@@ -545,8 +541,7 @@ ppt1                lbsr      us_xu               to the end of the procedure
                     lbsr      chain_paste         (recorded too)
                     lda       #1
                     sta       <modif
-                    andcc     #^Carry
-                    rts
+                    bra       shok6
 pp_none             andcc     #^Carry
                     rts
 
@@ -568,8 +563,7 @@ pps2                lbsr      pg_map
                     leay      d,y
                     lda       ,y
                     pshs      a,x
-                    ldu       <base
-                    leau      wp,u
+                    lbsr      a_wpu
                     bsr       pp_atx              the old text ended first?
                     beq       pps_no
                     lbsr      p_char

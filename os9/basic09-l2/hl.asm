@@ -265,7 +265,7 @@ hc5                 cmpa      #'0
 hc_norm             ldx       <base
                     ldb       hlnorm,x
                     puls      a,x,y,u,pc
-hc_num              lbsr      hl_num
+hc_num              bsr       hl_num
                     decb
                     stb       <hlrun
                     ldb       #CL.NUM
