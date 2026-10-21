@@ -32,6 +32,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - A test directory holds a `run` script (OS-9 shell), plus optional `modules`, `bootmods`, `fetch` and `expect` files, a `gen` script whose output is copied in unchanged (binary), and a `lua` MAME autoboot script for live keyboard and mouse input (`test/p5l`); it can read colours from the screen's pixels (`test/p5m`).
 - `expect` lines are `<file> <text>`, or `same <fileA> <fileB>`.
 - Output lands in `build/emu/<test>/`, and `mame.log` ends with a text-screen snapshot.
+- MAME runs with no host input (`-keyboardprovider none -mouseprovider none`, ...) and SDL's dummy video and audio drivers, so typing or using the mouse on the host during a test reaches nothing, and MAME never takes focus. (Before 2026-10-21 host keys could land in a test: p5x once got "syn" in its text.)
 
 ## Code map
 

@@ -84,7 +84,11 @@ os9 copy -l -r "$out/startup" "$img,startup"
 lua=()
 [ -f "$tdir/lua" ] && lua=(-autoboot_script "$tdir/lua")
 start=$(date +%s.%N)
-"$MAME" wbjr2 -video none -sound none -nothrottle -skip_gameinfo \
+# no host input: keys typed or mouse moves on this computer while a test
+# runs would reach the emulated machine (a lua script drives its own ports);
+# SDL's dummy drivers keep MAME off the desktop, so it takes no focus
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$MAME" wbjr2 -video none -sound none -nothrottle -skip_gameinfo \
+    -keyboardprovider none -mouseprovider none -joystickprovider none -lightgunprovider none \
     -seconds_to_run "$EMU_SECONDS" -hard "$img" "${lua[@]}" > "$out/mame.log" 2>&1 || true
 end=$(date +%s.%N)
 
