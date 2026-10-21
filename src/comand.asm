@@ -176,6 +176,12 @@ J$INTX jsr M.STMTS
  fcb X$INTX  Execute Interpreter
 J$CVIO jsr M.CNVIO
  fcb X$CVIO  call cnvio
+J$L2RS jsr M.STMTS
+ fcb X$L2RS resolve procedure ptr
+J$L2MW jsr M.STMTS
+ fcb X$L2MW map far block into the code window
+J$FALL jsr M.STMTS
+ fcb X$FALL free all far arrays
 
  ifne INCLUDED&EDITOR
 J$CMPL jsr M.COMPIL
@@ -194,12 +200,6 @@ J$ISTM jsr M.STMTS
  fcb X$ISTM  interpret single statement
 J$ASNM jsr M.CNVIO
  fcb X$ASNM  cnv ASCII > numeric
-J$L2RS jsr M.STMTS
- fcb X$L2RS resolve procedure ptr
-J$L2MW jsr M.STMTS
- fcb X$L2MW map far block into the code window
-J$FALL jsr M.STMTS
- fcb X$FALL free all far arrays
 
  ttl KEYWORD Table
  pag
@@ -1263,7 +1263,9 @@ START15 lda #$7E JMP Opcode
  lbsr J$INTI Initialize interpreter
  puls Y get initial shell params
 
+ ifne INCLUDED&EDITOR
  lbsr L2OPTS Parse l2b09run options
+ endc
  lbsr L2GARD keep the data window out of the top slot
  ifne L2B09RT
  pshs Y (the rest of our parameters)
@@ -2068,7 +2070,9 @@ KILALL ldy I.IOPT build "All" name in I/O buffer
  sta G.SIGN
 
 KILLER equ *
+ ifne INCLUDED&EDITOR
  lbsr L2BPZ procedures move: breakpoints go
+ endc
  lbsr PCDLST get list of procedures to kill
  clr I.APRC no active procedure
  clr I.APRC+1
@@ -2482,6 +2486,7 @@ NEWLN               fcb       $1b,$33,$06,$0c,$0d
 NEWLNLEN            equ	*-NEWLN
 				endc
 ***************
+ ifne INCLUDED&EDITOR (RunB has no options)
 * Subroutine L2OPTS
 *   Parse l2b09run options ahead of the file name
 *
@@ -2588,6 +2593,7 @@ L2TERM clra
  clra
  OS9 I$Dup terminal becomes path 1 too
 L2TER9 rts
+ endc
 
 ***************
 * Subroutine L2GARD
@@ -2859,6 +2865,7 @@ L2PRTX fcs "%PROC"
 L2DNTX fcs "%DONE"
  endc
 
+ ifne INCLUDED&EDITOR (RunB loads nothing)
 L2BNK0 puls D,X,Y,U,PC L2BANK's early exit, in reach of short branches
 
 
@@ -2971,6 +2978,7 @@ L2INSR pshs D,X where this line goes
  puls Y
 L2INS9 puls D,X,PC
 L2CERR fcs "%CERR"
+ endc
 
 ***************
  ifne L2B09RT

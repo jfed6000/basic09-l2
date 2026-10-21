@@ -27,7 +27,7 @@ Full usage: `l2b09run [#mem] [-b=<kb>] [-t=<terminal>] [<file> [<procedure>[(<pa
 
 - **`#mem` first.** Put the shell's `#mem` straight after the command name; Shell+ rejects it in front of an argument.
 - **`-b=<kb>`** banks procedure code into <kb> kilobytes of far memory (ARCHITECTURE.md, P6), so programs larger than the workspace can be loaded, run and debugged. Line numbers, LIST, SAVE and the debugger work the same with banking. PACK does not.
-- **Far arrays** (`DIM x(n):FAR type`, [FARARRAYS.md](FARARRAYS.md)) need nothing from the editor. The debugger's `print` and `let` work on their elements. PACK refuses procedures that use them (error 51).
+- **Far arrays** (`DIM x(n):FAR type`, [FARARRAYS.md](FARARRAYS.md)) need nothing from the editor. The debugger's `print` and `let` work on their elements. PACK packs them (2026-10-21); the packed modules need `runb-l2`.
 
 ## Runtime to editor
 

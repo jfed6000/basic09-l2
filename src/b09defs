@@ -473,7 +473,7 @@ P.BANK equ $20 P.STAT bit: banked procedure; this is its stub
 *  A stub is the procedure header and name, followed by the far
 *  block number (2 bytes) and offset in that block (2 bytes) of the
 *  real image.
-P.FAR equ $10 P.STAT bit: procedure has far arrays (not packable)
+P.FAR equ $10 P.STAT bit: procedure has far arrays (packed, they need runb-l2)
 L2BPN equ 16 Breakpoint table entries: procedure ptr, I-Code offset
 L2BPSZ equ 4*L2BPN Breakpoint table size; it sits at G.DIRA+$100
 * l2b09cc: below the breakpoint table, an index of the symbol table of the

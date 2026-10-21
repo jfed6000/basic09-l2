@@ -1,0 +1,9 @@
+a.out     p7: main done
+b.out     p7: real sum 98007000
+b.out     p7: str bad0 n2993 last n1
+b.out     p7: rec 1999 1000 -1000. 1999.
+b.out     p7: range error55
+b.out     p7: depth1 ok
+b.out     p7: main done
+same      a.out b.out
+same      mfree1 mfree2

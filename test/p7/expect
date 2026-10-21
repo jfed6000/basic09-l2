@@ -34,4 +34,3 @@ bench3.out bench 10000 far alternating blocks
 p7.err    %BERR 72 p7bad 1
 p7.err    %BERR 72 p7bad 2
 p7.err    %BERR 73 p7bad 3
-p7.err    ERROR #051

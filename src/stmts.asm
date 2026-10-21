@@ -289,7 +289,7 @@ STML10 rora is Trace bit set?
  lbsr J$PBLN Print line
  else
  ldb G.SIGN Return Signal as error
- bra LBRERR Signal Execution error
+ lbra LBRERR Signal Execution error
 STML10 equ *
  endc
 
@@ -1259,10 +1259,15 @@ INPS35 equ *
  beq INPS3B INTCPT
  cmpb #S$Intrpt Keyboard interrupt?
  lbne EXCER1
-INPS3B clr I.ERR a break, not an error (stock printed the line,
+INPS3B equ *
+ ifne INCLUDED&EDITOR
+ clr I.ERR a break, not an error (stock printed the line,
  lbsr J$DBUG "ERROR #003" and %ERROR): the debugger, as a BREAK
  clr I.ERR
  bra INPS10 Re-issue input request
+ else
+ lbra EXCER1 RunB: an error (ON ERROR, or the end)
+ endc
 
 INPS40 bsr INPVAR Call variable input
  bcc INPS50 bra if no error
@@ -1590,11 +1595,16 @@ GETSTM pshs X (the statement again after a break)
  orcc #Carry (an error)
 GETS9 leas 2,S
  bra PUTSTM90
-GETS2 clr I.ERR
+GETS2 equ *
+ ifne INCLUDED&EDITOR
+ clr I.ERR
  lbsr J$DBUG
  clr I.ERR
  puls X
  bra GETSTM
+ else
+ lbra EXCERR RunB: an error (ON ERROR, or the end)
+ endc
 
 ***************
 * Subroutine PUTSTM
@@ -1840,6 +1850,7 @@ L2INW9 puls D,X,Y,U,PC
  ldb I.ERR Get error code
  OS9 F$Exit Abort
  rts
+L2INPW rts RunB: no editor to tell, no window to select
  endc
 
 ***************

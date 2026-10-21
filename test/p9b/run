@@ -1,0 +1,9 @@
+* runb-l2: a packed program with far arrays runs as it does in l2b09run
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09run #24k <p9b.cmds >a.out >>a.err
+load /dd/l2b09/p7pk
+mfree >mfree1
+/dd/l2b09/runb-l2 #24k p7main >b.out >>b.err
+mfree >mfree2
+mdir -e >mdir.out

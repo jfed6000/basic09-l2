@@ -1,6 +1,6 @@
 # Far arrays: DIM x(n):FAR type
 
-In `l2b09run`, an array declared `FAR` keeps its elements in RAM outside the program's 64K, in whole 8K blocks. It is used with normal syntax. Only the declaration changes. Far arrays are an `l2b09run` feature: stock Basic09 and RunB do not have them, and PACK refuses procedures that use them.
+In `l2b09run`, an array declared `FAR` keeps its elements in RAM outside the program's 64K, in whole 8K blocks. It is used with normal syntax. Only the declaration changes. Far arrays are a basic09-l2 feature: stock Basic09 and RunB do not have them. PACK packs procedures that use them (since 2026-10-21), and `runb-l2` runs the packed modules; stock RunB would misrun them (ARCHITECTURE.md, "Packed modules and `runb-l2`").
 
 ## Usage
 

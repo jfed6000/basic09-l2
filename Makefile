@@ -41,7 +41,7 @@ AS = lwasm --no-warn=ifp1 --6309 --format=os9 \
 AFLAGS = -DNOS9VER= -DNOS9MAJ= -DNOS9MIN=
 
 SUBS  = $(BUILD)/syscall $(BUILD)/inkey $(BUILD)/farmem
-L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl $(BUILD)/l2b09cc
+L2B09 = $(BUILD)/l2b09run $(BUILD)/l2b09ovl $(BUILD)/l2b09cc $(BUILD)/runb-l2
 OS9DIR = os9
 TOOLS = $(BUILD)/l2b09ctl $(BUILD)/basic09-l2 $(BUILD)/l2b09help $(BUILD)/basic09-l2.hlp
 
@@ -52,7 +52,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all subs l2b09 tools pipes k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p5aatest p6test p7test p8atest p8btest p8ctest p8dtest p8etest loadtime clean k2main jr2main main mainsrc
+.PHONY: all subs l2b09 tools pipes k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p5aatest p6test p7test p8atest p8btest p8ctest p8dtest p8etest p9atest p9btest loadtime clean k2main jr2main main mainsrc
 
 all: subs l2b09 tools
 
@@ -75,6 +75,11 @@ $(BUILD)/l2b09run: $(DEPS) | $(BUILD)
 # so that LOAD sends each bound procedure to stdout
 $(BUILD)/l2b09cc: $(DEPS) | $(BUILD)
 	$(PYTHON) $(SCRIPT) basic09 $@ -DCOMMUNITY=1 -DL2B09CC=1 -DLevel=2
+
+# runb-l2: RunB built from basic09-l2's source (module name RunB), with
+# far arrays; it replaces stock RunB (ARCHITECTURE.md, "runb-l2")
+$(BUILD)/runb-l2: $(DEPS) | $(BUILD)
+	$(PYTHON) $(SCRIPT) runb $@ -DCOMMUNITY=1 -DLevel=2
 
 # Cold commands (PACK) that l2b09run loads when they are typed
 $(BUILD)/l2b09ovl: $(SRCDIR)/overlay.asm $(DEPS) | $(BUILD)
@@ -242,6 +247,14 @@ p8dtest: l2b09 $(BASEIMG)
 	tools/emu-wildbits.sh test/p8d
 
 # RUN/STOP (keyboard abort) at an INPUT: a break, not error 2
+# runb-l2: packed modules run as under stock RunB (and by name, through the shell)
+p9atest: l2b09 pipes $(BASEIMG)
+	tools/emu-wildbits.sh test/p9a
+
+# runb-l2: a packed program with far arrays (p7's) runs as in l2b09run
+p9btest: l2b09 pipes $(BASEIMG)
+	tools/emu-wildbits.sh test/p9b
+
 p8etest: l2b09 tools pipes $(BASEIMG)
 	tools/emu-wildbits.sh test/p8e
 	@! grep -a '^< ERROR\|^< %ERROR' build/emu/p8e/ctl.out || { echo "p8e: FAILED (an error for the break)"; exit 1; }

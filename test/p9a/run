@@ -1,0 +1,21 @@
+* runb-l2: packed modules run as under stock RunB
+-x
+chd /dd/l2b09
+/dd/l2b09/l2b09run <p9.cmds >pack.out >>pack.err
+load /dd/l2b09/p9pk
+echo == stock RunB
+/dd/cmds/runb p9main >s1.out
+/dd/cmds/runb p9arg("hi",7) >s2.out
+/dd/cmds/runb p9bad >s3.out >>s3.err
+echo == runb-l2
+/dd/l2b09/runb-l2 p9main >l1.out
+/dd/l2b09/runb-l2 p9arg("hi",7) >l2.out
+/dd/l2b09/runb-l2 p9bad >l3.out >>l3.err
+echo == by name: the shell forks RunB (stock, from /dd/cmds)
+p9main >m1.out
+p9str hi there >m2.out
+echo == by name, with ours in memory
+load /dd/l2b09/runb-l2
+p9main >n1.out
+p9str hi there >n2.out
+mdir -e >mdir.out

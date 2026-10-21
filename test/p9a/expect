@@ -1,0 +1,12 @@
+s1.out    p9: done
+s2.out    p9: arg hi7
+s3.out    p9: bad
+same      s1.out l1.out
+same      s2.out l2.out
+l3.out    p9: bad
+same      s3.err l3.err
+m2.out    p9: str hi there
+same      m1.out n1.out
+same      m2.out n2.out
+same      s1.out m1.out
+mdir.out  3271 11

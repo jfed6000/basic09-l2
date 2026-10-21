@@ -124,7 +124,8 @@ bigger than 64K.
   {Error 65}; an element by reference or ADDR of one is {Error 67};
   FAR on a simple variable, a PARAM or a TYPE field is {Error 72}.
 - Work through an array in order: the first subscript varies fastest.
-- Only l2b09run has FAR; PACK refuses procedures that use it.
+- Only basic09-l2 has FAR. PACK packs procedures that use it, but the
+  packed modules need runb-l2 (stock RunB cannot run them).
 
   DIM img(320,240):FAR BYTE
   FOR y=1 TO 240
