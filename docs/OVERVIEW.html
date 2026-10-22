@@ -64,6 +64,7 @@ nav ul { padding-left: 18px; }
 <li><a href="#far">How far memory works</a></li>
 <li><a href="#banking">Code banking</a></li>
 <li><a href="#pascal">OS-9 Pascal compared</a></li>
+<li><a href="#icode">Inside the I-code machine</a></li>
 <li><a href="#compiler">The compiler, and a separate compiler process</a></li>
 <li><a href="#compat">Compatibility</a></li>
 <li><a href="#speed">Compiler speed-ups (a log)</a></li>
@@ -175,6 +176,89 @@ nav ul { padding-left: 18px; }
 <li><strong>Our route:</strong> at start-up <code>runb-l2</code> reads the packed procedures from the file straight into far RAM, as <code>L2BANK</code> does after a load, and runs them through the code window as <code>l2b09run</code> does. The module never has to fit in the 64K.</li>
 </ol>
 <p>On Level 2 with plenty of RAM, route 2 fits better: it reuses the tested <code>L2RSLV</code>/<code>L2MAPW</code> code. <code>PascalS</code>'s model is the one to copy if Level 1, or a small-memory CoCo 3, ever matters.</p>
+
+<h2 id="icode">Inside the I-code machine</h2>
+<p>Basic09 compiles each procedure to <em>I-code</em>, a compact token code, and runs it on an interpreter: the "virtual machine" is the code in <code>stmts</code> (statements) and <code>exprsn</code> (expressions), with <code>cnvio</code> for number conversion and I/O. There is no hardware model to it: the machine is a loop that reads a token and jumps to the routine for it. This section describes how it works, as read in the source (<code>src/</code>, Microware's with basic09-l2's additions); symbol names are given so each part can be found. Where a detail is from reading rather than from a test, it says so.</p>
+
+<h3>A procedure in memory</h3>
+<p>A procedure is one block of memory with a fixed header (<code>P.*</code> in <code>src/b09defs</code>). In the workspace its module type is 0; PACKed, the same block is an OS-9 module of type <code>Sbrtn+ICode</code> (<code>$22</code>), which is why RunB and <code>RUN</code> can use either.</p>
+<div class="tablewrap"><table>
+<tr><th>Field</th><th>What it holds</th></tr>
+<tr><td><code>P.MHDR</code>, <code>P.SIZE</code>, name, type, revision, parity</td><td>An OS-9 module header, so a procedure can become a module as it is.</td></tr>
+<tr><td><code>P.PGMB</code></td><td>Where the I-code starts.</td></tr>
+<tr><td><code>P.VARC</code></td><td>How much storage a call needs (its variables, then the link area).</td></tr>
+<tr><td><code>P.SYMB</code></td><td>The symbol table: the names. LIST and the debugger use them; PACK strips them (it keeps the names a run still needs, such as <code>RUN</code> targets).</td></tr>
+<tr><td><code>P.DSCB</code></td><td>The description area: for each array, record or parameter, its type, shape, dimensions and storage offset; record layouts.</td></tr>
+<tr><td><code>P.PRCS</code></td><td>Where the <em>link area</em> starts in the storage: slots that are cleared on every call (below).</td></tr>
+<tr><td><code>P.DATA</code>, <code>P.EXEC</code></td><td>The first <code>DATA</code> statement, and the first statement to run (after <code>PARAM</code>, <code>DIM</code>, <code>TYPE</code>).</td></tr>
+<tr><td><code>P.STAT</code></td><td>Status bits: bit 0 "has errors" (it will not run), <code>P.FAR</code> (has far arrays), <code>P.BANK</code> (this is a stub; the code is banked).</td></tr>
+</table></div>
+<p>Each name in the symbol table has a <em>kind byte</em>: three bits of data type (BYTE, INTEGER, REAL, BOOLEAN, STRING, record), two of shape (simple, 1, 2 or 3 dimensions) and three of definition (undefined, type, field, variable, parameter, procedure). Six of the eight definition values are used.</p>
+
+<h3>The I-code</h3>
+<ul>
+<li><strong>Statement tokens</strong> are below <code>$80</code>: <code>PARAM</code>, <code>TYPE</code>, <code>DIM</code>, <code>PRINT</code>, <code>FOR</code>, <code>RUN</code> and so on, one per statement, in a fixed order (<code>T.*</code> in <code>b09defs</code>). A line ends with <code>T.EOL</code>; <code>\</code> between statements is <code>T.BKSL</code>. Every source line is one I-code line, including blank and comment lines, which is how the debugger's line numbers stay right.</li>
+<li><strong>Operand tokens</strong> are <code>$80</code> and up: variable references, literals (integer, real, string, hex) carried in the code, and the functions and operators. A line that starts with a variable reference is an assignment.</li>
+<li><strong>Variables</strong> are not looked up by name when the program runs. The compiler and binder turn each reference into a token and a 2-byte offset: for a simple variable into the storage, for an array, record field or parameter to its entry in the description area, which gives the rest (<code>VARREF</code> in <code>exprsn</code>). This is from reading the code.</li>
+<li><strong>Line numbers</strong> are bound: <code>GOTO 100</code> is compiled as "unbound" (<code>T.GOTO</code> with the number) and the binder rewrites it to "bound" (<code>T.GTBD</code> with the address), so a jump at run time costs nothing to find.</li>
+<li><strong>Declarations do nothing at run time.</strong> <code>PARAM</code>, <code>DIM</code> and <code>TYPE</code> are skipped (<code>SKPSTM</code>); the binder has already turned them into the description area and the storage layout.</li>
+</ul>
+
+<h3>Running a statement</h3>
+<p><code>STMLUP</code> (stmts) is the machine's main loop. For each statement it:</p>
+<ol>
+<li>keeps the I-code pointer (<code>I.ICPT</code>) for errors and the debugger;</li>
+<li>checks the breakpoint table, if any are set (basic09-l2), and the run mode: a pending debugger stop, or trace;</li>
+<li>reads the token and jumps through the statement table (<code>STMDIS</code>, <code>D.STMT</code>): one routine per statement;</li>
+<li>stops at the end of the I-code (<code>I.ICLM</code>), which is <code>END</code>.</li>
+</ol>
+<p>An expression is in <em>reverse Polish</em> order: operands first, then the operator, so <code>a+b*2</code> is stored as <code>a b 2 * +</code>. <code>EVAL</code> (exprsn) reads tokens and dispatches each to a routine that pushes onto or works on the <em>operand stack</em>, whose entries are 6 bytes: a type byte and up to 5 bytes of value (a REAL is 5 bytes). Strings being built go on a separate <em>string stack</em>. Most type work is done before the program runs: the binder puts conversion tokens (integer to real, for example) where they are needed, which is the work that made compiling quadratic before the 2026-10-20 speed-up.</p>
+
+<h3>A call: storage without a heap</h3>
+<p>A <code>RUN</code> of a Basic09 procedure goes to <code>EXECUT</code> (stmts), which:</p>
+<ol>
+<li>refuses a procedure with errors, checks the 6809 stack has 256 bytes left, and checks the free space can hold <code>P.VARC</code> bytes and still leave 256 for the operand stack (else error 32, memory full);</li>
+<li>takes the procedure's storage from the free space, just below the caller's, like a stack frame, and fills in the call's temporaries (<code>U.*</code>): the run mode, DEG/RAD, the array base, the procedure, the saved stack and caller's storage, the <code>DATA</code> pointer, the error trap (<code>ON ERROR</code>) and the <code>GOSUB</code> stack;</li>
+<li>clears the link area;</li>
+<li>jumps to the first executable statement (<code>P.EXEC</code>).</li>
+</ol>
+<p><code>END</code> (<code>ENDSTM</code>, the only way out of a procedure) gives the storage back. So every variable exists only during its call; recursion works with no extra effort; and there is no heap, no allocation in the middle of a call, and so nothing for a garbage collector to find. Variables start undefined: only the link area is cleared.</p>
+
+<h3>Parameters, and finding a procedure</h3>
+<ul>
+<li><strong>Parameters are passed as 4-byte packets:</strong> an address and a size (<code>RPARAM</code>). A variable is passed by reference: the packet points at the caller's own storage. An expression is evaluated, copied into a temporary, and passed as a packet to that, so it is by value. The called procedure's <code>PARAM</code> names are reached through the packets, one pointer away, and their sizes are checked.</li>
+<li><strong><code>RUN name</code> finds its procedure by name, once per call.</strong> Its slot in the link area starts at 0. The first time the statement runs, the name is looked up (the workspace's procedures, then an OS-9 module in memory, then a file loaded from the execution directory) and the pointer is kept in the slot (<code>RUNSTM</code>). Later runs of it in the same call go straight there.</li>
+<li><strong>Machine-code subroutine modules</strong> (<code>Sbrtn+Objct</code>, such as <code>syscall</code>, <code>inkey</code>, <code>farmem</code>) are called with <code>JSR</code> and the parameter packets on the 6809 stack; that is why they need real 16-bit addresses. Any other module type is error 43.</li>
+</ul>
+
+<h3>Errors</h3>
+<p>A runtime error goes to <code>EXCERR</code>. If the current procedure has an error trap armed (<code>ON ERROR GOTO</code>, <code>U.ERRS</code>), the machine resets the stacks to that procedure's and continues at the trap. Otherwise basic09-l2's runtime stops in the debugger (and tells the editor with <code>%ERROR</code>), and RunB prints the error and exits with it.</p>
+
+<h3>The workspace</h3>
+<p>All of this lives in one workspace (<code>G.*</code>): a directory of the procedures (<code>G.DIRA</code>; basic09-l2 keeps its breakpoint table just after it), the procedure area (<code>G.PRCA</code>) where loaded procedures sit, and the free space (<code>G.VARS</code>) from which each call's storage and the stacks are taken. The <code>mem</code> command sets its size.</p>
+
+<h3>What basic09-l2 added to the machine</h3>
+<ul>
+<li><strong>Breakpoints and step over:</strong> a check in <code>STMLUP</code> against a 16-entry table, and <code>L2OVRU</code>, the call to stop in after stepping over a <code>RUN</code>.</li>
+<li><strong>Banked code</strong> (<code>-b</code>): a procedure's code lives in far memory and a stub stays in the workspace (<code>P.BANK</code>); at each call <code>EXECUT</code> maps the code into an 8K window first (<code>L2RSLV</code>).</li>
+<li><strong>Far arrays:</strong> the description area marks the array (a total size of <code>$FF</code>/blocks), its 6-byte handle lives in the link area, and each element access computes a 24-bit element number and maps its block into the data window (<code>L2FVRF</code>); <code>END</code> frees the blocks.</li>
+<li><strong>Events for the editor:</strong> <code>%DEBUG</code> with the statement within the line, <code>%ERROR</code>, and <code>%INPUT</code> before an <code>INPUT</code> or <code>GET</code> waits on the terminal (which also selects the program's window).</li>
+</ul>
+
+<h3>Microware's reserved GLOBAL</h3>
+<p>Statement token 0 is <code>T.GLOB</code>, "Global (reserved)". The binder treats it as a statement followed by a string expression, like <code>CHD</code> or <code>CHAIN</code> (<code>PGLOBL</code>), and the runtime skips it like a declaration. But <code>GLOBAL</code> is not in the keyword table, so the compiler can never produce it: Microware planned a <code>GLOBAL "&lt;string&gt;"</code> statement and stopped before the compiler. What the string was for is not in the source; naming something (an OS-9 data module, perhaps) is a guess.</p>
+
+<h3>How a GLOBAL would fit (a sketch, not built)</h3>
+<p>Every part has a model in the machine already:</p>
+<ul>
+<li><strong>A new kind:</strong> definition value 6, unused (<code>S.GLOB</code>), for names declared <code>GLOBAL count:INTEGER</code>. Stock I-code never has it, so old modules are untouched. Microware's <code>T.GLOB</code> token is the obvious one to use.</li>
+<li><strong>A slot per global in the link area,</strong> as <code>RUN</code> targets and far handles have, cleared on every call.</li>
+<li><strong>Reached like a parameter:</strong> the slot holds a pointer to the shared storage, so each access is one pointer away.</li>
+<li><strong>Found like a <code>RUN</code> target:</strong> the first reference in a call finds the slot empty, looks the name up in the process's global table (created then, with the size and type from the description; an error if it exists with another), and keeps the pointer.</li>
+<li><strong>The global table</strong> is a region of the workspace kept by the runtime, for the whole run (to command level, or the whole process under RunB). A far global array would keep its handle there, freed at the end of the run.</li>
+<li><strong>PACK</strong> keeps global names, as it keeps <code>RUN</code> target names; such modules need <code>runb-l2</code>.</li>
+</ul>
+<p>Cost: one name lookup per global per call, then the speed of a parameter. Named blocks (<code>GLOBAL settings</code> plus <code>USE settings</code>) work the same way, looked up by block name, with each variable an offset in the block as a field is in a record. The details (the link area's exact layout, where the table goes, the mismatch error) are for the design note.</p>
 
 <h2 id="compiler">The compiler, and a separate compiler process</h2>
 <h3>How the compiler works</h3>
