@@ -12,6 +12,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **6809 only.** No 6309 work. The stock `H6309` conditionals stay as they are.
 - **Machine-neutral names** (`l2b09*`). Wildbits is only the first test target; a CoCo 3 port is possible. Machine-specific code goes behind conditionals.
 - **Old programs must run on basic09-l2 (the compatibility rule).** Basic09 source files load, compile and run unchanged, and PACKed I-Code modules from stock Basic09 or built for stock RunB run under `l2b09run`, by name and with arguments. New programs on stock Basic09 are best effort: PACK output without new features should still run under stock RunB, and PACK refuses what it cannot. Keep the I-Code and module formats compatible. Tests: p1 and p4 (the image's stock basic09/runb), p8a, p8d. (ARCHITECTURE.md.)
+- **Basic09's design rules** (docs/OVERVIEW.html, "Design background"): nothing writable in code (data in the process's storage, so modules stay reentrant and ROMable); stay position-independent; resolve early and pay once (what must be found at run time is found once per call, then reached through a pointer, as `RUN` targets and `PARAM` are).
 - **`src/` is basic09-l2's own source,** forked from Microware's on 2026-10-20 (`src/MICROWARE.md`, `tools/l2fork.py`). There are no stock builds and no `make check` any more; the pristine source is in the NitrOS-9 tree. Conditionals that remain: `L2B09RT` (runtime), `L2B09CC` (compiler), `INCLUDED`/`EDITOR`, `H6309`, machine.
 
 ## Build and test
