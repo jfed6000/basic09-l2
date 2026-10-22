@@ -64,6 +64,7 @@ nav ul { padding-left: 18px; }
 <li><a href="#far">How far memory works</a></li>
 <li><a href="#banking">Code banking</a></li>
 <li><a href="#pascal">OS-9 Pascal compared</a></li>
+<li><a href="#design">Design background: Basic09 and the 6809</a></li>
 <li><a href="#icode">Inside the I-code machine</a></li>
 <li><a href="#compiler">The compiler, and a separate compiler process</a></li>
 <li><a href="#compat">Compatibility</a></li>
@@ -176,6 +177,31 @@ nav ul { padding-left: 18px; }
 <li><strong>Our route:</strong> at start-up <code>runb-l2</code> reads the packed procedures from the file straight into far RAM, as <code>L2BANK</code> does after a load, and runs them through the code window as <code>l2b09run</code> does. The module never has to fit in the 64K.</li>
 </ol>
 <p>On Level 2 with plenty of RAM, route 2 fits better: it reuses the tested <code>L2RSLV</code>/<code>L2MAPW</code> code. <code>PascalS</code>'s model is the one to copy if Level 1, or a small-memory CoCo 3, ever matters.</p>
+
+<h2 id="design">Design background: Basic09 and the 6809</h2>
+<div class="note">The history in this section is from jfed's research into the Basic09 manuals and contemporary sources (2026-10-21). It was not checked here, except the points under "Seen in the source", which were read in Microware's code (<code>nitros9-languages/basic09/microware</code>).</div>
+<p>Basic09 was not just a BASIC for the 6809. It was developed alongside the processor, with the 6809's architects (among them Terry Ritter, whom the source credits "at Motorola" with Ken Kaplan, Larry Crane and Robert Doggett at Microware), to show that the 6809 could run structured high-level languages competitively in speed and memory, where earlier 8-bit processors made compilers and interpreters painfully inefficient. OS-9 was created to support it. The 6809 features it set out to use:</p>
+<ul>
+<li><strong>Position-independent, reentrant code.</strong> Program-counter-relative addressing and two stack pointers (user and system) make relocatable, reentrant code practical. Basic09 procedures are OS-9 modules: loaded anywhere, shared, called reentrantly; PACKed I-code modules rely on it.</li>
+<li><strong>Support for compiled code:</strong> a more orthogonal instruction set and richer addressing modes than the 6800 or 6502, 16-bit arithmetic and a hardware multiply, and better stack handling for calls and local variables, so compact and reasonably fast code needs little overhead. The I-code interpreter, and resolving variables to addresses instead of looking names up at run time, were written to exploit this.</li>
+<li><strong>Fast floating point and integer math:</strong> a 40-bit binary real with 9 decimal digits, practical in a small footprint because of the multiply and the 16-bit operations.</li>
+<li><strong>Modular, systems-style programming:</strong> named procedures with local variables, parameters, recursion and easy linkage to assembly routines, all within a Level One system's 64K.</li>
+</ul>
+<h3>Seen in the source</h3>
+<ul>
+<li><strong>Position independence throughout:</strong> 178 <code>pcr</code> operands in the six modules, and no absolute jumps between routines. A call to another module goes through a stub (<code>jsr M.COMAND</code> and an entry number) that jumps through a table of module addresses in the direct page, so each module can sit at any address. That is what let basic09-l2 split the compiler out (<code>l2b09cc</code>), add the overlay, and bank procedure code into whichever slot is free.</li>
+<li><strong>The 40-bit REAL:</strong> the size table (<code>ALCSZT</code>) gives BYTE 1, INTEGER 2, REAL 5, BOOLEAN 1, STRING 32 by default; the operand stack's 6-byte entries are a type byte plus the largest value.</li>
+<li><strong>The multiply:</strong> 50 <code>MUL</code>s in <code>exprsn</code>, the expression and math module.</li>
+<li><strong>Resolved before run time:</strong> variables become offsets, line numbers addresses, and type conversions are inserted by the binder; the only lookups by name are <code>RUN</code> targets, once per call (<a href="#icode">Inside the I-code machine</a>).</li>
+<li><strong>Reentrancy:</strong> each call's variables are taken from the process's workspace and nothing is written into the code, so a packed procedure can be in ROM or shared between processes.</li>
+</ul>
+<h3>Design rules for basic09-l2</h3>
+<p>What follows from this for new work; most of basic09-l2 already keeps to it:</p>
+<ol>
+<li><strong>Nothing writable goes in code.</strong> Data lives in the process's storage: far arrays and banking keep their handles and pointers in the link area and their data in the workspace or far blocks, and a <code>GLOBAL</code> would do the same. Packed modules stay reentrant and ROMable.</li>
+<li><strong>Stay position-independent.</strong> Code must run at whatever address it is loaded or mapped (the code window, the overlay, and the parked editor page overlay, which runs code from any cache buffer).</li>
+<li><strong>Resolve early, pay once.</strong> Do the work in the compiler or binder where possible; what must be found at run time is found once per call and then reached through a pointer, as <code>RUN</code> and <code>PARAM</code> are (and as <code>GLOBAL</code> would be).</li>
+</ol>
 
 <h2 id="icode">Inside the I-code machine</h2>
 <p>Basic09 compiles each procedure to <em>I-code</em>, a compact token code, and runs it on an interpreter: the "virtual machine" is the code in <code>stmts</code> (statements) and <code>exprsn</code> (expressions), with <code>cnvio</code> for number conversion and I/O. There is no hardware model to it: the machine is a loop that reads a token and jumps to the routine for it. This section describes how it works, as read in the source (<code>src/</code>, Microware's with basic09-l2's additions); symbol names are given so each part can be found. Where a detail is from reading rather than from a test, it says so.</p>
