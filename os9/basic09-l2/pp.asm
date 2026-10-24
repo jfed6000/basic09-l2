@@ -77,7 +77,7 @@ pg6                 cmpb      <nproc
                     pshs      b
                     lbsr      pt_at
                     tfr       x,y
-                    lda       PR.FLAG,y           (not the DEFTYPE blocks)
+                    lda       PR.FLAG,y           (not the DEFUSE blocks)
                     bita      #PF.DEF
                     bne       pg6a
                     lbsr      pp_one
@@ -518,7 +518,7 @@ pus_app             pshs      d,x                 A to the new text
                     puls      d,x,pc
 
 * pp_put: the new text in place of the lines of the procedure of entry
-* Y (from the PROCEDURE line up to the next PROCEDURE or DEFTYPE line,
+* Y (from the PROCEDURE line up to the next PROCEDURE or DEFUSE line,
 * or the end of the text); carry if the pages ran out
 pp_put              ldd       PR.LINE,y           from the PROCEDURE line
                     pshs      d,y

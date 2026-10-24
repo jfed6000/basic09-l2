@@ -3,7 +3,7 @@
 
 The source format and the compiled layout are in docs/HELP.md.  Checks:
 unique names, every link has a target, lines fit, every KEYTAB word
-(and the editor's DEFTYPE and USE) is a name, every error in errmsg has
+(and the editor's DEFUSE and USE) is a name, every error in errmsg has
 a page "Error <n>"; no page is over HPMAX and the name table not over NTMAX
 (the viewer's buffers, os9/l2b09help).
 
@@ -39,7 +39,7 @@ def keytab_words(path):
         if m and kind:
             words.append(m.group(1).upper())
             kind = None
-    return words + ['DEFTYPE', 'USE']
+    return words + ['DEFUSE', 'USE']
 
 
 def errmsg_numbers(path):

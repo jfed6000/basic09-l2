@@ -29,11 +29,11 @@ See also {INPUT}, {WRITE}, {PRINT USING|USING}.
 
 - `@category <name>` sets the category of the topics that follow (it groups them in the index).
 - `== <name> | <title>` starts a topic. The name is what links and context help look for, without regard to case; the title is shown in the frame. `| <title>` may be left out (the title is then the name).
-- `@also <name> ...` gives other names for the same page (`ELSE` and `ENDIF` open `IF`). Names are separated by spaces; a name with a space in it is written with `_` (`END_DEFTYPE`).
+- `@also <name> ...` gives other names for the same page (`ELSE` and `ENDIF` open `IF`). Names are separated by spaces; a name with a space in it is written with `_` (`END_DEFUSE`).
 - Body lines are shown as they are, at most 76 characters. Blank lines at the start and end of a page are dropped.
 - `{<name>}` is a link to the topic `<name>`, shown as `<name>`; `{<text>|<name>}` shows `<text>`. `{{` is a literal `{`.
 
-`tools/mkhelp.py` checks that every name is unique, every link has a target, every line fits, every word of the compiler's `KEYTAB` (and the editor's `DEFTYPE`, `USE`) is a name, and every error in `errmsg` has a page `Error <n>`.
+`tools/mkhelp.py` checks that every name is unique, every link has a target, every line fits, every word of the compiler's `KEYTAB` (and the editor's `DEFUSE`, `USE`) is a name, and every error in `errmsg` has a page `Error <n>`.
 
 Two topics are made by `mkhelp.py`:
 - `Index`: every topic by category, in columns, each a link.

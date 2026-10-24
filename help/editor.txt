@@ -180,7 +180,7 @@ deletes it on exit.
 Make (^B, Compile > Make) loads your program into l2b09run.
 
 A line PROCEDURE <name> starts a procedure. It runs to the next
-PROCEDURE line or the next {DEFTYPE} block. Text before the first
+PROCEDURE line or the next {DEFUSE} block. Text before the first
 procedure is not sent.
 
 Make sends only what changed since the last Make:
@@ -210,7 +210,7 @@ Run (^R, Shift+RUN/STOP, Run > Run) makes, then runs the first
 procedure in the text.
 
 Run does a {Make} first, then runs the first PROCEDURE in the file.
-{DEFTYPE} blocks are never started. Each run starts on a clear
+{DEFUSE} blocks are never started. Each run starts on a clear
 screen of its own, which is shown while the program runs. When it
 ends, "Press any key" appears under its output; a key brings the
 editor's screen back (Options > Pause after run turns the pause off).
@@ -351,7 +351,7 @@ capitals. Basic09 reads either.
 A procedure with errors, or a program stopped in the {Debugger}, is
 refused with a message. One ^Z takes a whole pretty print back.
 
-{USE} lines are kept as you wrote them, and {DEFTYPE} blocks are left
+{USE} lines are kept as you wrote them, and {DEFUSE} blocks are left
 alone.
 
 == Find | Find
@@ -537,7 +537,7 @@ The editor colours the text by its parts.
   numbers      orange
   other text   yellow on blue
 
-The keywords are the compiler's own, plus {DEFTYPE} and {USE}. Case does
+The keywords are the compiler's own, plus {DEFUSE} and {USE}. Case does
 not matter.
 
 The line the program stopped at is white on red, and the selection is
@@ -547,38 +547,53 @@ Options > Syntax colours turns the colours off and on. With colours off
 the editor uses reverse video, and pages through a long file a little
 faster.
 
-== DEFTYPE | DEFTYPE block
-@also END_DEFTYPE
-DEFTYPE ... END DEFTYPE holds TYPE lines that procedures can share.
+== DEFUSE | DEFUSE block
+@also END_DEFUSE DEFTYPE
+DEFUSE ... END DEFUSE holds TYPE and PARAM lines that procedures can
+share. A {USE} line brings them into a procedure.
 
 Basic09 has no global types: each procedure that shares a record must
-repeat its {TYPE} lines. With a DEFTYPE block you write them once, and
-a {USE} line brings them into a procedure.
+repeat its {TYPE} lines, and each procedure that takes it as a
+parameter its {PARAM} line. With a DEFUSE block you write them once.
 
-  DEFTYPE shapes
-  TYPE pt=x,y:REAL           (* a point *)
-  TYPE box=corner:pt; w,h:REAL
-  END DEFTYPE
+  DEFUSE game
+  TYPE state=score,lives:INTEGER  (* the game *)
+  END DEFUSE
+
+  DEFUSE gparm
+  PARAM g:state
+  END DEFUSE
 
   PROCEDURE main
-  USE shapes
-  DIM p:pt
+  USE game
+  DIM g:state
+  RUN move(g)
+
+  PROCEDURE move
+  USE game
+  USE gparm
+  g.score=g.score+1
+
+main owns the record, so it uses only the types; the procedures it
+calls use the PARAM block too. Other lines in a block are ignored, and
+a block cannot USE another.
 
 A block can go before the first procedure or between procedures. A
-DEFTYPE line ends the procedure before it, as a PROCEDURE line does.
+DEFUSE line ends the procedure before it, as a PROCEDURE line does.
 
 The block is not a procedure. Make does not send it, Run does not start
-it, and pretty print leaves it alone. A TYPE line in it may have a
-comment at the end.
+it, and pretty print leaves it alone. A line in it may have a comment
+at the end.
 
 The block's name must not be a procedure's name. When you change a
 block, the next {Make} loads again every procedure that uses it.
 
-Only the editor knows DEFTYPE and USE. l2b09run and stock Basic09 do
-not.
+Only the editor knows DEFUSE and USE. l2b09run and stock Basic09 do
+not. (Until 2026-10-24 the block was called DEFTYPE.)
 
 == USE | USE statement
-USE <name> brings the TYPE lines of a {DEFTYPE} block into a procedure.
+USE <name> brings the TYPE and PARAM lines of a {DEFUSE} block into a
+procedure.
 
   PROCEDURE show
   USE shapes
@@ -587,12 +602,12 @@ USE <name> brings the TYPE lines of a {DEFTYPE} block into a procedure.
 Put USE on a line of its own, before the {DIM} and {PARAM} lines that
 need the types. Any case works, and it may be indented.
 
-{Make} sends the USE line as the block's {TYPE} lines, joined by
+{Make} sends the USE line as the block's {TYPE} and {PARAM} lines, joined by
 backslashes, so the program's line numbers do not change. An error in
 the types shows on the USE line. If no block has that name, the
 compiler reports an error on the line.
 
-The joined TYPE text may be at most 200 characters. Put more types in a
-second block, with a USE line of its own.
+The joined text may be at most 200 characters. Put more in a second
+block, with a USE line of its own.
 
 {Pretty print} keeps your USE lines as you wrote them.

@@ -20,7 +20,7 @@ Debugging        {PAUSE} {TRON} {TROFF|TRON}
 Other            {BASE} {DEG} {RAD|DEG} {REM} {BYE}
 
 Expressions use the {Operators} and the {Functions}.
-See also {DEFTYPE} and {USE} (the editor's shared TYPE lines).
+See also {DEFUSE} and {USE} (the editor's shared TYPE and PARAM lines).
 
 == PROCEDURE | Procedures
 A program is a set of procedures; each one is compiled on its own.
@@ -58,6 +58,7 @@ Declares the parameters a procedure receives from {RUN}.
   PARAM <name>[(<dims>)] [, ...] [:<type>] [; ...]
 
 The syntax is that of {DIM}.  PARAM lines come first in a procedure.
+To share PARAM lines between procedures, see {DEFUSE}.
 Each parameter must match its argument in type and size ({Error 56}):
 an INTEGER constant such as 1 does not match a REAL parameter (write
 1. instead), and a STRING[10] parameter needs a STRING[10] argument.
@@ -98,7 +99,7 @@ record.  Variables of the type are made with DIM, and fields are reached
 with a dot.  A record can be assigned whole to another of its type.
 Field names share the procedure's names, so a field x makes x unusable
 as a variable ({Error 76}).
-To share TYPE lines between procedures, see {DEFTYPE}.
+To share TYPE lines between procedures, see {DEFUSE}.
 
   TYPE pt = x,y:REAL; label:STRING[8]
   DIM a,b:pt; path(50):pt

@@ -58,7 +58,7 @@ kw_C
                     fcb       0
 kw_D
                     fcs       "ATA"
-                    fcs       "EFTYPE"
+                    fcs       "EFUSE"
                     fcs       "EG"
                     fcs       "ELETE"
                     fcs       "IM"

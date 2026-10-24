@@ -4,7 +4,7 @@ Status: **proposed, not built** (2026-10-24). Planned for after the first releas
 
 ## What it is for
 
-Basic09 has no global variables. Today a program shares data through a context record: `TYPE ctx=...` (shared with `DEFTYPE`/`USE` since 2026-10-15), `DIM g:ctx` in `main` and `PARAM g:ctx` in every procedure, passed down on every `RUN`. `GLOBAL` lets each procedure name the shared variables itself:
+Basic09 has no global variables. Today a program shares data through a context record: `TYPE ctx=...` (shared with `DEFUSE`/`USE` since 2026-10-15, called `DEFTYPE` until 2026-10-24), `DIM g:ctx` in `main` and `PARAM g:ctx` in every procedure, passed down on every `RUN`. `GLOBAL` lets each procedure name the shared variables itself:
 
 ```
 PROCEDURE main
@@ -64,7 +64,7 @@ PACK drops the symbol names but keeps them for `S.PROC` entries, so that `RUN` c
 
 ### The editor
 
-There is nothing to do for the first version: the editor sends source text and `l2b09cc` compiles it. Optional: syntax colour for `GLOBAL` (from `mkkw.py`), a help page (`help/`; `mkhelp.py` requires one for every keyword anyway), and `GLOBAL` lines in a `DEFTYPE` block, so that a block can declare shared variables as well as types (**Decide**).
+There is nothing to do for the first version: the editor sends source text and `l2b09cc` compiles it. Optional: syntax colour for `GLOBAL` (from `mkkw.py`), a help page (`help/`; `mkhelp.py` requires one for every keyword anyway), and `GLOBAL` lines in a `DEFUSE` block, so that a block can declare shared variables as well as types and parameters (decided 2026-10-24: yes, as `PARAM` lines are allowed now).
 
 ## Compatibility
 
