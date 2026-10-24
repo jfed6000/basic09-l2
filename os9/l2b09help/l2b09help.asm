@@ -90,7 +90,7 @@ ksns                rmb       1
 hold                rmb       1                   -h
 glyphs              rmb       NGL1                frame characters (term.asm)
 glyok               rmb       1
-dblsp               rmb       1                   (term.asm; always 0 here)
+dblsp               rmb       1                   -d: double spacing, as the editor's (term.asm)
 nocolr              rmb       1                   -n
 hlout               rmb       1                   the colour in force
 edmode              rmb       1                   -e
@@ -166,7 +166,11 @@ st1                 clr       ,y+
                     lbsr      hf_open             the help file first: no screen
                     bcs       st9                 if it is not there
                     lbsr      t_init              raw keys, screen size, glyphs
-                    lda       #1                  the text window: no menu bar
+                    tst       <dblsp              double spacing: half the rows, and
+                    beq       st1d                the gap rows cleared (v_gap draws
+                    lsr       <scrh               the frame's sides on them)
+                    lbsr      t_cls
+st1d                lda       #1                  the text window: no menu bar
                     sta       <wtop
                     ldb       <scrh
                     subb      #3
@@ -218,8 +222,12 @@ ga2                 cmpa      #'N
                     inc       <nocolr
                     bra       ga1
 ga3                 cmpa      #'H
-                    bne       ga4
+                    bne       ga3a
                     inc       <hold
+                    bra       ga1
+ga3a                cmpa      #'D
+                    bne       ga4
+                    inc       <dblsp
                     bra       ga1
 ga4                 cmpa      #'F
                     bne       ga7
@@ -964,11 +972,15 @@ vd4a                lda       #C$SPAC
                     lda       glyphs+GL.TR2,x
                     lbsr      t_ch
                     clr       <tmp                the rows
+                    clrb
+                    lbsr      v_gap
 vd5                 ldb       <tmp
                     cmpb      <wrows
                     bhs       vd6
                     lbsr      v_row
                     inc       <tmp
+                    ldb       <tmp
+                    lbsr      v_gap
                     bra       vd5
 vd6                 clra                          the bottom border
                     ldb       <scrh
@@ -1030,6 +1042,29 @@ sl1                 tst       b,x
                     incb
                     bra       sl1
 sl9                 rts
+
+* v_gap: with double spacing, the frame's sides on the gap row under
+* screen row B
+v_gap               tst       <dblsp
+                    beq       vg9
+                    pshs      b
+                    clra
+                    lbsr      t_xyg
+                    ldb       #CL.FRAME
+                    lbsr      c_fg
+                    ldx       <base
+                    lda       glyphs+GL.V2,x
+                    lbsr      t_ch
+                    lda       <scrw
+                    deca
+                    ldb       ,s
+                    lbsr      t_xyg
+                    ldx       <base
+                    lda       glyphs+GL.V2,x
+                    lbsr      t_ch
+                    lbsr      c_norm
+                    puls      b
+vg9                 rts
 
 * v_row: text row B (0 = the first) of the window
 v_row               lda       #0

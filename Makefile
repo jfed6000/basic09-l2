@@ -225,6 +225,10 @@ p5aatest: l2b09 tools pipes $(BASEIMG)
 p5abtest: l2b09 tools pipes $(BASEIMG)
 	EMU_SECONDS=60 tools/emu-wildbits.sh test/p5ab
 
+# F1's help browser double-spaced like the editor (-d), on 80x60
+p5actest: l2b09 tools pipes $(BASEIMG)
+	EMU_SECONDS=60 tools/emu-wildbits.sh test/p5ac
+
 p6test: l2b09 $(BASEIMG)
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6
 

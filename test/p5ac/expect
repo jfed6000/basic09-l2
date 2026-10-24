@@ -1,0 +1,11 @@
+mame.log  00: |+=============================== LEFT$ function ===============================+|
+mame.log  01: ||                                                                              ||
+mame.log  02: ||Returns the first characters of a string.                                     ||
+mame.log  03: ||                                                                              ||
+mame.log  06: ||  LEFT$(<string>, <count>)                                                    ||
+mame.log  07: ||                                                                              ||
+mame.log  55: ||                                                                              ||
+mame.log  56: |+==============================================================================+|
+mame.log  57: |                                                                                |
+mame.log  58: | Enter follow  Bksp back  F1 help  F2 index  type to search  Esc close          |
+mame.log  59: |                                                                                |

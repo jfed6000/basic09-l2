@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""The help browser follows the editor's double spacing (-d).  The
+editor goes to the 80x60 screen (Ctrl+3) with double spacing (Ctrl+2),
+then F1 on LEFT$ opens its page; the keys end there, so with -h (passed
+on to l2b09help) the snapshot shows the help: its text on every other
+row, the frame's sides on the gap rows between, and the gap rows
+blank inside.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+with open(os.path.join(out, 'hp.b09'), 'w', newline='') as f:
+    f.write('PROCEDURE hp\rPRINT LEFT$("ab",1)\rEND\r')
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys('^3 ^2 down right*8 f1'))

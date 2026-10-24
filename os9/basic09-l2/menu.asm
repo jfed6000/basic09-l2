@@ -817,7 +817,7 @@ chp1                lbsr      a_inbx
 c_hkeys             leax      keystp,pcr          Help > Keys
                     bra       hlp_go
 c_hcont             leax      keystp+4,pcr        Help > Contents: no topic
-* hlp_go: run "l2b09help -e [-n] <topic X>" and wait for it
+* hlp_go: run "l2b09help -e [-n] [-h] [-d] <topic X>" and wait for it
 hlp_go              pshs      x
                     lbsr      a_rliny
                     leax      hlpe,pcr
@@ -827,8 +827,12 @@ hlp_go              pshs      x
                     leax      hlpn,pcr
                     lbsr      s_cpy
 hg0                 tst       <hold               (-h for the tests' snapshots)
-                    beq       hg1
+                    beq       hg0a
                     leax      hlph,pcr
+                    lbsr      s_cpy
+hg0a                tst       <dblsp              -d: double spacing, as ours
+                    beq       hg1
+                    leax      hlpd,pcr
                     lbsr      s_cpy
 hg1                 puls      x
                     lbsr      s_cpy
@@ -866,6 +870,7 @@ hlpnm               fcc       "l2b09help"
 hlpe                fcn       "-e "
 hlpn                fcn       "-n "
 hlph                fcn       "-h "
+hlpd                fcn       "-d "
 keystp              fcn       "Keys"
 
 c_about             leax      aboutm,pcr

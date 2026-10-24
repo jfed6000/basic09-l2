@@ -1,0 +1,6 @@
+* basic09-l2: F1's help double-spaced like the editor (80x60, -h snapshot)
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -h -t=/dd/l2b09/term.out hp.b09 <keys.bin >/term
