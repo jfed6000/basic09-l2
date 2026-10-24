@@ -16,7 +16,8 @@ comment):
     ^a ... ^z     Ctrl+letter
     s^a ... s^z   Ctrl+Shift+letter (s^l find previous; the K2 driver's
                   code, the letter minus $40)
-    ^1 ^2         Ctrl+1, Ctrl+2 (line spacing; ps2^1 ps2^2 as the PS/2 sends them)
+    ^1 ^2 ^3      Ctrl+1, Ctrl+2 (line spacing), Ctrl+3 (80x30/80x60);
+                  ps2^1 ps2^2 ps2^3 as the PS/2 sends them
     ^space        Ctrl+Space as the PS/2 driver sends it ($C0)
     k2^space      Ctrl+Space as the K2 driver sends it ($20)
     alt-a ...     Alt+letter
@@ -58,6 +59,7 @@ NAMED = {
     'enter': b'\x0d', 'tab': b'\x09',
     '^1': pfx(CTRL, 0x31), '^2': pfx(CTRL, 0x32),   # line spacing (K2: the digit)
     'ps2^1': pfx(CTRL, 0xD1), 'ps2^2': pfx(CTRL, 0xD2),   # (PS/2: the digit - $60)
+    '^3': pfx(CTRL, 0x33), 'ps2^3': pfx(CTRL, 0xD3),   # 80x30 / 80x60 screen
     'ps2s^l': pfx(CTRL | SHF, 0xEC),   # Ctrl+Shift+L as the PS/2 driver sends it
     '^space': pfx(CTRL, 0xC0), 'k2^space': pfx(CTRL, 0x20),
 }

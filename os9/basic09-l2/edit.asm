@@ -119,6 +119,8 @@ cmdtab              fcb       C$CR
                     fdb       c_sp1-cmdtab
                     fcb       EK.SP2              Ctrl+2 double spacing
                     fdb       c_sp2-cmdtab
+                    fcb       EK.SCR              Ctrl+3 80x30 / 80x60 screen
+                    fdb       c_scrtog-cmdtab
                     fcb       $1A                 ^Z undo
                     fdb       c_undo-cmdtab
                     fcb       $19                 ^Y redo

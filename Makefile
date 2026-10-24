@@ -221,6 +221,10 @@ p5ztest: l2b09 tools pipes $(BASEIMG)
 p5aatest: l2b09 tools pipes $(BASEIMG)
 	EMU_SECONDS=120 tools/emu-wildbits.sh test/p5aa
 
+# the Options menu's marks, Ctrl+3 (80x60), F2 (All: pretty print)
+p5abtest: l2b09 tools pipes $(BASEIMG)
+	EMU_SECONDS=60 tools/emu-wildbits.sh test/p5ab
+
 p6test: l2b09 $(BASEIMG)
 	EMU_SECONDS=180 tools/emu-wildbits.sh test/p6
 

@@ -58,6 +58,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | ^F / ^L | Find / find next (the match is selected) | P5.2c |
 | Ctrl+Shift+L | Find previous (Search ▸ Find previous) | P5.7 |
 | Ctrl+1 / Ctrl+2 | Single / double line spacing (Options ▸ Double spacing toggles) | P5.7 |
+| Ctrl+3 | 80×30 or 80×60 screen (as Options ▸ 80x60 screen) | 2026-10-24 |
 | Search ▸ Replace | Replace, asking Y / N / A (all) / Esc at each match | P5.2c |
 | Options ▸ Match case | Searches match case (off by default) | P5.2c |
 | Esc | Cancel (menu, dialog, selection) | P5.2a/b |
@@ -77,7 +78,8 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | ^T | Breakpoint on the cursor line, on or off | P5.5 |
 | Debug ▸ Clear breakpoints | Clear them all | P5.5 |
 | Options ▸ Syntax colours | Syntax colours on or off (on by default) | P5.6 |
-| Options ▸ Keyword case | Pretty print writes keywords in lower case (the default) or in capitals | P5.6 |
+| Options ▸ Keywords in capitals | Pretty print writes keywords in capitals, or in lower case (the default); it was "Keyword case" until 2026-10-24 | P5.6 |
+| Options menu marks | A setting that is on has a mark before it (the breakpoint glyph; `*` with ASCII frames): `m_mark` looks the item's command up in `opttab` (its byte in the data area, a mask and an XOR). 80x60 is on when `phrows` has bit 5 (60 rows, not 30) | 2026-10-24 |
 | Compile ▸ Pretty print, All: pretty print (F2; Ctrl+Space until 2026-10-24) | Pretty print the procedure at the cursor, or every procedure | P5.6 |
 | Run ▸ With arguments..., Compile ▸ Pack module..., Debug ▸ Procedure calls | Run a procedure with arguments; PACK to a file for RunB; the call chain in the message window | 2026-10-20 |
 
@@ -159,8 +161,8 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 - **How:** the editor lays itself out for half the screen's rows (`scrh`; `phrows` keeps the screen's own), and `t_xy` doubles the row. Everything (text, frames, menus, dialogs, the message and watch windows, the mouse) keeps working in those logical rows. The mouse's row shift comes from `scrh` too (`mu_rows`), so a pixel lands on the right logical row.
 - **The gap rows:** only what crosses them is drawn there: the side borders and the scroll bar (`v_gaps`, `sb_upd`), the menu bar's grey, and the inside of a box (`bx_draw`). A box sets `gapdty`, and the next full redraw clears the gaps in the text window again.
 - **Room:** switching to double spacing hides the message window if the text window would have fewer than 3 rows, and refuses if it still would.
-- **Keys:** the K2 driver sends Ctrl+1 / Ctrl+2 as the digit with the Ctrl bit, the PS/2 driver as the digit minus `$60` (`$D1`, `$D2`).
-- **Screen size:** Options ▸ 80x60 screen switches the editor's terminal between 80×30 and 80×60, separately from the spacing. It uses VTIO's DWSet (`$1B $20 <type> …`, `t_dwset`), which changes the terminal's own width, height and scroll size along with the display mode; `SS.DScrn` (`SS.MCR`) would only flip the double-height bit and leave the terminal at 30 rows. DWSet clears the screen in the colours it is given (the terminal's own), so the editor clears again in its colours and redraws. On exit it puts back the type it started with (worked out from `SS.ScSiz` at start, since `SS.ScTyp` is only set by a DWSet). It needs a terminal whose colours are known; from a key file it says it cannot.
+- **Keys:** the K2 driver sends Ctrl+1 / Ctrl+2 as the digit with the Ctrl bit, the PS/2 driver as the digit minus `$60` (`$D1`, `$D2`). Ctrl+3 (`EK.SCR`, 80×30 or 80×60) comes the same way (`$D3` on the PS/2); `EK.WHEEL` moved to `$9A` to make room.
+- **Screen size:** Options ▸ 80x60 screen (Ctrl+3) switches the editor's terminal between 80×30 and 80×60, separately from the spacing. It uses VTIO's DWSet (`$1B $20 <type> …`, `t_dwset`), which changes the terminal's own width, height and scroll size along with the display mode; `SS.DScrn` (`SS.MCR`) would only flip the double-height bit and leave the terminal at 30 rows. DWSet clears the screen in the colours it is given (the terminal's own), so the editor clears again in its colours and redraws. On exit it puts back the type it started with (worked out from `SS.ScSiz` at start, since `SS.ScTyp` is only set by a DWSet). It needs a terminal whose colours are known; from a key file it says it cannot.
 
 ## Syntax colours
 
@@ -173,11 +175,11 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
 
 - **Where the text comes from:** Basic09 keeps no source, only I-code, and `LIST` decompiles it with the keywords in capitals, standard spacing and the control structures indented. That is stock Basic09's pretty print. `SAVE` writes the same text without the indent.
 - **Compile ▸ Pretty print** (the procedure at the cursor):
-  1. Make, so that the procedure is loaded as it stands. A procedure with errors, or a program stopped in the debugger, is refused with a message.
+  1. Make, so that the procedure is loaded as it stands. Then a "Formatting..." dialog (`dlg_show`, the message dialog without the wait) stays up until the redraw at the end. A procedure with errors, or a program stopped in the debugger, is refused with a message.
   2. `list <procedure>`. Each line comes back as a marker, the I-code offset, a line number if there is one, and the text from column 11 on, two columns more per level of indent. The editor keeps the line number and the text, and makes the indent two spaces a level. It joins lines that `LIST` wrapped at its margin (an LF in the line), and drops trailing spaces.
   3. The result replaces the procedure's lines, the `PROCEDURE` line included (it comes back as `PROCEDURE <name>`). The body is indented two spaces under it, and a line number sits in that gutter (`10 k=0`). An `END` at the top level lines up with `PROCEDURE`; one inside a structure keeps its indent. If it is the same text already, nothing changes.
 - **Compile ▸ All: pretty print** (F2) does the same for every procedure, and stops at the first one that has errors. Until 2026-10-24 it was Ctrl+Space, and F2 was Save; the user moved it, since Ctrl+Space usually means completion, and ^S is enough for Save. F2 is on both keyboards (on the K2 it is Shift+F1). Ctrl+Space is still decoded (`EK.CSPC`: the PS/2 driver sends `$C0`, space minus `$60`, the K2 driver a space, both with the Ctrl bit) but bound to nothing, kept for keyword completion.
-- **Keyword case:** keywords come out in lower case (`procedure`, `for`, `left$`), which reads more easily; Options ▸ Keyword case switches to capitals, as `LIST` writes them. Basic09 reads either. Strings, comments, numbers and names are not touched.
+- **Keyword case:** keywords come out in lower case (`procedure`, `for`, `left$`), which reads more easily; Options ▸ Keywords in capitals switches to capitals, as `LIST` writes them. Basic09 reads either. Strings, comments, numbers and names are not touched.
 - **What changes:** keyword case, spacing, the indent and number formats (`1.50` becomes `1.5`, `1E3` becomes `1000.`). Comments stay as written. Names ignore case in Basic09, which keeps each one as it was first entered, so a name typed in another case elsewhere comes back in that first spelling.
 - **What stays:** the number of lines, because every source line is one I-code line. So the cursor, the window and the breakpoints stay on their lines, and the procedure counts as loaded: its text came from the loaded code, so the next Make does not recompile it.
 - **Undo:** one ^Z takes a whole pretty print back, and ^Y redoes it. Its undo records carry `UF.LINK` ("goes with the record before"). Undo and redo of such a group also put the breakpoints back on their lines.
@@ -327,6 +329,7 @@ DIM p:pt
 - **`make p5stest`:** `test/p5s`, global TYPE lines. A `DEFTYPE` block comes before `main` (Run must still start `main`) and another, unused, between `main` and `show`; both procedures `USE` the first (one in lower case, indented). Make sends only the procedures, and Run prints the record's size, 10. A field is added to the block alone; the next Make sends both procedures again and Run prints 15. Pretty print keeps the `USE` lines and leaves both blocks alone, and a last Make sends nothing. The protocol log (with the joined lines in `LIST`) and the saved file must match.
 - **`make p5ttest`:** `test/p5t`, the mouse wheel from a key script. In the help browser, two steps down on the Errors page bring in its 33rd line. In the editor, on a 60-line text, two steps down and one up leave line 4 at the top of the window with the cursor on it.
 - **`make p5utest`:** `test/p5u`, a program that prints `it` on a `/vt` terminal, run twice, Esc answering each pause; F5 shows that terminal (`-h`): `it` once on the top row, `Press any key` under it.
+- **`make p5abtest`:** `test/p5ab`, F2 (All: pretty print), then Options ▸ Auto indent off and Match case on, Ctrl+3 to 80×60, and the Options menu left open: the snapshot must show the pretty text, the marks on exactly the settings that are on, `^3` beside 80x60 screen, and "80x60 screen" in the message line. (The "Formatting..." dialog was checked once with the screen going to a file: the title and text are drawn before the redraw.)
 - **`make p5vtest`:** `test/p5v`, the same with Options ▸ Pause after run turned off: `it` once, and no prompt.
 - **`make p5ptest` (P5.7):** `test/p5p`, the screen switch live in MAME. The script counts the grey pixel rows down one column (menu bar, its gap row, hint line), which tell 80×30 from 80×60 and single from double spacing, through four switches; then quits on 80×60 and checks the shell is back on 80×30.
 - **`make p5otest` (P5.7):** `test/p5o`, double spacing from a key script on the 80×30 screen. The snapshot must show the text on the even rows, the borders and the scroll bar's track on the gap rows, the gap rows clean after a dialog, and a press on logical row 5 typing on line 4.

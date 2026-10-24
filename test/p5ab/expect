@@ -1,0 +1,9 @@
+mame.log  02: ||procedure op                             | Auto indent           |            ^|
+mame.log  03: ||  for i=1 to 3                           |*Match case            |            #|
+mame.log  04: ||    print i                              |*Syntax colours        |            :|
+mame.log  05: ||  next i                                 | Keywords in capitals  |            :|
+mame.log  06: ||end                                      | Double spacing  ^1/^2 |            :|
+mame.log  07: ||                                         |*80x60 screen       ^3 |            :|
+mame.log  08: ||                                         | Memory...             |            :|
+mame.log  09: ||                                         |*Pause after run       |            :|
+mame.log  59: | 80x60 screen                                                                   |

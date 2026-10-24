@@ -76,6 +76,7 @@ Make, Run and debug
 
 View
   ^1, ^2                   single, double {Line spacing}
+  ^3                       80x30 or 80x60 {Screen size}
 
 Menus and help ({Menus})
   Alt+F E S R C D O H      File Edit Search Run Compile Debug Options
@@ -133,13 +134,13 @@ Debug
   Breakpoint        ^T      on or off on this line ({Breakpoints})
   Clear breakpoints         remove them all ({Breakpoints})
   Procedure calls           where it stopped, and the callers
-Options
+Options (a mark before a setting shows it is on)
   Auto indent               Enter indents like the line above, on or off
   Match case                searches match case, on or off ({Find})
   Syntax colours            colours on or off ({Syntax colours})
-  Keyword case              lower case or capitals ({Pretty print})
+  Keywords in capitals      capitals, or lower case ({Pretty print})
   Double spacing    ^1/^2   text on every other row ({Line spacing})
-  80x60 screen              switch 80x30 and 80x60 ({Screen size})
+  80x60 screen      ^3      switch 80x30 and 80x60 ({Screen size})
   Memory...                 l2b09run's workspace ({Memory})
   Pause after run           wait for a key when a program ends ({Running})
 Help
@@ -344,7 +345,7 @@ procedure's lines:
 Comments, strings and the number of lines stay the same, so the cursor
 and the {Breakpoints} stay on their lines.
 
-Keywords come out in lower case. Options > Keyword case switches to
+Keywords come out in lower case. Options > Keywords in capitals switches to
 capitals. Basic09 reads either.
 
 A procedure with errors, or a program stopped in the {Debugger}, is
@@ -498,8 +499,8 @@ too small, and refuses if it still would.
 See {Screen size}.
 
 == Screen size | 80x30 and 80x60 screens
-Options > 80x60 screen switches the editor's screen between 80x30 and
-80x60.
+Options > 80x60 screen (^3) switches the editor's screen between 80x30
+and 80x60.
 
 80x60 uses half-height characters and shows twice as many lines. It
 works on its own or with double {Line spacing}: 80x60 with double

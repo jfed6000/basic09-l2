@@ -46,7 +46,10 @@ pg2                 tst       <nproc
                     leax      noprms,pcr
                     stx       <msgp
                     rts
-pg3                 ldx       <base               where everything is, by line
+pg3                 leax      ppfms,pcr           (rd_all clears it at the end)
+                    leay      ppttl,pcr
+                    lbsr      dlg_show
+                    ldx       <base               where everything is, by line
                     ldd       <curline
                     std       ppcl,x
                     ldd       <curcol
@@ -109,6 +112,7 @@ pg7                 lbsr      bp_back
                     lbra      rd_all
 ppdbms              fcn       "The program is stopped: reset it first (^P)"
 ppnoms              fcn       "The cursor is not in a procedure"
+ppfms               fcn       "Formatting..."
 
 * pp_one: pretty print the procedure of entry Y; carry (and a message)
 * if it could not be done

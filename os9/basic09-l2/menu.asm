@@ -115,7 +115,7 @@ mcomp               fdb       c_make-cmdtab
                     fcn       "F6"
                     fdb       0
                     fdb       c_pp-cmdtab
-                    fcn       "Pretty print"
+ppttl               fcn       "Pretty print"      also pp.asm's dialog title
                     fcn       ""
                     fdb       c_ppall-cmdtab
                     fcn       "All: pretty print"
@@ -163,14 +163,14 @@ mopt                fdb       c_indent-cmdtab
                     fcn       "Syntax colours"
                     fcn       ""
                     fdb       c_kwcase-cmdtab
-                    fcn       "Keyword case"
+                    fcn       "Keywords in capitals"
                     fcn       ""
                     fdb       c_sptog-cmdtab
 spon2               fcn       "Double spacing"    also lspace.asm's message
                     fcn       "^1/^2"
                     fdb       c_scrtog-cmdtab
 scrm60              fcn       "80x60 screen"      also lspace.asm's message
-                    fcn       ""
+                    fcn       "^3"
                     fdb       c_memory-cmdtab
                     fcn       "Memory..."
                     fcn       ""
@@ -509,7 +509,7 @@ mdb2                inca
                     cmpa      <msel
                     bne       mdb3
                     lbsr      mi_sel
-mdb3                lda       #C$SPAC
+mdb3                lbsr      m_mark              a space, or the mark of a setting
                     lbsr      t_ch
                     pshs      x
                     leay      2,x                 text
@@ -774,7 +774,13 @@ dak_esc             bsr       dlg_done
 * dlg_msg: show message X until a key is pressed
 dlg_msg             leay      msgtl,pcr
 * dlg_msgt: the same, in a dialog titled Y
-dlg_msgt            pshs      x
+dlg_msgt            bsr       dlg_show
+                    pshs      x
+                    lbsr      getkd
+                    lbsr      dlg_done
+                    puls      x,pc
+* dlg_show: message X in a dialog titled Y, without waiting
+dlg_show            pshs      x
                     lda       #3
                     sta       <bx.h
                     tfr       y,x
@@ -788,8 +794,6 @@ dlg_msgt            pshs      x
                     lbsr      t_str
                     lbsr      t_curoff
                     lbsr      t_flush
-                    lbsr      getkd
-                    lbsr      dlg_done
                     puls      x,pc
 
 asktl               fcn       "Confirm"
@@ -893,6 +897,47 @@ pauson              fcn       "Pause after a run on"
 pausof              fcn       "Pause after a run off"
 indon               fcn       "Auto indent on"
 indoff              fcn       "Auto indent off"
+
+* m_mark: A = what goes before item X: the bullet if it is an Options
+* setting that is on (opttab), else a space
+m_mark              pshs      d,x,y
+                    ldd       ,x
+                    leay      opttab,pcr
+mmk1                ldx       ,y
+                    beq       mmk8                not a setting
+                    cmpd      ,y
+                    beq       mmk2
+                    leay      6,y
+                    bra       mmk1
+mmk2                ldx       <base
+                    ldd       2,y
+                    lda       d,x
+                    eora      5,y
+                    anda      4,y
+                    beq       mmk8
+                    lda       <glyphs+GL.BP
+                    bra       mmk9
+mmk8                lda       #C$SPAC
+mmk9                sta       ,s
+                    puls      d,x,y,pc
+
+* opttab: each setting's command, its byte in the data area, and the
+* bits that are set when it is on (after the XOR)
+opttab              fdb       c_indent-cmdtab,noindt
+                    fcb       1,$FF
+                    fdb       c_mcase-cmdtab,fcase
+                    fcb       1,0
+                    fdb       c_colour-cmdtab,nocolr
+                    fcb       1,$FF
+                    fdb       c_kwcase-cmdtab,kwup
+                    fcb       1,0
+                    fdb       c_sptog-cmdtab,dblsp
+                    fcb       1,0
+                    fdb       c_scrtog-cmdtab,phrows
+                    fcb       $20,0               60 rows ($3C) and not 30 ($1E)
+                    fdb       c_pause-cmdtab,nopaus
+                    fcb       1,$FF
+                    fdb       0
 
 * ask_save: if the text has changed, offer to save it; carry to cancel
 ask_save            tst       <modif

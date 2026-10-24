@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""The Options menu shows which settings are on: a mark before the item
+(the breakpoint glyph; with keys from a file, ASCII).  Auto indent is
+turned off from the menu and Match case on, Ctrl+3 asks for the 80x60
+screen, and the menu is left open for the -h snapshot.  F2 (All: pretty
+print) runs first: its "Formatting..." dialog is cleared by the redraw
+at the end, so the snapshot shows the pretty text.
+
+usage: gen <outdir>
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools'))
+from keys import compile_keys  # noqa: E402
+
+out = sys.argv[1]
+text = 'PROCEDURE op\nfor i=1 to 3\nprint i\nnext i\nEND\n'
+keys = '''
+f2                            # All: pretty print
+alt-o enter                   # Options > Auto indent: off
+alt-o down enter              # Options > Match case: on
+^3                            # 80x60 screen
+alt-o                         # the menu, open for the snapshot
+'''
+with open(os.path.join(out, 'op.b09'), 'w', newline='') as f:
+    f.write(text.replace('\n', '\r'))
+with open(os.path.join(out, 'keys.bin'), 'wb') as f:
+    f.write(compile_keys(keys))
