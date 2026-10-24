@@ -92,7 +92,7 @@ alt-c "p"                   # again: the same text
 ^r                          # Make sends nothing; the breakpoint stops it
 ^r                          # to the end
 alt-o "k"                   # Options > Keyword case: capitals
-^space                      # All: pretty print (ppmain changes case)
+f2                          # All: pretty print (ppmain changes case)
 %(sa)s "pp4.b09" enter
 ^g "16" enter ^k " " ^b     # ppmain changed (a space): Make compiles the pretty text
 ^q "n"

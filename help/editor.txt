@@ -51,7 +51,7 @@ Selection and clipboard ({Selection}, {Clipboard})
   Esc                      end the selection
 
 Files ({Files})
-  ^S, F2                   save
+  ^S                       save
   ^O, F3                   open
   ^Q                       quit
 
@@ -72,7 +72,7 @@ Make, Run and debug
   ^T                       {Breakpoints}: on or off on this line
   ^E                       {Evaluate} (or set with x:=value)
   ^W                       add a watch ({Watches})
-  ^Space                   {Pretty print} every procedure
+  F2                       {Pretty print} every procedure
 
 View
   ^1, ^2                   single, double {Line spacing}
@@ -121,7 +121,7 @@ Compile
   Next error        ^N      go to the next message ({Message window})
   Messages          F6      into the message window ({Message window})
   Pretty print              tidy the procedure at the cursor ({Pretty print})
-  All: pretty print ^Space  tidy every procedure ({Pretty print})
+  All: pretty print F2      tidy every procedure ({Pretty print})
   Pack module...           (K) PACK: a module for RunB ({Running})
 Debug
   Trace into        F7      step, into called procedures ({Debugger})
@@ -156,7 +156,7 @@ a * in the bottom border means the text has changed since it was saved.
 
   New        drops the text and starts an empty one with no name.
   Open...    (^O, F3) asks for a file name and loads that file.
-  Save       (^S, F2) writes the text to its file. With no name yet it
+  Save       (^S) writes the text to its file. With no name yet it
              asks for one, as Save as does.
   Save as... asks for a name, then saves under it. The text keeps the
              new name.
@@ -330,7 +330,7 @@ Evaluate works in the procedure the program is stopped in. See
 Pretty print tidies a procedure: spacing, indent and keyword case.
 
 Compile > Pretty print does the procedure at the cursor. Compile > All:
-pretty print (^Space) does every procedure, and stops at the first one
+pretty print (F2) does every procedure, and stops at the first one
 with errors.
 
 The editor makes the procedure first, then lists it back from the

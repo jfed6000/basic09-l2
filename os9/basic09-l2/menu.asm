@@ -119,7 +119,7 @@ mcomp               fdb       c_make-cmdtab
                     fcn       ""
                     fdb       c_ppall-cmdtab
                     fcn       "All: pretty print"
-                    fcn       "^Space"
+                    fcn       "F2"
                     fdb       c_pack-cmdtab
                     fcn       "Pac&k module..."
                     fcn       ""

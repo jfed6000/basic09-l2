@@ -44,7 +44,7 @@ keys = '''
 ^g "2" enter right*10 "z,"  # the block only: TYPE pt=x,z,y:REAL
 ^b                          # Make: main and show again
 ^r                          # Run: size=15
-^space                      # pretty print every procedure
+f2                          # pretty print every procedure
 ^b                          # up to date: nothing is sent
 ^s ^q
 '''

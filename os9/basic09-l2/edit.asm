@@ -75,8 +75,6 @@ cmdtab              fcb       C$CR
                     fdb       c_goto-cmdtab
                     fcb       $13                 ^S save
                     fdb       c_save-cmdtab
-                    fcb       EK.F2
-                    fdb       c_save-cmdtab
                     fcb       $11                 ^Q quit
                     fdb       c_quit-cmdtab
                     fcb       $0F                 ^O open
@@ -103,7 +101,7 @@ cmdtab              fcb       C$CR
                     fdb       c_eval-cmdtab
                     fcb       $17                 ^W watch
                     fdb       c_watch-cmdtab
-                    fcb       EK.CSPC             Ctrl+Space pretty print all
+                    fcb       EK.F2               F2 pretty print all
                     fdb       c_ppall-cmdtab
                     fcb       $14                 ^T breakpoint
                     fdb       c_bptog-cmdtab

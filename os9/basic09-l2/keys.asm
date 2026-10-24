@@ -37,7 +37,7 @@ EK.BS               equ       $90                 Backspace
 EK.DEL              equ       $91                 Shift+Backspace
 EK.ESC              equ       $92                 Esc (PS/2), BREAK (K2)
 EK.HOME             equ       $93                 Home (K2)
-EK.CSPC             equ       $94                 Ctrl+Space
+EK.CSPC             equ       $94                 Ctrl+Space (unbound; kept for completion)
 EK.MOUSE            equ       $95                 a mouse event (mouse.asm)
 EK.FPREV            equ       $96                 Ctrl+Shift+L find previous
 EK.SP1              equ       $97                 Ctrl+1 single spacing

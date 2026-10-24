@@ -47,7 +47,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Enter | New line, indented like the current one | P5.1 |
 | ^D | Delete the line | P5.1 |
 | ^G | Go to line | P5.1 |
-| ^S, F2 | Save (asks for a name if there is none) | P5.1 |
+| ^S | Save (asks for a name if there is none); F2 was Save until 2026-10-24 | P5.1 |
 | ^Q | Quit (asks to save changes) | P5.1 |
 | Alt+letter | Open a menu (File, Edit, Search, Run, Compile, Debug, Options, Help) | P5.2a |
 | F1 | Help | P5.2a |
@@ -78,7 +78,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | Debug ▸ Clear breakpoints | Clear them all | P5.5 |
 | Options ▸ Syntax colours | Syntax colours on or off (on by default) | P5.6 |
 | Options ▸ Keyword case | Pretty print writes keywords in lower case (the default) or in capitals | P5.6 |
-| Compile ▸ Pretty print, All: pretty print (Ctrl+Space) | Pretty print the procedure at the cursor, or every procedure | P5.6 |
+| Compile ▸ Pretty print, All: pretty print (F2; Ctrl+Space until 2026-10-24) | Pretty print the procedure at the cursor, or every procedure | P5.6 |
 | Run ▸ With arguments..., Compile ▸ Pack module..., Debug ▸ Procedure calls | Run a procedure with arguments; PACK to a file for RunB; the call chain in the message window | 2026-10-20 |
 
 ## Mouse
@@ -176,7 +176,7 @@ With watches (P5.4), a watch window of 2 rows plus one per watch sits directly u
   1. Make, so that the procedure is loaded as it stands. A procedure with errors, or a program stopped in the debugger, is refused with a message.
   2. `list <procedure>`. Each line comes back as a marker, the I-code offset, a line number if there is one, and the text from column 11 on, two columns more per level of indent. The editor keeps the line number and the text, and makes the indent two spaces a level. It joins lines that `LIST` wrapped at its margin (an LF in the line), and drops trailing spaces.
   3. The result replaces the procedure's lines, the `PROCEDURE` line included (it comes back as `PROCEDURE <name>`). The body is indented two spaces under it, and a line number sits in that gutter (`10 k=0`). An `END` at the top level lines up with `PROCEDURE`; one inside a structure keeps its indent. If it is the same text already, nothing changes.
-- **Compile ▸ All: pretty print** (Ctrl+Space) does the same for every procedure, and stops at the first one that has errors. The PS/2 driver sends Ctrl+Space as `$C0` (space minus `$60`) and the K2 driver as a space; both come with the Ctrl bit.
+- **Compile ▸ All: pretty print** (F2) does the same for every procedure, and stops at the first one that has errors. Until 2026-10-24 it was Ctrl+Space, and F2 was Save; the user moved it, since Ctrl+Space usually means completion, and ^S is enough for Save. F2 is on both keyboards (on the K2 it is Shift+F1). Ctrl+Space is still decoded (`EK.CSPC`: the PS/2 driver sends `$C0`, space minus `$60`, the K2 driver a space, both with the Ctrl bit) but bound to nothing, kept for keyword completion.
 - **Keyword case:** keywords come out in lower case (`procedure`, `for`, `left$`), which reads more easily; Options ▸ Keyword case switches to capitals, as `LIST` writes them. Basic09 reads either. Strings, comments, numbers and names are not touched.
 - **What changes:** keyword case, spacing, the indent and number formats (`1.50` becomes `1.5`, `1E3` becomes `1000.`). Comments stay as written. Names ignore case in Basic09, which keeps each one as it was first entered, so a name typed in another case elsewhere comes back in that first spelling.
 - **What stays:** the number of lines, because every source line is one I-code line. So the cursor, the window and the breakpoints stay on their lines, and the procedure counts as loaded: its text came from the loaded code, so the next Make does not recompile it.
