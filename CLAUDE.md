@@ -4,7 +4,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 - **Goal:** an editor process drives `l2b09run` (compiler, runtime and debugger) over pipes, and programs can use memory beyond 64K.
 - **Design and roadmap:** `docs/ARCHITECTURE.md`. It records what each phase (P0–P7) did and what was found.
 - **Reference specs:** `docs/PROTOCOL.md` (the editor/runtime protocol), `docs/FARMEM.md` and `docs/FARARRAYS.md`.
-- **Proposals and decisions not built yet:** see "Risks and open questions" and the naming plan under "Name" in `docs/ARCHITECTURE.md`. They cover the cold-command overlay, the automatic workspace size, `runb-l2`, and the multi-language editor as a separate project.
+- **Proposals and decisions not built yet:** see "Risks and open questions" and the naming plan under "Name" in `docs/ARCHITECTURE.md`. They cover the cold-command overlay, the automatic workspace size, `runb-l2`, and the multi-language editor as a separate project. Native `GLOBAL` variables (after the first release): `docs/GLOBAL.md`.
 - **Repository:** https://github.com/jfed6000/basic09-l2. Besides `main`: `p5.6` (merged) and `mouse-wip` (the first mouse attempt, superseded by P5.7); the separate compiler was built on the local branch `separate_compiler`, merged 2026-10-20.
 
 ## Ground rules

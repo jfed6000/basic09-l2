@@ -284,7 +284,7 @@ nav ul { padding-left: 18px; }
 <li><strong>The global table</strong> is a region of the workspace kept by the runtime, for the whole run (to command level, or the whole process under RunB). A far global array would keep its handle there, freed at the end of the run.</li>
 <li><strong>PACK</strong> keeps global names, as it keeps <code>RUN</code> target names; such modules need <code>runb-l2</code>.</li>
 </ul>
-<p>Cost: one name lookup per global per call, then the speed of a parameter. Named blocks (<code>GLOBAL settings</code> plus <code>USE settings</code>) work the same way, looked up by block name, with each variable an offset in the block as a field is in a record. The details (the link area's exact layout, where the table goes, the mismatch error) are for the design note.</p>
+<p>Cost: one name lookup per global per call, then the speed of a parameter. Named blocks (<code>GLOBAL settings</code> plus <code>USE settings</code>) work the same way, looked up by block name, with each variable an offset in the block as a field is in a record. The details (the link area's layout, where the table goes, the mismatch error) are in the design note, <code>docs/GLOBAL.md</code>.</p>
 
 <h2 id="compiler">The compiler, and a separate compiler process</h2>
 <h3>How the compiler works</h3>
