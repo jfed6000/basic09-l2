@@ -20,7 +20,7 @@ make main MAINDIR=/other/main   # clones somewhere else
 
 The basic09-l2 image adds:
 - the pipe modules (`pipeman piper pipe`) in OS9Boot;
-- `basic09-l2`, `l2b09run` and its overlay `l2b09ovl`, `farmem`, `syscall` and `inkey` in CMDS, built
+- `basic09-l2`, `l2b09run` and its overlay `l2b09ovl`, `farmem`, `syscall` and `inkey` in CMDS, `runb-l2` as CMDS/runb, built
   with the copy's defs into `build/main/`;
 - `examples/` in `/dd/L2B09` (`.b09` files as text, with LF turned into CR; anything else byte for byte), and `examples/*.bin` (sprite and background data, such as `centass.bin` for `centipede2.b09`) also in `/dd/SYS/BACKGROUNDS`.
 

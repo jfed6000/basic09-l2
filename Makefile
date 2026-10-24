@@ -265,7 +265,8 @@ loadtime: l2b09 $(BASEIMG)
 
 # SD card images for trying the editor on a Wildbits K2 or Jr2: the stock
 # image with the pipe modules added to OS9Boot, basic09-l2, l2b09run,
-# l2b09help and the subroutine modules in CMDS, the help file in SYS, and
+# l2b09help and the subroutine modules in CMDS, runb-l2 as CMDS/runb, the
+# help file in SYS, and
 # examples/ in /dd/l2b09
 K2IMG  = $(BUILD)/l2b09_k2.dsk
 JR2IMG = $(BUILD)/l2b09_jr2.dsk
@@ -281,6 +282,8 @@ $(BUILD)/l2b09_%.dsk: $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk $(TOOLS) $(L2B09)
 	for m in basic09-l2 l2b09run l2b09cc l2b09ovl l2b09help syscall inkey farmem; do \
 	    os9 copy -r $(BUILD)/$$m $@.tmp,CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $@.tmp,CMDS/$$m || exit 1; done
+	os9 copy -r $(BUILD)/runb-l2 $@.tmp,CMDS/runb
+	os9 attr -q -e -pe -r -pr $@.tmp,CMDS/runb
 	os9 copy -r $(BUILD)/basic09-l2.hlp $@.tmp,SYS/basic09-l2.hlp
 	os9 makdir $@.tmp,L2B09
 	for f in examples/*; do case $$f in *.b09) l=-l ;; *) l= ;; esac; \

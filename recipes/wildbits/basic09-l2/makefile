@@ -8,7 +8,8 @@
 include ../l2/makefile
 
 # After the stock image is built: basic09-l2's modules go to CMDS (the
-# stock inkey and syscall are replaced), the help file to SYS, and
+# stock inkey and syscall are replaced, and runb-l2 replaces RunB as
+# CMDS/runb), the help file to SYS, and
 # examples/ to /dd/L2B09.
 # toolshed's os9 copy can fail with exit status 0, so the result is
 # checked with os9 dir.
@@ -20,6 +21,12 @@ b09l2: libs $(DSKIMAGE) b09l2-mods
 	for m in $(B09L2MODS); do \
 	    os9 copy -r $(B09L2BUILD)/$$m $(DSKIMAGE),CMDS/$$m && \
 	    os9 attr -q -e -pe -r -pr $(DSKIMAGE),CMDS/$$m || exit 1; done
+	os9 copy -r $(B09L2BUILD)/runb-l2 $(DSKIMAGE),CMDS/runb
+	os9 attr -q -e -pe -r -pr $(DSKIMAGE),CMDS/runb
+	rm -f $(B09L2BUILD)/runb.check
+	os9 copy -r $(DSKIMAGE),CMDS/runb $(B09L2BUILD)/runb.check
+	cmp -s $(B09L2BUILD)/runb-l2 $(B09L2BUILD)/runb.check || \
+	    { echo "$(DSKIMAGE): CMDS/runb is not runb-l2" >&2; exit 1; }
 	os9 copy -r $(B09L2BUILD)/basic09-l2.hlp $(DSKIMAGE),SYS/basic09-l2.hlp
 	os9 dir $(DSKIMAGE),L2B09 >/dev/null 2>&1 || os9 makdir $(DSKIMAGE),L2B09
 	for f in $(B09L2DIR)/examples/*; do \
