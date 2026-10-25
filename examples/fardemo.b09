@@ -1,0 +1,35 @@
+PROCEDURE fardemo
+(* Far arrays: data past the 64K address space *)
+(* 20000 reals are 100,000 bytes, more than all of 64K *)
+DIM num(20000):FAR REAL
+DIM grid(320,240):FAR BYTE
+DIM i,x,y,bad:INTEGER
+DIM s:REAL
+PRINT "basic09-l2 far array demo"
+PRINT "Filling 20000 reals (100,000 bytes)..."
+FOR i:=1 TO 20000
+num(i):=i
+NEXT i
+s:=0.
+FOR i:=1 TO 20000
+s:=s+num(i)
+NEXT i
+PRINT "Sum of 1..20000: "; s; " (should be 200010000)"
+PRINT "num(1)="; num(1); "  num(20000)="; num(20000)
+PRINT "Filling a 320x240 byte grid (76,800 bytes)..."
+FOR y:=1 TO 240 STEP 3
+FOR x:=1 TO 320 STEP 2
+grid(x,y):=MOD(x+y,256)
+NEXT x
+NEXT y
+bad:=0
+FOR y:=1 TO 240 STEP 3
+FOR x:=1 TO 320 STEP 2
+IF grid(x,y)<>MOD(x+y,256) THEN
+bad:=bad+1
+ENDIF
+NEXT x
+NEXT y
+PRINT "Grid errors:"; bad; " (should be 0)"
+PRINT "Done."
+END
