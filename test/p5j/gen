@@ -55,7 +55,7 @@ psub = '''PROCEDURE ppsub
 END
 '''
 
-# pretty print writes keywords in lower case by default
+# with keywords in lower case (switched from the default, capitals)
 lmain = '''procedure ppmain
   dim i,k:integer
 10 k=0
@@ -80,6 +80,7 @@ for name, text in files.items():
         f.write(text.replace('\n', '\r'))
 saveas = 'alt-f down down down enter'
 keys = '''
+alt-o "k"                   # Options > Keywords in capitals: off
 ^g "6" enter ^t             # a breakpoint on k=k+10, the cursor there too
 right right                 # (column 3)
 alt-c "p"                   # pretty print ppmain (Make loads both first)
@@ -91,7 +92,7 @@ alt-c "p"                   # again: the same text
 ^y                          # redo
 ^r                          # Make sends nothing; the breakpoint stops it
 ^r                          # to the end
-alt-o "k"                   # Options > Keyword case: capitals
+alt-o "k"                   # Options > Keywords in capitals: on again
 f2                          # All: pretty print (ppmain changes case)
 %(sa)s "pp4.b09" enter
 ^g "16" enter ^k " " ^b     # ppmain changed (a space): Make compiles the pretty text

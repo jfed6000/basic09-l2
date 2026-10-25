@@ -345,8 +345,8 @@ procedure's lines:
 Comments, strings and the number of lines stay the same, so the cursor
 and the {Breakpoints} stay on their lines.
 
-Keywords come out in lower case. Options > Keywords in capitals switches to
-capitals. Basic09 reads either.
+Keywords come out in capitals, as LIST writes them. Options > Keywords in
+capitals turns that off, for lower case. Basic09 reads either.
 
 A procedure with errors, or a program stopped in the {Debugger}, is
 refused with a message. One ^Z takes a whole pretty print back.
@@ -610,4 +610,5 @@ compiler reports an error on the line.
 The joined text may be at most 200 characters. Put more in a second
 block, with a USE line of its own.
 
-{Pretty print} keeps your USE lines as you wrote them.
+{Pretty print} keeps your USE lines and blocks as you wrote them, and
+only sets the case of their keywords (Options > Keywords in capitals).

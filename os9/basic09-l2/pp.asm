@@ -20,6 +20,10 @@
 * line), so the cursor, the window and the breakpoints go back to
 * their lines, and the procedure counts as loaded: its text came from
 * the loaded code.  One undo takes the whole pretty print back.
+*
+* USE lines are copied from the text (LIST shows the TYPE text they
+* bring in), and DEFUSE blocks are not code at all: in both only the
+* case of the keywords changes (pp_use, pp_blk).
 
 PPCOL               equ       11                  LIST text column, indent level 0
 PPIND               equ       2                   the body's indent under PROCEDURE
@@ -77,11 +81,8 @@ pg6                 cmpb      <nproc
                     pshs      b
                     lbsr      pt_at
                     tfr       x,y
-                    lda       PR.FLAG,y           (not the DEFUSE blocks)
-                    bita      #PF.DEF
-                    bne       pg6a
                     lbsr      pp_one
-pg6a                puls      b
+                    puls      b
                     bcs       pg_done
                     incb
                     bra       pg6
@@ -117,12 +118,14 @@ ppfms               fcn       "Formatting..."
 * pp_one: pretty print the procedure of entry Y; carry (and a message)
 * if it could not be done
 pp_one              lda       PR.FLAG,y
+                    bita      #PF.DEF
+                    lbne      pp_blk              a DEFUSE block
                     bita      #PF.ERR
                     beq       po1
                     leax      pperms,pcr
                     lbra      po_msg
 po1                 pshs      y
-                    lbsr      pp_usei             (USE lines stay as they are)
+                    lbsr      pp_usei             (USE lines are copied)
                     ldy       ,s
                     lbsr      a_rline             "list <name>"
                     leay      listcm,pcr
@@ -155,7 +158,7 @@ po3                 bsr       pp_clean
 po4                 lda       rline+1,x
                     cmpa      #'R                 %READY
                     bne       po2
-                    puls      y
+po_put              puls      y
                     lbsr      pp_put
                     pshs      cc
                     ldx       <base
@@ -443,7 +446,9 @@ pp_usei             ldu       <base
                     bita      #PF.USE
                     beq       pui9
                     inc       ppuse,u
-                    ldd       PR.LINE,y
+* pp_line: usep = the first line of entry Y (by its line number: the
+* pages move as the procedures before it change)
+pp_line             ldd       PR.LINE,y
                     lbsr      goto_line           cpos
                     ldu       <base
                     ldd       <cpos
@@ -487,11 +492,19 @@ pus3c               bsr       pus_app
                     bcs       pus_err
                     decb
                     bne       pus3c
+                    ldu       <base               the word USE in the
+                    clr       ppkc,u              keyword case
 pus3                lbsr      us_xu
                     lbsr      p_char
                     bcs       pus4
                     lbsr      p_next
-                    bsr       pus_app
+                    ldu       <base
+                    tst       ppkc,u
+                    bne       pus3d
+                    lbsr      pp_kc
+                    bcc       pus3d
+                    inc       ppkc,u
+pus3d               bsr       pus_app
                     bcs       pus_err
                     cmpa      #C$CR
                     bne       pus3
@@ -517,17 +530,95 @@ pus_app             pshs      d,x                 A to the new text
                     lbsr      chain_app
                     puls      d,x,pc
 
+* pp_blk: the DEFUSE block of entry Y.  LIST cannot print it, so only
+* the case of its keywords changes, as Options > Keywords in capitals
+* says: the first word of each line (DEFUSE, TYPE, PARAM, ...) and the
+* word after END.  The lines after END DEFUSE stay as they are.
+pp_blk              pshs      y
+                    lbsr      d_alloc             a chain for the new text
+                    lbcs      po_full0
+                    ldu       <base
+                    stx       pprec+UR.CH,u
+                    clr       ppskip,u            (3 once END is past)
+                    lbsr      pp_line
+pbk1                 ldu       <base               a line
+                    lda       ppskip,u
+                    sta       ppkc,u
+                    lbsr      us_xu
+                    lbsr      ln_at
+pbk2                 lbsr      a_wpu
+                    lbsr      p_char
+                    bcs       pbk8
+                    lbsr      p_next
+                    bsr       pb_case
+                    lbsr      pus_app
+                    bcs       pbk_err
+                    cmpa      #C$CR
+                    bne       pbk2
+pbk8                 lbsr      us_xu
+                    lbsr      ln_next
+                    bcc       pbk1
+                    lbra      po_put
+pbk_err              ldx       <base
+                    ldx       pprec+UR.CH,x
+                    lbsr      chain_free
+                    lbra      po_full0
+
+* pb_case: A, the next character of a block line, in the keyword case
+* if it is in the line's first word (ppkc: 0 before it, 1 in it, 3
+* past it; ppmid = its first letter)
+pb_case             pshs      b,u
+                    ldu       <base
+                    ldb       ppkc,u
+                    cmpb      #1
+                    bhi       pbk9
+                    beq       pbk4
+                    cmpa      #C$SPAC             before the word
+                    beq       pbk9
+                    bsr       pp_kc
+                    bcs       pbk_off
+                    sta       ppmid,u
+                    inc       ppkc,u
+                    bra       pbk9
+pbk4                bsr       pp_kc               in the word
+                    bcc       pbk9
+                    ldb       ppmid,u             it ended: END goes on to
+                    andb      #$DF                the next word
+                    cmpb      #'E
+                    bne       pbk_off
+                    clr       ppmid,u
+                    clr       ppkc,u
+                    ldb       #3
+                    stb       ppskip,u
+                    bra       pbk9
+pbk_off             ldb       #3
+                    stb       ppkc,u
+pbk9                puls      b,u,pc
+
+* pp_kc: if A is a letter, A in the keyword case (kwup); carry if it is
+* not a letter
+pp_kc               pshs      b,x
+                    tfr       a,b
+                    andb      #$DF
+                    cmpb      #'A
+                    blo       pkk_no
+                    cmpb      #'Z
+                    bhi       pkk_no
+                    ldx       <base
+                    tst       kwup,x
+                    bne       pkk1
+                    orb       #$20
+pkk1                tfr       b,a
+                    andcc     #^Carry
+                    puls      b,x,pc
+pkk_no              orcc      #Carry
+                    puls      b,x,pc
+
 * pp_put: the new text in place of the lines of the procedure of entry
 * Y (from the PROCEDURE line up to the next PROCEDURE or DEFUSE line,
 * or the end of the text); carry if the pages ran out
-pp_put              ldd       PR.LINE,y           from the PROCEDURE line
-                    pshs      d,y
-                    lbsr      goto_line
-                    ldu       <base
-                    ldd       <cpos
-                    std       usep,u
-                    ldd       <cpos+2
-                    std       usep+2,u
+pp_put              pshs      y                   from the PROCEDURE line
+                    lbsr      pp_line
 ppt1                lbsr      us_xu               to the end of the procedure
                     lbsr      ln_next
                     bcc       ppt1
@@ -535,7 +626,8 @@ ppt1                lbsr      us_xu               to the end of the procedure
                     std       <xpos
                     ldd       2,x
                     std       <xpos+2
-                    puls      d,y
+                    puls      y
+                    ldd       PR.LINE,y
                     lbsr      goto_line
                     bsr       pp_same
                     bcc       pp_none             already pretty: no edit at all
@@ -545,7 +637,6 @@ ppt1                lbsr      us_xu               to the end of the procedure
                     lbsr      chain_paste         (recorded too)
                     lda       #1
                     sta       <modif
-                    bra       shok6
 pp_none             andcc     #^Carry
                     rts
 

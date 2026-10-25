@@ -439,8 +439,8 @@ kwf_no              clrb
                     leas      2,s
                     puls      x,y,pc
 
-* c_kwcase: pretty print writes keywords in lower case (the default) or
-* in capitals (Options)
+* c_kwcase: pretty print writes keywords in capitals (the default, since
+* 2026-10-25) or in lower case (Options)
 c_kwcase            ldx       <base
                     com       kwup,x
                     leax      kwlom,pcr

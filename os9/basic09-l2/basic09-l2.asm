@@ -332,7 +332,7 @@ ppall               rmb       1                   pretty print: every procedure
 pphdr               rmb       1                   the LIST header line was read
 ppcont              rmb       1                   the last read had no CR
 ppw                 rmb       1                   the width of a line number
-kwup                rmb       1                   pretty print keeps keywords in capitals
+kwup                rmb       1                   pretty print keeps keywords in capitals ($FF, the default)
 ppcl                rmb       2                   the cursor line and column, the
 ppcc                rmb       2                   window's top line, before
 pptl                rmb       2
@@ -342,6 +342,7 @@ ppuse               rmb       1                   the procedure has USE lines (r
 ppmid               rmb       1                   the last read had no CR
 ppskip              rmb       1                   and it was a USE line's
 usep                rmb       4                   USE: a line of the procedure
+ppkc                rmb       1                   pretty print: where the keyword case is (pp.asm)
 hdrp                rmb       4                   USE: a line of the DEFUSE block
 wtab                rmb       MAXWATCH*WT.SIZE      watches
 ptab                rmb       MAXPROC*PR.SIZE     procedures l2b09run holds
@@ -407,13 +408,13 @@ getargs             ldb       #NCDEF
                     stb       <rtmem
                     ldx       <base               the data area is not cleared
                     clr       fname,x
-                    clr       kwup,x              keywords in lower case
                     clr       inbuf,x
                     clr       tname,x
                     clr       bopt,x
                     clr       fstr,x              the find, replace and evaluate
                     clr       rstr,x              dialogs start empty
                     clr       estr,x
+                    com       kwup,x              keywords in capitals
                     ldx       <argp
 ga1                 lda       ,x+
                     cmpa      #C$SPAC

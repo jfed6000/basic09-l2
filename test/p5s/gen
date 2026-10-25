@@ -7,10 +7,11 @@ with backslashes into one line and without their comments, then
 "(* " and the line.  A change to the block alone sends the procedures
 that use it again: main prints the size of its record, 10 and then 15.
 Run starts main, not the block before it.  Pretty print keeps the USE
-lines (indented like the body) and leaves the blocks alone, also the
-one between two procedures.  show takes its PARAM from a second block,
-with a second USE line (until 2026-10-24 the blocks were DEFUSE, and
-held only TYPE lines).
+lines (indented like the body) and the blocks, also the one between
+two procedures, changing only the case of their keywords: "use" and
+the lower-case block "unused" come out in capitals (since 2026-10-25).
+show takes its PARAM from a second block, with a second USE line
+(until 2026-10-24 the blocks were DEFTYPE, and held only TYPE lines).
 
 usage: gen <outdir>
 """
@@ -32,9 +33,9 @@ p.y=2
 PRINT "size="; SIZE(p)
 RUN show(p)
 END
-DEFUSE unused
-  TYPE nothing=n:INTEGER
-END DEFUSE
+defuse unused
+  type nothing=n:INTEGER
+end defuse
 DEFUSE sparm
 PARAM q:pt (* the point *)
 DIM z:INTEGER
@@ -93,18 +94,19 @@ log = r'''# -t=/dd/l2b09/term.out
 < %READY
 > bye
 '''
-# pretty print keeps the USE lines and the blocks
+# pretty print keeps the USE lines and the blocks, with their keywords in
+# capitals (the default)
 expect = r'''DEFUSE shapes
 TYPE pt=x,z,y:REAL (* a point *)
 END DEFUSE
-procedure main
+PROCEDURE main
   USE shapes
-  dim p:pt
+  DIM p:pt
   p.x=1.5
   p.y=2
-  print "size="; size(p)
-  run show(p)
-end
+  PRINT "size="; SIZE(p)
+  RUN show(p)
+END
 DEFUSE unused
   TYPE nothing=n:INTEGER
 END DEFUSE
@@ -112,11 +114,11 @@ DEFUSE sparm
 PARAM q:pt (* the point *)
 DIM z:INTEGER
 END DEFUSE
-procedure show
-  use shapes
+PROCEDURE show
+  USE shapes
   USE sparm
-  print "x="; q.x; " y="; q.y
-end
+  PRINT "x="; q.x; " y="; q.y
+END
 '''
 with open(os.path.join(out, 'prog.b09'), 'w', newline='') as f:
     f.write(prog.replace('\n', '\r'))
