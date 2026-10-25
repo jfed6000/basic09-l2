@@ -85,7 +85,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 
 ## Mouse
 
-The pointer is the hardware one that `mousedrv_ps2` moves. The editor reads it with `SS.Mouse` on its own terminal, which since nitros9 `8562e60d` gives the buttons only to the terminal on the screen. There are no mouse events, so while it waits for a key the editor polls: `SS.Ready` on the key path, then `SS.Mouse`, then a one-tick sleep (`mouse.asm`). A change of the buttons, or a move to another cell with the left button held, comes back from `getkey` as `EK.MOUSE`. Pixels become cells by the cell size worked out from the screen size (8 or 16 pixels). On a CoCo 3 build `SS.Mouse` is a different call, so the mouse is left out there.
+The pointer is the hardware one that `mousedrv_ps2` moves. The editor reads it with `SS.Mouse` on its own terminal, which since nitros9 `8562e60d` gives the buttons only to the terminal on the screen. There are no mouse events, so while it waits for a key the editor polls: `SS.Ready` on the key path, then `SS.Mouse`, then a one-tick sleep (`mouse.asm`). A change of the buttons, or a move to another cell with the left button held, comes back from `getkey` as `EK.MOUSE`. Pixels become cells by the cell size worked out from the screen size (8 or 16 pixels). On a CoCo 3 build `SS.Mouse` is a different call, so the mouse is left out there. Confirmed on the K2 and the Jr2 by the user on 2026-10-25.
 
 | Where | Left button | Right button |
 |---|---|---|
@@ -99,7 +99,7 @@ The pointer is the hardware one that `mousedrv_ps2` moves. The editor reads it w
 
 The hint line has no buttons, and there is no double-click word select.
 
-**The wheel** (2026-10-18, nitros9 `23b18b69`): `SS.MsWheel` (`$E8`) returns the wheel steps since the last call, signed, negative away from the user (0 without a wheel mouse, and 0 on a terminal that is not on the screen). If it answers at start, the editor asks it after `SS.Mouse` in every poll. Steps come back from `getkey` as the key `EK.WHEEL` (the count in `muwst`), not as a mouse event, so the menus, dialogs and the message window, which do not scroll, ignore it. In the text window each step scrolls 3 lines (at most a window's worth), the cursor moving with the window as with the scroll bar's arrows; away from the user scrolls up. The help browser scrolls its page by 3 lines a step too. A key script sends the wheel as `$FD <steps>` (`wheel:N` in `tools/keys.py`). MAME's `wbjr2` mouse has no wheel, so the real call is only tried on hardware.
+**The wheel** (2026-10-18, nitros9 `23b18b69`): `SS.MsWheel` (`$E8`) returns the wheel steps since the last call, signed, negative away from the user (0 without a wheel mouse, and 0 on a terminal that is not on the screen). If it answers at start, the editor asks it after `SS.Mouse` in every poll. Steps come back from `getkey` as the key `EK.WHEEL` (the count in `muwst`), not as a mouse event, so the menus, dialogs and the message window, which do not scroll, ignore it. In the text window each step scrolls 3 lines (at most a window's worth), the cursor moving with the window as with the scroll bar's arrows; away from the user scrolls up. The help browser scrolls its page by 3 lines a step too. A key script sends the wheel as `$FD <steps>` (`wheel:N` in `tools/keys.py`). MAME's `wbjr2` mouse has no wheel, so the real call is only tried on hardware. The wheel works on the K2 and the Jr2 (the user, 2026-10-25).
 
 The base bindings follow the user's `te` editor (`~/projects/f256/jfed/te`), and the Turbo roles sit on F1–F8.
 
