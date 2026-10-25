@@ -414,7 +414,8 @@ getargs             ldb       #NCDEF
                     clr       fstr,x              the find, replace and evaluate
                     clr       rstr,x              dialogs start empty
                     clr       estr,x
-                    com       kwup,x              keywords in capitals
+                    lda       #$FF                keywords in capitals (set, not
+                    sta       kwup,x              com: the data area is not cleared)
                     ldx       <argp
 ga1                 lda       ,x+
                     cmpa      #C$SPAC

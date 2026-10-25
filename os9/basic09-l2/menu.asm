@@ -76,7 +76,7 @@ msrch               fdb       c_find-cmdtab
                     fcn       "^F"
                     fdb       c_fnext-cmdtab
                     fcn       "Find next"
-                    fcn       "^L"
+                    fcn       "^L/F3"
                     fdb       c_fprev-cmdtab
                     fcn       "Find previous"
                     fcn       "Shift+^L"

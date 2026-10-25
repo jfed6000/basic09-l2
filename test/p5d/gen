@@ -28,7 +28,9 @@ def main():
     s.find('line 12')                            # typing replaces the match
     s.type('X')
     s.fnext()
-    s.fnext()
+    s.m.find()                                   # F3: find next too
+    s._after(False)
+    s.keys.append('f3')
     s.type('Y')
     s.matchcase()                                # case: "print" is not there
     s.find('print')

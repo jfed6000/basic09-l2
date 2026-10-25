@@ -79,8 +79,6 @@ cmdtab              fcb       C$CR
                     fdb       c_quit-cmdtab
                     fcb       $0F                 ^O open
                     fdb       c_open-cmdtab
-                    fcb       EK.F1+2             F3 open
-                    fdb       c_open-cmdtab
                     fcb       EK.F1
                     fdb       c_help-cmdtab
                     fcb       $02                 ^B make
@@ -113,6 +111,8 @@ cmdtab              fcb       C$CR
                     fdb       c_find-cmdtab
                     fcb       $0C                 ^L find next
                     fdb       c_fnext-cmdtab
+                    fcb       EK.F1+2             F3 find next (was Open until
+                    fdb       c_fnext-cmdtab      2026-10-25)
                     fcb       EK.FPREV            Ctrl+Shift+L find previous
                     fdb       c_fprev-cmdtab
                     fcb       EK.SP1              Ctrl+1 single spacing

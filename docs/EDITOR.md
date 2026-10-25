@@ -51,11 +51,11 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | ^Q | Quit (asks to save changes) | P5.1 |
 | Alt+letter | Open a menu (File, Edit, Search, Run, Compile, Debug, Options, Help) | P5.2a |
 | F1 | Help | P5.2a |
-| F3, ^O | Open | P5.2a |
+| ^O | Open (F3 until 2026-10-25) | P5.2a |
 | Shift+arrows, Ctrl+Shift+Left/Right | Select (typing, Enter or paste replaces the selection; Backspace/Delete remove it) | P5.2b |
 | ^A ^C ^X ^V | Select all, copy, cut, paste | P5.2b |
 | ^Z / ^Y | Undo / redo (50 steps) | P5.2d |
-| ^F / ^L | Find / find next (the match is selected) | P5.2c |
+| ^F / ^L, F3 | Find / find next (the match is selected); F3 since 2026-10-25, when it stopped being Open (the user wants no file commands on F-keys); F3 confirmed on the Jr2 with the new PS/2 driver | P5.2c |
 | Ctrl+Shift+L | Find previous (Search ▸ Find previous) | P5.7 |
 | Ctrl+1 / Ctrl+2 | Single / double line spacing (Options ▸ Double spacing toggles) | P5.7 |
 | Ctrl+3 | 80×30 or 80×60 screen (as Options ▸ 80x60 screen) | 2026-10-24 |
@@ -78,7 +78,7 @@ The editor has to work with two Wildbits keyboards, and later a CoCo 3 keyboard.
 | ^T | Breakpoint on the cursor line, on or off | P5.5 |
 | Debug ▸ Clear breakpoints | Clear them all | P5.5 |
 | Options ▸ Syntax colours | Syntax colours on or off (on by default) | P5.6 |
-| Options ▸ Keywords in capitals | Pretty print writes keywords in capitals (the default since 2026-10-25), or in lower case; it was "Keyword case" until 2026-10-24 | P5.6 |
+| Options ▸ Keywords in capitals | Pretty print writes keywords in capitals (the default since 2026-10-25: `getargs` sets `kwup` to `$FF`, since the data area is not cleared; a `com` there left it random on hardware, and the toggle then did nothing), or in lower case; it was "Keyword case" until 2026-10-24 | P5.6 |
 | Options menu marks | A setting that is on has a mark before it (the breakpoint glyph; `*` with ASCII frames): `m_mark` looks the item's command up in `opttab` (its byte in the data area, a mask and an XOR). 80x60 is on when `phrows` has bit 5 (60 rows, not 30) | 2026-10-24 |
 | Compile ▸ Pretty print, All: pretty print (F2; Ctrl+Space until 2026-10-24) | Pretty print the procedure at the cursor, or every procedure | P5.6 |
 | Run ▸ With arguments..., Compile ▸ Pack module..., Debug ▸ Procedure calls | Run a procedure with arguments; PACK to a file for RunB; the call chain in the message window | 2026-10-20 |

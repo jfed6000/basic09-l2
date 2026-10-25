@@ -52,12 +52,12 @@ Selection and clipboard ({Selection}, {Clipboard})
 
 Files ({Files})
   ^S                       save
-  ^O, F3                   open
+  ^O                       open
   ^Q                       quit
 
 Search ({Find}, {Replace})
   ^F                       find
-  ^L, Ctrl+Shift+L         find next, find previous
+  ^L or F3, Ctrl+Shift+L   find next, find previous
 
 Make, Run and debug
   ^B                       {Make}
@@ -107,7 +107,7 @@ Edit
   Delete line       ^D      delete the cursor line
 Search
   Find...           ^F      find a text ({Find})
-  Find next         ^L      find it again ({Find})
+  Find next         ^L/F3   find it again ({Find})
   Find previous             Ctrl+Shift+L: find it backwards ({Find})
   Replace...                replace, asking at each match ({Replace})
   Go to line...     ^G      move to a line number
@@ -156,7 +156,7 @@ The editor edits one file at a time. Its name is in the top border, and
 a * in the bottom border means the text has changed since it was saved.
 
   New        drops the text and starts an empty one with no name.
-  Open...    (^O, F3) asks for a file name and loads that file.
+  Open...    (^O) asks for a file name and loads that file.
   Save       (^S) writes the text to its file. With no name yet it
              asks for one, as Save as does.
   Save as... asks for a name, then saves under it. The text keeps the
