@@ -52,6 +52,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 
 ## Gotchas learned the hard way
 
+- **MAME starts with zeroed memory; hardware does not.** The editor's data area is not cleared, so every variable needs an explicit start value in `getargs`. A `com`/`inc` of an unset byte works in every test and fails on hardware (Keywords in capitals, 2026-10-25).
 - **`TFR` sets no flags.** Use `leax ,y` (or a compare) when the next branch needs Z.
 - **`LEAU`/`LEAS` don't set Z** (only `LEAX`/`LEAY` do). A `leau -1,u` / `bne` loop never ends, so count with X or Y, or add `cmpu #0`.
 - **Branch range.** Inserting code inline often pushes 8-bit branches (`bsr`, `beq`, ...) out of range ("Byte overflow"). Put new code in a subroutine somewhere else and call it with `lbsr`, or make that one branch long under `ifne L2B09`.
