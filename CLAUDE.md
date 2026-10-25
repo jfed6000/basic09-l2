@@ -28,6 +28,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 | `make p1test` … `p4test`, `p5atest` … `p5xtest`, `p6test`, `p7test`, `p8atest` … `p8dtest` | Headless emulator tests; each prints PASS/FAIL lines. `p8atest` is the reference for the separate compiler (docs/COMPILER.md); `p8btest` checks `l2b09cc`'s frames; `p8ctest` checks that its procedures are byte-identical to LOAD's. |
 | `make loadtime` | Compile-speed benchmark. |
 | `make main` (`k2main`, `jr2main`) | New-core images built in an export of the main repos: `build/main/l2_wildbits{k2,jr2}.dsk` (stock, for tests) and `l2_basic09-l2{k2,jr2}.dsk` (for hardware). |
+| `make langcheck` | Exports the shippable files into a copy of nitros9-languages as `wildbits/basic09-l2` (`tools/export-lang.sh`, with the makefiles and README from `upstream/languages/`), builds it the way nitros9-languages does, and requires all 8 outputs to be byte-identical to this build (docs/ARCHITECTURE.md, "Upstreaming to NitrOS-9"). |
 | `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the same as `l2_basic09-l2{k2,jr2}.dsk` from `make main`, made by patching the stock image's OS9Boot instead of the recipe. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.

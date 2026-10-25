@@ -52,7 +52,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all subs l2b09 tools pipes k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p5aatest p6test p7test p8atest p8btest p8ctest p8dtest p8etest p9atest p9btest loadtime clean k2main jr2main main mainsrc
+.PHONY: all subs l2b09 tools pipes langcheck k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p5aatest p6test p7test p8atest p8btest p8ctest p8dtest p8etest p9atest p9btest loadtime clean k2main jr2main main mainsrc
 
 all: subs l2b09 tools
 
@@ -324,6 +324,21 @@ k2main jr2main: %main: mainsrc $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk
 	cp -p recipes/wildbits/basic09-l2/makefile recipes/wildbits/basic09-l2/recipe.mak $(MAINRCP)/basic09-l2/
 	$(MAINMAKE) -C $(MAINRCP)/basic09-l2 PLATFORM=$*
 	cp $(MAINRCP)/basic09-l2/l2_basic09-l2$*.dsk $(BUILD)/main/
+
+# nitros9-languages/wildbits/basic09-l2 (docs/ARCHITECTURE.md, "Upstreaming
+# to NitrOS-9"): export into a copy of the languages tree from build/main/src,
+# build it there the way nitros9-languages does, and require every module
+# to be byte-identical to this repository's build
+LANGDIR  = $(BUILD)/lang/nitros9-languages
+LANGMODS = l2b09run l2b09cc l2b09ovl runb-l2 basic09-l2 l2b09help farmem basic09-l2.hlp
+langcheck: l2b09 subs tools
+	rm -rf $(BUILD)/lang
+	mkdir -p $(BUILD)/lang
+	cp -a $(MAINSRC)/nitros9-languages $(LANGDIR)
+	tools/export-lang.sh $(LANGDIR)
+	$(MAKE) -C $(LANGDIR) wildbits NITROS9DIR=$(NITROS9DIR)
+	for m in $(LANGMODS); do cmp $(LANGDIR)/wildbits/basic09-l2/$$m $(BUILD)/$$m || exit 1; done
+	@echo "langcheck: $(words $(LANGMODS)) files byte-identical"
 
 clean:
 	rm -rf $(BUILD)
