@@ -342,6 +342,29 @@ Pascal's approach is not being copied. OS-9 Pascal swaps P-code from disk, which
   - **Open:** whether RUN calls the binder for a procedure changed since it was last bound; if so, that has to move to the compiler too.
   - **A possible step on the way:** a compile overlay, with compil and binder (about 5.8K) moved to an overlay like `l2b09ovl`. It would raise the room below 24,576 from 642 bytes to about 6K. The survey of 2026-10-15 found 10 exports into compil and binder; `NAMSYM`, `SEARC0` and `MOVDWN` (about 190 bytes) must stay resident (every command line, and record assignment at run time), RUN calls `CPRM`/`BPRM` every time, and the debugger's PRINT and LET would need a free slot for it (none at `#24k -b` with far arrays). Net saving about 5.5K. It costs a load on each compile, and while compiling the overlay takes an 8K slot, which leaves the workspace one slot less during Make. Check how many `X$` entries would have to point into it.
 
+## Upstreaming to NitrOS-9 (plan, agreed 2026-10-25)
+
+The first release (2026-10-25, `build/release/basic09-l2-2026-10-25.zip`) goes into the nitros9project repositories in two pull requests. Nothing is pushed to nitros9project until the user says so.
+
+**Decisions (the user, 2026-10-25):**
+- **Home:** jfed6000/basic09-l2 stays the working repository for now (tests, docs, tools). The languages copy is an export, never edited by hand. Moving development upstream comes later.
+- **A fork, stated plainly:** basic09-l2 is its own product, forked from `nitros9-languages/basic09/microware` on 2026-10-20. It does not change the original Basic09 or RunB in any way; `basic09/microware` stays the authoritative source of those (the languages README's "no competing sources" rule). The PR and the README say so.
+- **Place: `nitros9-languages/wildbits/basic09-l2`.** Wildbits only: it keeps the PR away from the CoCo side, and a CoCo 3 port is doubtful (its 6809 is about 10 times slower). The module names stay `l2b09*`.
+- **RunB:** runb-l2 replaces `runb` on the Level 2 Wildbits images, and `wildbits.mak`'s `RUNB_SHA256` pin moves to runb-l2.
+
+**Layout in nitros9-languages:**
+- `wildbits/Makefile`: recurses into each directory (only `basic09-l2` for now); the top-level `Makefile` adds `wildbits` to `dirs`.
+- `wildbits/basic09-l2/`: `Makefile`, `README.md`, `src/` (the fork and `build-modular-basic09.py`, `MICROWARE.md`), `editor/` (today's `os9/basic09-l2`, with `kwtab.asm` committed), `help/` (`l2b09help.asm`, the pages, `mkhelp.py`), `modules/farmem.asm`, `examples/` (`demo.b09`, `fardemo.b09`). `inkey` and `syscall` are not copied: ours are identical to `basic09/`'s.
+- Left in the jfed repository: the MAME tests and harness, `l2b09ctl`, `b09prof.py`, `edmodel.py`, `keys.py`, most of `docs/`.
+
+**`wildbits/basic09-l2/Makefile`:** like `basic09/Makefile`. It includes `$(NITROS9DIR)/rules.mak` and has one target per module, built in place (`l2b09run`, `l2b09cc`, `l2b09ovl`, `runb-l2`, `basic09-l2`, `l2b09help`, `farmem`, `basic09-l2.hlp`), so a recipe can `$(MAKE) -C $(LANGUAGES)/wildbits/basic09-l2 <module>`. The editor and help browser use their own assembler line (no `--6309`, no `undefextern`; `rules.mak`'s `AS` has both). The help file comes from `mkhelp.py --errmsg $(NITROS9DIR)/level1/sys/errmsg`. The 24,576-byte warning stays. `all` and `clean`; no disk image (that is the recipes' job).
+
+**Steps:**
+1. In the jfed repository: `tools/export-lang.sh` writes the subset into a languages tree, and `make langcheck` builds it there and requires every module to be byte-identical to this repository's build.
+2. PR 1, nitros9-languages: add `wildbits/basic09-l2` (nothing uses it yet).
+3. PR 2, nitros9: `wildbits.mak`, for `LEVEL=2` (so `l2`, `l2dw`, `l2_mega`, `l2dw_mega`, `l2win`): `pipeman piper pipe` in the boot file (each recipe's bootfile must stay under the limit), the modules in `CMDS`, `basic09-l2.hlp` in `SYS`, the examples on the disk, runb-l2 as `runb` with the new hash. Then `recipes/wildbits/basic09-l2` here retires.
+4. Separately: the PS/2 driver (`wb/ps2-keyboard`, F1-F8) merges into nitros9 on its own; until then the release's Jr2 image gets it by a swap in OS9Boot.
+
 ## Verification
 - P0: byte-identical rebuilds (`cmp`) against `nitros9_complete/nitros9-languages/basic09/{basic09_wildbits,runb_6809}` (`make check`), plus a `basic09_6809` built from that tree.
 - P1+: build a Wildbits disk with the recipe in `nitros9/recipes/wildbits` (or `os9 copy` into an existing image), then run it in MAME (`/usr/games/mame`) or on hardware. Test cases:
