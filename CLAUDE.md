@@ -29,6 +29,7 @@ A Level 2 (NitrOS-9) Basic09 development environment built from the original Mic
 | `make loadtime` | Compile-speed benchmark. |
 | `make main` (`k2main`, `jr2main`) | New-core images built in an export of the main repos: `build/main/l2_wildbits{k2,jr2}.dsk` (stock, for tests) and `l2_basic09-l2{k2,jr2}.dsk` (for hardware). |
 | `make langcheck` | Exports the shippable files into a copy of nitros9-languages as `wildbits/basic09-l2` (`tools/export-lang.sh`, with the makefiles and README from `upstream/languages/`), builds it the way nitros9-languages does, and requires all 8 outputs to be byte-identical to this build (docs/ARCHITECTURE.md, "Upstreaming to NitrOS-9"). |
+| `make shots` | Screenshots of the editor for the video slides, taken in MAME (`tools/shots/shots.sh`; the scenario in `tools/shots/editor/` drives the editor with its `lua` and calls `scr:snapshot`): `build/shots/<name>.png` and a 2x copy with hard pixel edges. |
 | `make k2img`, `make jr2img` | `build/l2b09_k2.dsk` / `build/l2b09_jr2.dsk`: the same as `l2_basic09-l2{k2,jr2}.dsk` from `make main`, made by patching the stock image's OS9Boot instead of the recipe. |
 
 **Emulator harness:** `tools/emu-wildbits.sh <testdir>` copies the image into `build/emu/<test>/`, installs the test, boots MAME headless, then fetches the results.

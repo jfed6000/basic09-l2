@@ -52,7 +52,7 @@ PLATAS   = $(AS) -Dwildbits=1 -Djr2 -DNOS9VER=0 -DNOS9MAJ=0 -DNOS9MIN=0 \
 PIPEMODS = $(BUILD)/pipeman $(BUILD)/pipeman_named $(BUILD)/piper $(BUILD)/pipe
 
 .NOTPARALLEL:
-.PHONY: all subs l2b09 tools pipes langcheck k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p5aatest p6test p7test p8atest p8btest p8ctest p8dtest p8etest p9atest p9btest loadtime clean k2main jr2main main mainsrc
+.PHONY: all subs l2b09 tools pipes langcheck shots k2img jr2img p1test p2test p3test p4test p5atest p5btest p5ctest p5dtest p5etest p5ftest p5gtest p5htest p5itest p5jtest p5ktest p5ltest p5mtest p5ntest p5otest p5ptest p5qtest p5rtest p5stest p5ttest p5utest p5vtest p5wtest p5xtest p5ytest p5ztest p5aatest p6test p7test p8atest p8btest p8ctest p8dtest p8etest p9atest p9btest loadtime clean k2main jr2main main mainsrc
 
 all: subs l2b09 tools
 
@@ -331,6 +331,10 @@ k2main jr2main: %main: mainsrc $(CURDIR)/$(BUILD)/main/l2_wildbits%.dsk
 # to be byte-identical to this repository's build
 LANGDIR  = $(BUILD)/lang/nitros9-languages
 LANGMODS = l2b09run l2b09cc l2b09ovl runb-l2 basic09-l2 l2b09help farmem basic09-l2.hlp
+# Screenshots of the editor for the video slides (tools/shots/shots.sh)
+shots: l2b09 tools pipes $(BASEIMG)
+	tools/shots/shots.sh
+
 langcheck: l2b09 subs tools
 	rm -rf $(BUILD)/lang
 	mkdir -p $(BUILD)/lang
