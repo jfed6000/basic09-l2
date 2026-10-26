@@ -1,0 +1,63 @@
+# The video, shot by shot (video/README.md).  Times are placeholders until
+# the narration is recorded; then give each slide its narration file and
+# drop the time.
+#
+#   chapter <title>                      a YouTube chapter starts at the next shot
+#   slide <id> [<time>] [<audio>]        a slide (video/slides.txt), for <time>
+#                                        or its narration plus a short pause
+#   clip <file> [<start>|-] [<end>|-] [audio=keep|mute|<file>] [crop=W:H:X:Y] [scale=int]
+#
+# Files are under video/media/.  Times: 5, 5s, 1:23, 1:23.5, 0:01:23.
+
+chapter Introduction
+slide cover 6
+# clip clips/hook.mkv                    the 20-second hook: type, Make, error, fix, run
+slide agenda 12
+
+chapter What basic09-l2 is
+slide div-1 4
+slide t1-fork 15
+slide level2 20
+slide t1-compat 12
+# clip clips/compat.mkv                  an old program and a stock packed module
+
+chapter The editor
+slide div-2 4
+slide t2-shot 15
+slide t2-editor 10
+# clip clips/editor.mkv                  menus, mouse, colours, find, undo, pretty print, F1
+
+chapter Editor, compiler and runtime
+slide div-3 4
+slide t3-pipes 20
+slide t3-make 15
+# clip clips/make.mkv                    a typo, ^B, the message window, fix, ^B, ^R
+
+chapter Running and debugging
+slide div-4 4
+slide t4-shot 15
+slide t4-debug 12
+slide t4-stop 15
+# clip clips/debug.mkv                   ^T, ^R, F7, F8, ^E, ^W, F4, procedure calls
+
+chapter Packing programs
+slide div-5 4
+slide t5-pack 15
+# clip clips/pack.mkv                    Pack module, then run it from the shell
+
+chapter New features
+slide div-6 4
+slide t6-far 15
+slide t6-farhow 20
+# clip clips/fardemo.mkv                 fardemo: 200010000 and 0 grid errors
+slide t6-defuse 20
+# clip clips/defuse.mkv
+
+chapter The help system
+slide div-7 4
+slide t7-help 15
+# clip clips/help.mkv                    F1 on a keyword, a link, the index, search
+
+chapter Conclusion
+slide recap 15
+slide getit 10

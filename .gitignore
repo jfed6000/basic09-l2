@@ -2,3 +2,4 @@ build/
 *.list
 *.map
 __pycache__/
+video/media/

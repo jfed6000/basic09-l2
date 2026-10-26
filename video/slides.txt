@@ -1,0 +1,28 @@
+# The deck's slides in order: page n of media/slides.pdf (the deck's PDF
+# export) is the slide on line n.  Keep this in step with the deck.
+cover
+agenda
+div-1
+t1-fork
+level2
+t1-compat
+div-2
+t2-shot
+t2-editor
+div-3
+t3-pipes
+t3-make
+div-4
+t4-shot
+t4-debug
+t4-stop
+div-5
+t5-pack
+div-6
+t6-far
+t6-farhow
+t6-defuse
+div-7
+t7-help
+recap
+getit
