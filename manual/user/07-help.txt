@@ -27,7 +27,10 @@ The help is a program of its own, `l2b09help`, with its pages in `/dd/SYS/basic0
 
 Put the cursor on a keyword or a function in the editor and press F1: the help opens on that word's page. A function with a `$` (`LEFT$`) finds its page with or without it.
 
-@image build/shots/helpwhile-2x.png 100 Figure 7.2: F1 with the cursor on WHILE. REPEAT is selected, and Enter follows the link.
+> NOTE
+> If the cursor is on a keyword, pressing F1 opens help for the keyword; pressing F1 again opens the help contents.
+
+@image build/shots/helpwhile-2x.png 86 Figure 7.2: F1 with the cursor on WHILE. REPEAT is selected, and Enter follows the link.
 
 For an error, choose Errors on the contents page: it lists every error number, each a link to its page.
 
@@ -39,7 +42,7 @@ Pages link to each other: a link is drawn pale cyan, and the selected link black
 
 Type a name anywhere in the help, and it searches: the page lists every name that starts with what you have typed, as links, with the first one selected. Enter opens it; Backspace takes off a character; Esc goes back to the page you were on.
 
-@image build/shots/helpsearch-2x.png 100 Figure 7.3: typing LE lists LEFT$, LEN and LET.
+@image build/shots/helpsearch-2x.png 86 Figure 7.3: typing LE lists LEFT$, LEN and LET.
 
 ## 7.3 Help keys
 
