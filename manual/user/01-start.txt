@@ -90,7 +90,7 @@ OS9: basic09-l2 -m=32 -b=64 bigprog.b09
 
 ## 1.5 The screen
 
-The editor fills the screen. Its layout comes from the Turbo C editor of DOS days: a menu bar at the top, the text in a framed window, and a line of hints at the bottom.
+The editor fills the screen. Its layout is similar to the Turbo C editor of DOS days: a menu bar at the top, the text in a framed window, and a line of hints at the bottom.
 
 @figure screen
 
