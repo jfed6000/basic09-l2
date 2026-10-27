@@ -1,6 +1,6 @@
 # 5 Packing programs
 
-## 5.1 What PACK makes
+## 5.1 PACKing a Program
 
 PACK turns a program's procedures into I-code modules: the compiled form, without the source, the comments or the names of local variables. A packed program is smaller, starts at once because nothing needs compiling, and runs under RunB without the editor, the compiler or the runtime.
 
