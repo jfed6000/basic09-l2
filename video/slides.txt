@@ -3,6 +3,7 @@
 cover
 agenda
 div-1
+t1-hw
 t1-fork
 level2
 t1-compat

@@ -16,6 +16,7 @@ slide agenda 12
 
 chapter What basic09-l2 is
 slide div-1 4
+slide t1-hw 20
 slide t1-fork 15
 slide level2 20
 slide t1-compat 12
