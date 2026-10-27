@@ -10,6 +10,9 @@
 # build/shots/ and adds a copy scaled 2x with hard pixel edges
 # (<name>-2x.png, 1280x960), the size the slides use.
 #
+# help: the manual's chapter 7: the help contents (helpcontents), the
+# page for WHILE (helpwhile) and a search (helpsearch).
+#
 # debug: the manual's chapter 4: the Debug menu (debugmenu), Evaluate
 # (evaluate) and Procedure calls (calls), stopped in drawrow.
 #

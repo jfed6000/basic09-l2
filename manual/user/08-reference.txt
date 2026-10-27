@@ -1,0 +1,67 @@
+# 8 Reference
+
+## 8.1 Keys: quick reference
+
+| @widths 44 41 44 41
+| Key | Does | Key | Does
+| **Moving** | | **Debugging** |
+| Arrows | move | `^R` | run, or continue
+| Ctrl+Left, Right | word left, right | F7 | trace into
+| Ctrl+Up, Down | page up, down | F8 | step over
+| Ctrl+Shift+Up, Down | top, end of file | F4 | go to the cursor line
+| `^J`, `^K` | start, end of line | `^T` | breakpoint on or off
+| `^G` | go to line | `^E` | evaluate, or set a variable
+| **Editing** | | `^W` | add a watch
+| Backspace | delete before the cursor | `^P` | program reset
+| Shift+Backspace | delete at the cursor | RUN/STOP, Esc, `^C` | stop the running program
+| Enter | new line, indented | **Make and run** |
+| `^D` | delete the line | `^B` | Make
+| `^Z`, `^Y` | undo, redo | `^R` | Make and run
+| **Selection** | | Shift+RUN/STOP | run (K2)
+| Shift+arrows | select | `^N` | next message
+| Ctrl+Shift+Left, Right | select by word | F6 | into the message window
+| `^A` | select all | F5 | the program's screen
+| `^X`, `^C`, `^V` | cut, copy, paste | F2 | pretty print all
+| Esc | end the selection | **Screen** |
+| **Search** | | `^1`, `^2` | single, double spacing
+| `^F` | find | `^3` | 80×30 or 80×60
+| `^L`, F3 | find next | **Help** |
+| Ctrl+Shift+L | find previous | F1 | the topic at the cursor
+| **Files** | | **Menus** |
+| `^S` | save | Alt+letter | open a menu
+| `^O` | open | Esc | close a menu or dialog
+| `^Q` | quit | |
+
+> Shift on the K2's function keys
+> On the K2, F2, F4, F6 and F8 are Shift+F1, F3, F5 and F7. Every function-key command is also in a menu.
+
+## 8.2 Glossary
+
+| @widths 40 130
+| Term | Meaning
+| 8K block | The unit NitrOS-9 Level 2 maps memory in. A process's 64K is eight 8K slots, each holding one block of the machine's RAM.
+| `basic09-l2` | The editor, and the name of the whole system.
+| Binding | The step after compiling that links a procedure's references: its variables, line numbers and the procedures it calls.
+| Breakpoint | A mark on a line that stops the program when it gets there (`^T`).
+| Data window | The 8K slot that a FAR array's blocks are mapped into, one at a time.
+| `DEFUSE` | A block of `TYPE` and `PARAM` lines that procedures share with `USE`. Handled by the editor.
+| Execution directory | The directory OS-9 looks for commands in, normally `/dd/CMDS`. PACK writes there.
+| FAR array | An array whose elements are kept outside the program's 64K.
+| I-code | The compiled form of a Basic09 procedure, which the runtime interprets.
+| `l2b09cc` | The compiler: source in, I-code out.
+| `l2b09help` | The help browser.
+| `l2b09ovl` | Rarely used commands, PACK among them, loaded when needed.
+| `l2b09run` | The runtime and debugger: it loads, runs and stops the program.
+| Level 2 | NitrOS-9 Level 2, in which each process has its own 64K, mapped from all the machine's RAM.
+| Make | Sending the changed procedures to `l2b09run` to be compiled and loaded (`^B`).
+| Message window | The window under the text that lists errors, and the procedure calls.
+| Module | A unit of code OS-9 loads and runs by name. A packed procedure is a module.
+| PACK | Writing procedures out as I-code modules, without their source.
+| Pipe | An OS-9 channel between two processes. The editor, the runtime and the compiler talk over pipes.
+| Pretty print | Rewriting a procedure with standard spacing, indent and keyword case.
+| Procedure | Basic09's unit of program: from a `PROCEDURE` line to the next.
+| RunB | The run-time-only Basic09 that runs packed modules. `runb-l2` adds FAR arrays.
+| Swap file | `basic09-l2.swp`, where the editor keeps the text in 2K pages.
+| `USE` | A line that brings a `DEFUSE` block's lines into a procedure.
+| Watch | An expression shown each time the program stops (`^W`).
+| Workspace | The memory in `l2b09run` that holds the loaded procedures and the program's variables: 16K at start, up to 63K.

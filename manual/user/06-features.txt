@@ -1,0 +1,118 @@
+# 6 New features
+
+## 6.1 FAR arrays
+
+The 6809 addresses 64K, and Basic09 kept every variable in the program's workspace, inside that 64K. The Wildbits has 2 MB. A FAR array keeps its elements outside the 64K, so one array can be larger than the whole address space.
+
+```
+DIM grid(320,240):FAR BYTE        (* 76,800 elements *)
+DIM big(20000):FAR REAL           (* 100,000 bytes *)
+DIM names(3000):FAR STRING[20]
+DIM pts(2000):FAR pt              (* a TYPE record *)
+```
+
+Only the declaration changes. Everything else is written as for any array:
+
+```
+big(i):=big(i-1)*2.
+grid(x,y):=MOD(x+y,256)
+names(1):=names(2993)
+pts(5).px:=1.5 \ pts(6):=pts(5)
+```
+
+- `FAR` goes after the colon, before the type, and the type must be given. It applies to every array named before the colon: in `DIM a(10),b(20):FAR REAL` both are far.
+- The elements can be of any type: BYTE, INTEGER, REAL, BOOLEAN, STRING or a TYPE record, up to 7,424 bytes each.
+- An array can have up to three dimensions, each up to 32,767, and up to 255 8K blocks, about 2 MB.
+- Expressions, assignment both ways (far to far too), READ, GET, PUT, SIZE of an element, LIST, SAVE and the debugger all work as normal.
+
+> Freed for you
+> A FAR array belongs to one call of its procedure, like any local variable. Its memory is taken the first time the call uses it, and given back when the procedure returns, and when the program ends, however it ends. There is nothing to free, and recursion works: each call has its own array. Like other variables, it starts with whatever was in memory, so clear it before relying on its contents.
+
+## 6.2 How a FAR array works
+
+The program's 64K is mapped in 8K slots. A FAR array's elements live in 8K blocks of their own, outside those slots. On each access, `l2b09run` works out which block holds the element and maps that block into one 8K *data window*, normally the top slot.
+
+@figure fararray
+
+Staying in the same block costs nothing extra: it is as fast as a normal array. Changing blocks costs two system calls. So work through a FAR array in order where you can.
+
+| Access pattern | 10,000 reads at 6.29 MHz
+| Normal array | about 3 s
+| FAR array, within one block | about 3 s
+| FAR array, alternating between two blocks | about 8 s
+
+> Loop order
+> Elements are stored with the first subscript changing fastest. For `grid(x,y)`, put the loop over `x` inside the loop over `y`, so that consecutive reads stay in the same block.
+
+Each block holds a whole number of elements in its first 7,424 bytes: a block holds 1,484 REALs, for example.
+
+## 6.3 FAR arrays: what is not allowed
+
+An element of a FAR array has no fixed address: the window it appears in is reused by the next access. So anything that needs an element's address, or the whole array at once, is refused.
+
+| Use | Error | Instead
+| `RUN p(big)`, `SIZE(big)`: the whole array | 65, when it runs | pass the elements you need
+| `RUN p(big(1))`: an element by reference | 67 | pass it by value: `RUN p(big(1)+0.)`, or `RUN p(s(1)+"")`
+| `ADDR(big(1))` | 67 | copy the element to a normal variable first
+| `FAR` on a simple variable, a `PARAM` or a TYPE field | 72, when loaded | only arrays can be FAR
+| More than 255 blocks, or an element over 7,424 bytes | 73, when loaded | split the array
+
+Machine-code subroutines such as `syscall` cannot be given FAR elements either: copy them to a normal variable first.
+
+> FAR and other programs
+> `FAR` is a reserved word in basic09-l2, so a program with a variable called `far` must rename it. Programs with FAR arrays pack for `runb-l2`, not stock RunB (Section 5.3). Stock Basic09 cannot load them.
+
+## 6.4 DEFUSE and USE
+
+Basic09 has no global variables or types. Procedures that share a record, say a game's state passed from procedure to procedure, each repeat the record's `TYPE` lines, and the procedures it is passed to repeat its `PARAM` line. Change the record, and every copy has to change.
+
+A `DEFUSE` block holds those lines once. A `USE` line brings them into a procedure.
+
+```
+DEFUSE game
+TYPE state=score,lives:INTEGER     (* the game *)
+END DEFUSE
+
+DEFUSE gparm
+PARAM g:state
+END DEFUSE
+
+PROCEDURE main
+USE game
+DIM g:state
+RUN move(g)
+
+PROCEDURE move
+USE game
+USE gparm
+g.score:=g.score+1
+```
+
+`main` owns the record, so it uses only the types; `move`, which is passed the record, uses the `PARAM` block too.
+
+| Rule |
+| A block holds `TYPE` and `PARAM` lines. Other lines are ignored, and a block cannot `USE` another.
+| A block can go before the first procedure or between procedures. A `DEFUSE` line ends the procedure before it, as a `PROCEDURE` line does.
+| A line in a block may end with a comment.
+| A block's name must not be a procedure's name.
+| `USE` goes on a line of its own, before the `DIM` and `PARAM` lines that need the types. A procedure can have several.
+
+> The editor's feature
+> Only the editor knows `DEFUSE` and `USE`; the compiler sees plain Basic09 (Section 6.5). So a packed program runs under stock RunB, but a source file that uses them needs basic09-l2 to load it.
+
+## 6.5 How DEFUSE works
+
+A block is not a procedure: Make does not send it, Run does not start it, and breakpoints and pretty print leave it as written. Instead, Make sends each `USE` line as the block's lines, joined with backslashes into one line, followed by the `USE` line as a comment:
+
+```
+USE game          becomes     TYPE state=score,lives:INTEGER \ (* USE game
+```
+
+So the compiler sees ordinary Basic09, and every source line is still one line of compiled code. Line numbers, error messages, breakpoints and debugger stops all stay on the lines you wrote. An error in the types shows on the `USE` line.
+
+| When | Make
+| a block changes, or is deleted | sends again every procedure that uses it
+| a `USE` names no block | sends the line as it is; the compiler reports it
+| the joined text is over 200 characters | cuts it there: put the rest in a second block, with its own `USE` line
+
+Pretty print keeps your `USE` lines as you wrote them, and in a block it only sets the case of the keywords.

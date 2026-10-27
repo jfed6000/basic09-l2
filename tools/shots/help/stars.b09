@@ -1,0 +1,19 @@
+PROCEDURE stars
+  (* Draw a triangle of stars and count them *)
+  DIM row,total:INTEGER
+  total:=0
+  FOR row:=1 TO 8
+    RUN drawrow(row,total)
+  NEXT row
+  PRINT "Stars drawn: "; total
+END
+PROCEDURE drawrow
+  PARAM n,count:INTEGER
+  DIM s:STRING[40]
+  s:=""
+  WHILE LEN(s)<n*2 DO
+    s:=s+"* "
+  ENDWHILE
+  PRINT TAB(21-n); s
+  count:=count+n
+END

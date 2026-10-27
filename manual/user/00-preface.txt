@@ -18,6 +18,6 @@ Every command has a key and a menu item, and most can also be reached with the m
 
 ### How to use this book
 
-Start with Section 1 for what basic09-l2 is and how to start it, then Section 2 for the editor. Section 3 explains how the editor, the compiler and the runtime work together, and Section 4 covers running and debugging. Section 5 is packing programs for RunB, Section 6 the new language features, and Section 7 the help system. The key reference, the error messages, the glossary and the index are at the back.
+Start with Section 1 for what basic09-l2 is and how to start it, then Section 2 for the editor. Section 3 explains how the editor, the compiler and the runtime work together, and Section 4 covers running and debugging. Section 5 is packing programs for RunB, Section 6 the new language features, and Section 7 the help system. Section 8 has a key reference and a glossary.
 
 This book follows the order of the basic09-l2 video, so the two can be used together.

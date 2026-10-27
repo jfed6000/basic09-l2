@@ -177,3 +177,59 @@ def make(width, st, top):
                   font='Mono' if text.startswith(('load', '%')) else 'Sans')
     return [d, caption('Figure 3.1: one Make. With no errors, step 6 sends nothing, '
                        'and the hint line says how many procedures were loaded.', st)]
+
+
+def fararray(width, st, top):
+    """The program's 64K in 8K slots, and a FAR array's blocks mapped into the window."""
+    h = 240
+    d = Drawing(width, h)
+    sw, sh = 130, 23
+    x0, y0 = 40, 24
+    slots = ['code and workspace'] * 7 + ['data window']
+    labels = ['$0000', '$2000', '$4000', '$6000', '$8000', '$A000', '$C000', '$E000']
+    for i in range(8):
+        y = y0 + i * sh
+        top_slot = i == 7
+        d.add(Rect(x0, y, sw, sh, fillColor=AMBER if top_slot else PANEL,
+                   strokeColor=INK, strokeWidth=0.8))
+        label(d, x0 - 6, y + sh / 2 - 2.5, labels[i], size=6.5, anchor='end', font='Mono')
+        if top_slot:
+            label(d, x0 + sw / 2, y + sh / 2 - 3, 'data window', size=7.5, color=INK,
+                  font='Sans-Bold')
+    d.add(Rect(x0, y0, sw, sh * 7, fillColor=None, strokeColor=INK, strokeWidth=0.8))
+    label(d, x0 + sw / 2, y0 + sh * 3.5 + 4, "the program's 64K:", size=7.5, color=INK,
+          font='Sans-Bold')
+    label(d, x0 + sw / 2, y0 + sh * 3.5 - 7, 'code, workspace, variables', size=7)
+    label(d, x0 + sw / 2, h - 12, 'l2b09run: 64K, eight 8K slots', size=7.5, color=INK,
+          font='Sans-Bold')
+    # The machine's RAM: a grid of 8K blocks, three of them the array's.
+    bs, gap, cols, rows = 16, 4, 8, 8
+    gx = width - cols * (bs + gap)
+    gy = y0
+    label(d, gx + (cols * (bs + gap)) / 2, h - 12, 'the 2 MB of RAM, in 8K blocks',
+          size=7.5, color=INK, font='Sans-Bold')
+    far = [(2, 5), (3, 5), (4, 5)]
+    for r in range(rows):
+        for c in range(cols):
+            x = gx + c * (bs + gap)
+            y = gy + r * (bs + gap)
+            isfar = (c, r) in far
+            d.add(Rect(x, y, bs, bs, rx=2, ry=2, fillColor=TEAL if isfar else TINT,
+                       strokeColor=TEAL if isfar else RULE, strokeWidth=0.6))
+    for n, (c, r) in enumerate(far):
+        label(d, gx + c * (bs + gap) + bs / 2, gy + r * (bs + gap) + 5, str(n), size=7,
+              color=white, font='Sans-Bold')
+    d.add(Rect(gx, gy - 14, 8, 8, rx=2, ry=2, fillColor=TEAL, strokeWidth=0))
+    label(d, gx + 12, gy - 13, "big()'s blocks 0, 1 and 2; the rest are other "
+          "programs' or free", size=6.8, anchor='start')
+    # Block 1 mapped into the window.
+    bx = gx + far[1][0] * (bs + gap) + bs / 2
+    by = gy + far[1][1] * (bs + gap) + bs + 1
+    wx, wy = x0 + sw + 3, y0 + 7 * sh + sh / 2
+    arrow(d, bx, by, wx, wy, color=AMBER)
+    mx = (wx + gx) / 2 - 6
+    label(d, mx, wy + 20, 'big(2000) is in block 1:', size=7, color=INK, font='Sans-Bold')
+    label(d, mx, wy + 10, 'mapped into the window', size=7)
+    label(d, mx, wy + 1, 'on access', size=7)
+    return [d, caption('Figure 6.2: a FAR array of 4,000 REALs (1,484 to a block) in three '
+                       'blocks. Reading big(2000) maps block 1 into the data window.', st)]

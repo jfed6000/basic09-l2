@@ -8,7 +8,7 @@ title: basic09-l2 / User's Manual
 subtitle: Editor  |  Compiler  |  Runtime and debugger / Basic09 for NitrOS-9 Level 2
 cover-image: build/shots/runmenu-2x.png
 cover-caption: The editor with the Run menu open
-cover-notes: How to write, run, debug and pack Basic09 programs with basic09-l2 / Numbered sections - key reference - glossary - index
+cover-notes: How to write, run, debug and pack Basic09 programs with basic09-l2 / Numbered sections - key reference - glossary
 header: WILDBITS  /  BASIC09-L2 USER'S MANUAL
 footer: WildBits F256 Jr2 and K2
 revision: 0.1

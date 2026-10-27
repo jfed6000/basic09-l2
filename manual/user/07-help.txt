@@ -1,0 +1,73 @@
+# 7 The help system
+
+## 7.1 The help browser
+
+basic09-l2 has help for every Basic09 keyword, every error number and every part of the editor, on the machine itself. F1 in the editor opens it.
+
+@image build/shots/helpcontents-2x.png 112 Figure 7.1: the contents, Help ▸ Contents.
+
+| Part | Pages
+| The editor | 24 pages: keys, menus, files, Make, Run, the debugger, find and replace, the mouse, the options, DEFUSE and USE
+| Statements | 47 pages: every Basic09 statement, procedures and the operators
+| Functions | 36 pages: every Basic09 function
+| Errors | 144 pages: every error number in `/dd/SYS/errmsg`, with its cause and what to do
+| Index | every page, by category
+
+The help is a program of its own, `l2b09help`, with its pages in `/dd/SYS/basic09-l2.hlp`. The editor starts it and waits; it takes over the screen, and Esc brings the editor back exactly as it was.
+
+| Help menu | Opens
+| Topic at cursor (F1) | the page for the word at the cursor, or the contents
+| Contents | the start page
+| Keys | the editor's keys
+| About | a short note on basic09-l2
+
+## 7.2 Finding a page
+
+### F1 on a word
+
+Put the cursor on a keyword or a function in the editor and press F1: the help opens on that word's page. A function with a `$` (`LEFT$`) finds its page with or without it.
+
+@image build/shots/helpwhile-2x.png 100 Figure 7.2: F1 with the cursor on WHILE. REPEAT is selected, and Enter follows the link.
+
+For an error, choose Errors on the contents page: it lists every error number, each a link to its page.
+
+### Links
+
+Pages link to each other: a link is drawn pale cyan, and the selected link black on pale cyan. Left and Right select the previous or the next link, and Enter follows it. Backspace goes back, up to 16 pages.
+
+### Search
+
+Type a name anywhere in the help, and it searches: the page lists every name that starts with what you have typed, as links, with the first one selected. Enter opens it; Backspace takes off a character; Esc goes back to the page you were on.
+
+@image build/shots/helpsearch-2x.png 100 Figure 7.3: typing LE lists LEFT$, LEN and LET.
+
+## 7.3 Help keys
+
+| Key | Does
+| Up, Down | scroll a line
+| Ctrl+Up, Ctrl+Down | scroll a page
+| Ctrl+Shift+Up, Ctrl+Shift+Down | the top or the end of the page
+| Left, Right | select the previous or the next link
+| Enter | follow the selected link
+| Backspace | back to the page before
+| F1 | the contents
+| F2 | the index
+| a letter | search
+| Esc, `^Q`, RUN/STOP | back to the editor
+
+The mouse wheel scrolls the page three lines a step.
+
+### From the shell
+
+The help also runs on its own, without the editor:
+
+```
+OS9: l2b09help             the contents
+OS9: l2b09help PRINT       the page for PRINT
+OS9: l2b09help error 43    the page for error 43
+```
+
+A name that has no page opens a search for it, and if nothing starts with it, the contents.
+
+> The help follows the editor's settings
+> Started from the editor, the help uses the same colours and, with double spacing on, the same spacing. On the 80×60 screen it shows twice as many lines.

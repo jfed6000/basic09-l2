@@ -1,0 +1,68 @@
+# 5 Packing programs
+
+## 5.1 What PACK makes
+
+PACK turns a program's procedures into I-code modules: the compiled form, without the source, the comments or the names of local variables. A packed program is smaller, starts at once because nothing needs compiling, and runs under RunB without the editor, the compiler or the runtime.
+
+| | Source (.b09) | Packed module
+| Holds | the text, as you wrote it | compiled I-code, one module per procedure
+| Needs | basic09-l2 (or Basic09) to compile it | RunB, or `l2b09run`
+| Runs from the shell | no | yes, by name
+| Can be debugged | yes | no: it has no names left
+| Can be changed | yes | no: keep the source
+
+> Keep the source
+> A packed module cannot be turned back into readable source: its variable names and comments are gone. Always keep the `.b09` file you packed it from.
+
+## 5.2 Packing from the editor
+
+Compile ▸ Pack module... (Alt+C, then K) does a Make, then asks for a file name. It offers the source's name without `.b09`. PACK then writes every procedure in the text, in order, as modules in that one file.
+
+```
+stars.b09           the source
+/dd/CMDS/stars      the packed file: modules stars and drawrow
+```
+
+The file goes in the **execution directory**, normally `/dd/CMDS`, where the shell looks for commands. If the file is already there, the editor asks before replacing it.
+
+> Name it after the first procedure
+> The shell runs a file by its name and starts the module of the same name. Give the file the name of the program's first procedure, as with `stars` here, and typing `stars` runs it.
+
+PACK strips the procedures it packs out of `l2b09run`'s workspace, as Basic09's PACK always did. The editor knows, and the next Make sends every procedure again.
+
+| PACK refuses | Why | Instead
+| a program stopped in the debugger | the workspace is in use | `^P` (Program reset), then pack
+| a program with errors | there is no code to pack | fix the errors first
+| a session started with `-b` | banked code cannot be packed | start the editor without `-b` to pack
+
+## 5.3 Running packed programs
+
+A packed program runs from the shell by name, like any other command:
+
+```
+OS9: stars
+```
+
+The shell sees that the module is I-code, not machine code, and hands it to RunB. To run a packed file that is not in the execution directory, load it first:
+
+```
+OS9: load /dd/myprogs/stars
+OS9: stars
+```
+
+Packed modules also run inside `l2b09run`, by name and with arguments:
+
+```
+RUN stars
+RUN drawrow(5,total)
+```
+
+### Which RunB
+
+| The program | Runs under
+| Uses only Basic09's features | stock RunB, and the RunB on the basic09-l2 disk images
+| Uses FAR arrays | the RunB on the basic09-l2 disk images (`runb-l2`, installed as `/dd/CMDS/runb`)
+| Was packed by stock Basic09 | either, unchanged
+
+> Moving a program to another system
+> A program without FAR arrays packs into modules that stock RunB runs, on any NitrOS-9 system. With FAR arrays it needs `runb-l2` there too: copy `/dd/CMDS/runb` from a basic09-l2 disk image to the other Wildbits along with it.
