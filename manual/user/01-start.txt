@@ -25,7 +25,7 @@ Both machines have the same core, and basic09-l2 runs the same on either:
 - **FAR arrays** that keep their elements in memory beyond 64K, and **DEFUSE / USE**, for declarations shared between procedures.
 - **Help** for every keyword and error, on F1.
 
-basic09-l2 started from Microware's own Basic09 source, the source stock Basic09 and RunB are built from. Its copy was forked on October 20, 2026; the original in NitrOS-9 is unchanged.
+basic09-l2 started from the Basic09 source contained in the NitrOS-9 distribution, the source stock Basic09 and RunB are built from. Its copy was forked on October 20, 2026; the original in NitrOS-9 is unchanged.
 
 ## 1.2 Built for Level 2
 
