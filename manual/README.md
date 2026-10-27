@@ -35,6 +35,7 @@ The first `make manual` makes a virtualenv in `build/manual/venv` with ReportLab
 ```                        a code block
 @figure <name>             a drawing from figures.py
 @image <file> <mm> [<caption>]
+@images <mm> <file> <file> ... [| <caption>]   side by side
 @pagebreak
 % <text>                   a comment
 ```

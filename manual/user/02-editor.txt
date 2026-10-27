@@ -1,0 +1,209 @@
+# 2 The editor
+
+## 2.1 Menus and keys
+
+Every command is in one of the eight menus on the menu bar. Alt and a menu's first letter opens it, or click its title. In an open menu, Up and Down move, Left and Right go to the next menu, Enter or an item's highlighted letter runs it, and Esc closes the menu. Most items show their key on the right, so the menus are also a reminder of the keys.
+
+@image build/shots/editmenu-2x.png 104 Figure 2.1: the Edit menu, with the procedure drawrow selected.
+
+| Menu | Its items
+| File | New, Open..., Save, Save as..., Quit
+| Edit | Undo, Redo, Cut, Copy, Paste, Select all, Delete line
+| Search | Find..., Find next, Find previous, Replace..., Go to line...
+| Run | Run, Go to cursor, Program reset, User screen, With arguments...
+| Compile | Make, Next error, Messages, Pretty print, All: pretty print, Pack module...
+| Debug | Trace into, Step over, Until return..., Evaluate..., Add watch..., Delete watch..., Breakpoint, Clear breakpoints, Procedure calls
+| Options | Auto indent, Match case, Syntax colours, Keywords in capitals, Double spacing, 80x60 screen, Memory..., Pause after run
+| Help | Topic at cursor, Contents, Keys, About
+
+An item that ends in `...` asks for something in a dialog box first. Esc, or a click outside the box, cancels it.
+
+> Function keys
+> On the K2, F2, F4, F6 and F8 are Shift+F1, F3, F5 and F7. Every command on a function key is also in a menu, so a keyboard without them loses nothing.
+
+## 2.2 Moving and editing
+
+The editor always inserts: what you type goes in at the cursor and pushes the rest of the line along. Lines can be as long as you like; a line wider than the window scrolls the whole window sideways.
+
+| Key | Moves to
+| Arrows | a character or a line
+| Ctrl+Left, Ctrl+Right | the previous or next word
+| Ctrl+Up, Ctrl+Down | a page up or down
+| Ctrl+Shift+Up, Ctrl+Shift+Down | the top or the end of the file
+| `^J`, `^K` | the start or the end of the line
+| `^G` | a line by its number (Search ▸ Go to line)
+
+| Key | Edits
+| Backspace | deletes the character before the cursor
+| Shift+Backspace | deletes the character at the cursor
+| Enter | starts a new line, indented like the one above
+| `^D` | deletes the whole line (Edit ▸ Delete line)
+
+The line numbers are the file's, counted from 1 at the top. They are the numbers the frame shows, `^G` asks for, and the messages from Make use.
+
+> Auto indent
+> Enter starts the new line with the same indent as the one above, so the body of a loop stays lined up as you type it. Options ▸ Auto indent turns it off. Pretty print (Section 2.8) can put every indent right afterwards.
+
+## 2.3 Selection and the clipboard
+
+A selection marks text to cut, copy or type over. It is drawn black on pale cyan.
+
+| Key | Selects
+| Shift+arrows | a character or a line at a time
+| Ctrl+Shift+Left, Ctrl+Shift+Right | a word at a time
+| `^A` | all the text (Edit ▸ Select all)
+| Esc | nothing: ends the selection
+
+With the mouse, drag with the left button to select, or press the right button to extend the selection to the pointer. Dragging above or below the window scrolls it.
+
+Typing, Enter or a paste replaces the selection, and Backspace removes it. A plain move ends it and leaves the text alone.
+
+| Key | Clipboard
+| `^X` | cut the selection (Edit ▸ Cut)
+| `^C` | copy the selection (Edit ▸ Copy)
+| `^V` | paste at the cursor (Edit ▸ Paste)
+
+> No size limit
+> The clipboard is kept in the editor's swap file, not in its memory, so it can hold any amount of text, even a whole file larger than 64K.
+
+## 2.4 Find and replace
+
+`^F` (Search ▸ Find) asks for the text to find. The dialog starts with the last search, and typing a character first replaces it. The search runs forward from the cursor; the match becomes the selection, so typing replaces it.
+
+@images 80 build/shots/find-2x.png build/shots/found-2x.png | Figure 2.4: Find, and the match it selects.
+
+| Key | Finds
+| `^F` | asks, then finds the first match
+| `^L` or F3 | the next match
+| Ctrl+Shift+L | the previous match
+
+Letters match either case, so `count` also finds `COUNT`. Options ▸ Match case makes the case count.
+
+### Replace
+
+Search ▸ Replace asks for the text to find, then for the text to put in its place. At each match it asks on the hint line:
+
+| Answer | Does
+| `Y` | replace this one and go on
+| `N` | leave this one and go on
+| `A` | replace this one and all the rest
+| Esc | stop
+
+At the end it says how many it replaced. Each replacement can be undone on its own.
+
+> Searches do not wrap
+> Find and Replace stop at the end of the file. To search the whole file, go to the top first (Ctrl+Shift+Up).
+
+## 2.5 Undo and redo
+
+`^Z` (Edit ▸ Undo) takes back the last edit, and `^Y` (Edit ▸ Redo) does it again. After either, the cursor is at the change, in the middle of the window.
+
+The editor keeps the last 50 steps. A step is one of:
+
+- a run of typing, including Enter;
+- a run of Backspace or Delete;
+- a paste, a cut, or a deleted selection;
+- one replacement;
+- a whole pretty print.
+
+A new edit after an undo drops what could have been redone. File ▸ New and File ▸ Open clear the history.
+
+> Memory
+> Undo shares the swap file's pages with the text and the clipboard. If an edit needs a page and none is left, the editor gives up the undo history to make room, rather than refusing the edit.
+
+## 2.6 Files
+
+The editor edits one file at a time. Its name is in the top border, and a `*` in the bottom border means there are changes not yet saved.
+
+| Command | Key | Does
+| File ▸ New | | Starts an empty text with no name.
+| File ▸ Open... | `^O` | Asks for a file name and loads that file.
+| File ▸ Save | `^S` | Writes the text to its file. With no name yet, it asks for one.
+| File ▸ Save as... | | Asks for a name and saves under it. The text keeps the new name.
+| File ▸ Quit | `^Q` | Leaves the editor.
+
+New, Open and Quit ask `Save the changes (Y/N)?` when the text has changed: `Y` saves first, `N` goes on without saving, and Esc cancels. New and Open also clear the undo history, the breakpoints and the messages.
+
+### Large files
+
+A file can be far larger than the editor's 64K. The text is kept in 2K pages in a swap file, `basic09-l2.swp` in the current directory, and only some of the pages are in memory at a time (12 by default; `-c` changes it). The swap file is deleted when you quit.
+
+> Basic09 files are text
+> The editor reads and writes plain `.b09` text, the same files stock Basic09 LOADs and SAVEs. There is no special format, so a file can go back and forth between basic09-l2, stock Basic09 and an editor on another computer.
+
+## 2.7 The mouse
+
+The editor uses the Wildbits mouse pointer. Everything can still be done from the keyboard.
+
+| Where | Left button
+| In the text | Moves the cursor there. Drag to select; drag above or below the window to scroll.
+| Right border | The scroll bar: the arrows scroll a line, the track a page; drag the thumb to move through the file.
+| Left border | Sets or clears a breakpoint on that line (Section 4).
+| Menu bar | Opens that menu. Drag down to an item and release to run it.
+| Message window | Selects a message; a double click goes to its line (Section 3).
+| Dialog | A press outside it cancels it. In a Y/N question, press the `Y` or the `N`.
+
+The right button, in the text, extends the selection to the pointer. A message or help box closes on any press.
+
+> Mouse wheel
+> On a mouse with a wheel, each step scrolls the text three lines, and the cursor moves with it. The help browser scrolls the same way.
+
+## 2.8 Pretty print
+
+Pretty print tidies a procedure: its spacing, its indent and the case of its keywords. Compile ▸ Pretty print does the procedure at the cursor; Compile ▸ All: pretty print (F2) does every procedure.
+
+```
+procedure stars                      PROCEDURE stars
+dim row,total:integer                  DIM row,total:INTEGER
+total:=0                               total:=0
+for row:=1 to 8                        FOR row:=1 TO 8
+run drawrow(row,total)                   RUN drawrow(row,total)
+next row                               NEXT row
+print "Stars drawn: ";total            PRINT "Stars drawn: "; total
+end                                  END
+```
+
+The editor makes the procedure first, then lists it back from the compiled code, as Basic09's `LIST` does, and puts the result in place of the procedure's lines:
+
+- the body is indented two spaces under `PROCEDURE`, and two more for each level of `FOR`, `IF`, `WHILE`, `REPEAT` and `LOOP`;
+- a line number sits in that indent;
+- numbers are written in standard form: `1.50` becomes `1.5`;
+- names come back as they were first typed.
+
+Comments, strings and the number of lines stay the same, so the cursor and the breakpoints stay on their lines. One `^Z` takes a whole pretty print back.
+
+> Refused
+> A procedure with errors cannot be listed, so pretty print stops there with a message. It is also refused while a program is stopped in the debugger: press `^P` (Program reset) first.
+
+Keywords come out in capitals. Options ▸ Keywords in capitals turns that off, for lower case; Basic09 reads either.
+
+## 2.9 Options
+
+The Options menu holds the editor's settings. A setting that is on has a mark in front of it.
+
+@image build/shots/options-2x.png 72 Figure 2.9: the Options menu. Auto indent, Syntax colours, Keywords in capitals and Pause after run are on.
+
+| Option | Key | What it does
+| Auto indent | | Enter indents the new line like the one above (on at start).
+| Match case | | Find and Replace match case exactly (off at start).
+| Syntax colours | | Colours keywords, functions, strings, comments and numbers (on at start).
+| Keywords in capitals | | Pretty print writes keywords in capitals (on at start).
+| Double spacing | `^2`, `^1` | Draws the text on every other row, or back to every row.
+| 80x60 screen | `^3` | Switches the screen between 80×30 and 80×60.
+| Memory... | | Sets the program's workspace in K (Section 3).
+| Pause after run | | Waits for a key on the program's screen when it ends (on at start).
+
+### The colours
+
+| Text | Colour
+| Keywords | white
+| Functions | pale cyan
+| Strings | green
+| Comments (`REM`, and `(* ... *)`) | light grey
+| Numbers | orange
+| Everything else | yellow on blue
+
+The line a program stopped at is white on red, and a selection black on pale cyan.
+
+> Screen sizes
+> 80×60 uses half-height characters and shows twice as many lines. With double spacing as well, it gives normal-size characters with a blank row under each, which some find easiest to read. When you quit, the editor puts back the screen size it started with.

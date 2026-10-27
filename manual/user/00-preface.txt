@@ -10,7 +10,7 @@
 | Written | Means
 | `^S` | Ctrl+S: hold Ctrl and press S
 | Alt+F | hold Alt and press F
-| Run ▸ Run to cursor | the Run menu, then its item Run to cursor
+| Run ▸ Go to cursor | the Run menu, then its item Go to cursor
 | `stars.b09` | text you type, a file name or a program's output
 | Esc | Esc on the Jr2's PS/2 keyboard, RUN/STOP on the K2
 

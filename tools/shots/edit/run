@@ -1,0 +1,6 @@
+* screenshots for the manual, chapter 2
+-x
+chd /dd/l2b09
+load /dd/l2b09/l2b09run
+echo >term.out
+/dd/l2b09/basic09-l2 -t=/dd/l2b09/term.out stars.b09 </term >/term

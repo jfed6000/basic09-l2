@@ -343,9 +343,11 @@ $(MANUALPY):
 	python3 -m venv build/manual/venv
 	build/manual/venv/bin/pip install -q reportlab==4.2.5 pillow
 
-# Screenshots of the editor for the video slides (tools/shots/shots.sh)
+# Screenshots of the editor for the video slides and the manual
+# (tools/shots/shots.sh; the scenarios editor and edit)
 shots: l2b09 tools pipes $(BASEIMG)
 	tools/shots/shots.sh
+	tools/shots/shots.sh edit
 
 langcheck: l2b09 subs tools
 	rm -rf $(BUILD)/lang

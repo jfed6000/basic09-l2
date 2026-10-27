@@ -10,6 +10,10 @@
 # build/shots/ and adds a copy scaled 2x with hard pixel edges
 # (<name>-2x.png, 1280x960), the size the slides use.
 #
+# edit: the manual's chapter 2: a selection with the Edit menu open
+# (editmenu), Find (find, found), the Options menu (options) and a Make
+# with errors (errors).
+#
 # editor: tools/shots/editor/stars.b09 with the Run menu open (runmenu),
 # and the debugger stopped at a breakpoint on its third pass with watches
 # on count and s (debug); plain is the editor before the menu opens.

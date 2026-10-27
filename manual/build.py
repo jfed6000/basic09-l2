@@ -18,6 +18,7 @@ text.  The markup:
   ```                    a code block, to the next ```
   @figure <name>         a drawing from figures.py
   @image <file> <mm> [<caption>]   an image (relative to the repository)
+  @images <mm> <file> <file> ... [| <caption>]   images side by side
   @pagebreak
 
 Inline: **bold**, *italic*, `code`.  Paragraphs are separated by blank
@@ -323,6 +324,12 @@ class Book:
                 parts = s.split(None, 3)
                 out += image(os.path.join(TOP, parts[1]), float(parts[2]) * mm,
                              parts[3] if len(parts) > 3 else '', st)
+            elif s.startswith('@images '):
+                flush()
+                head, _, cap = s.partition('|')
+                parts = head.split()
+                out += images([os.path.join(TOP, f) for f in parts[2:]],
+                              float(parts[1]) * mm, cap.strip(), st)
             elif s == '@pagebreak':
                 flush()
                 out.append(PageBreak())
@@ -452,8 +459,9 @@ class Book:
         d = self.meta.get('date')
         day = datetime.date.fromisoformat(d) if d else datetime.date.today()
         self.date = f'{day:%B} {day.day}, {day.year}'
-        text = self.parse()
         for _ in range(2):          # the second pass has the page numbers
+            self.entries = []       # flowables cannot be built twice: parse again
+            text = self.parse()
             doc = BaseDocTemplate(out, pagesize=A4, title=self.meta['pdf-title'],
                                   author=self.meta.get('author', ''),
                                   subject=self.meta.get('subject', ''))
@@ -467,14 +475,29 @@ class Book:
         return out
 
 
-def image(path, width, caption, st):
+def picture(path, width):
     if os.path.isfile(path):
         from PIL import Image as PI
         w, h = PI.open(path).size
-        im = Image(path, width, width * h / w)
-    else:
-        im = figures.missing(width, width * 3 / 4, os.path.relpath(path, TOP))
-    out = [im]
+        return Image(path, width, width * h / w)
+    return figures.missing(width, width * 3 / 4, os.path.relpath(path, TOP))
+
+
+def image(path, width, caption, st):
+    out = [picture(path, width)]
+    if caption:
+        out.append(Paragraph(inline(caption), st['caption']))
+    return [KeepTogether(out)]
+
+
+def images(paths, width, caption, st):
+    """Images side by side, each width wide, with one caption."""
+    cells = [picture(p, width) for p in paths]
+    t = Table([cells], colWidths=[BODY_W / len(paths)] * len(paths))
+    t.setStyle(TableStyle([('LEFTPADDING', (0, 0), (-1, -1), 0),
+                           ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                           ('ALIGN', (0, 0), (-1, -1), 'LEFT')]))
+    out = [t]
     if caption:
         out.append(Paragraph(inline(caption), st['caption']))
     return [KeepTogether(out)]
