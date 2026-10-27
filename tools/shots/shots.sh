@@ -10,6 +10,9 @@
 # build/shots/ and adds a copy scaled 2x with hard pixel edges
 # (<name>-2x.png, 1280x960), the size the slides use.
 #
+# debug: the manual's chapter 4: the Debug menu (debugmenu), Evaluate
+# (evaluate) and Procedure calls (calls), stopped in drawrow.
+#
 # edit: the manual's chapter 2: a selection with the Edit menu open
 # (editmenu), Find (find, found), the Options menu (options) and a Make
 # with errors (errors).

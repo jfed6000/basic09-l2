@@ -1,0 +1,108 @@
+# 4 Running and debugging
+
+## 4.1 The debugger
+
+The debugger stops your program at a line of its source, shows you where, and lets you look at and change its variables, then step on or carry on. It works on the source in the editor: there is no separate debugger screen, and nothing to switch on.
+
+@image build/shots/debug-2x.png 112 Figure 4.1: stopped at a breakpoint on line 18, on drawrow's third call, with watches on count and s.
+
+A program stops:
+
+- at a **breakpoint** (`^T`, Section 4.3);
+- after a **step** (F7, F8), or at the cursor line (F4);
+- at a **PAUSE** statement;
+- when you press **RUN/STOP**, Esc on the Jr2, or `^C`;
+- at a **runtime error**: the message gives the error, and the program waits at the line that failed;
+- on return to a procedure, after Debug ▸ **Until return**.
+
+The statement it stopped at is drawn white on red, the cursor goes there, and the hint line lists the debugger's keys. On a line with several statements (`a:=1 \ b:=2`), only the one about to run is marked.
+
+> Basic09's debugger, with the source
+> Basic09 always had a debugger, with commands typed at a `D:` prompt. basic09-l2 drives the same debugger from the editor, so a stop shows the line in your source, and a variable is a keystroke away.
+
+## 4.2 Stepping
+
+| Key | Command | Does
+| F7 | Debug ▸ Trace into | Runs one statement. At a `RUN`, stops at the first statement of the procedure it calls.
+| F8 | Debug ▸ Step over | Runs one statement. A `RUN` runs the whole call and stops after it.
+| F4 | Run ▸ Go to cursor | Runs until the program reaches the cursor line.
+| `^R` | Run ▸ Run | Continues, to the next stop or the end.
+| `^P` | Run ▸ Program reset | Ends the program.
+| | Debug ▸ Until return... | Asks for a procedure in the call chain; the next `^R` runs until the program returns to it.
+
+F7, F8 and F4 also start a program that is not running, with a Make first; F7 then stops before its first statement.
+
+@image build/shots/debugmenu-2x.png 100 Figure 4.2: the Debug menu.
+
+> Stepping out of a procedure
+> To leave the procedure you are in and stop in the one that called it, use Debug ▸ Until return... with the caller's name, then `^R`. The dialog accepts any procedure in the call chain, so you can step out several levels at once.
+
+While you step, the editor keeps its own screen. If a statement waits for `INPUT` or `GET`, the program's screen comes up for you to type, and the editor's comes back at the next stop. F5 shows the program's screen at any time.
+
+## 4.3 Breakpoints
+
+A breakpoint stops the program each time it reaches a line. `^T` (Debug ▸ Breakpoint) sets one on the cursor line, or clears it; clicking the line's left border does the same. A line with a breakpoint has a mark in the left border. You can have up to 8.
+
+| To | Use
+| Set or clear a breakpoint on the cursor line | `^T`, or click the left border
+| Stop at the cursor line, this time only | F4 (Run ▸ Go to cursor)
+| Clear all breakpoints | Debug ▸ Clear breakpoints
+
+Breakpoints stay on their lines when you edit: insert lines above, and they move down with the text. File ▸ New and File ▸ Open clear them.
+
+> A breakpoint that does not stop
+> A breakpoint does nothing on a line that never runs as a statement: a `PROCEDURE` line, `DIM`, `PARAM` or `TYPE`, or a line outside a procedure. It also does nothing in a procedure you have changed and not made again, since the loaded code no longer matches the text: Make, then run.
+
+## 4.4 Evaluate and watches
+
+### Evaluate
+
+`^E` (Debug ▸ Evaluate) shows the value of an expression while the program is stopped. The dialog starts with the word at the cursor, or the last expression; edit it if you like, and press Enter.
+
+@image build/shots/evaluate-2x.png 100 Figure 4.4: Evaluate of count, on drawrow's second call.
+
+Any Basic09 expression works: `count`, `n*2`, `LEFT$(s,3)`, `a(i)`, `pt.x`. To change a variable, type an assignment:
+
+```
+count:=10
+```
+
+The editor sets it, then shows the new value. Evaluate works in the procedure the program is stopped in. A name from another procedure gives error 49, Undefined Variable.
+
+### Watches
+
+A watch is an expression shown each time the program stops. `^W` (Debug ▸ Add watch) asks for one, starting with the word at the cursor. Watches appear, numbered, in the watch window under the text; you can have up to 6.
+
+```
+1 count: 3
+2 s: * * *
+```
+
+A watch that cannot be worked out where the program stopped shows its error instead: a variable of another procedure shows `Error 49 Undefined Variable` until the program is back in its own procedure. Debug ▸ Delete watch... asks for a watch's number, or 0 for all of them. The values are cleared when the program ends.
+
+> Expressions are compiled
+> Evaluate and the watches are compiled by `l2b09cc` in the procedure the program is stopped in, so they see its variables, its types and its records, exactly as a statement on that line would.
+
+## 4.5 Procedure calls
+
+Debug ▸ Procedure calls lists where the program is stopped, and the procedures that called it, in the message window.
+
+@image build/shots/calls-2x.png 100 Figure 4.5: stopped in drawrow, called by stars.
+
+F6 goes into the window, and Enter on a line goes to that procedure's `PROCEDURE` line. A packed module that is not in the text is listed, but has no line to go to; a stop inside one says `Stopped in <procedure> line <n>`.
+
+### A debugging session
+
+This is the session behind Figure 4.1, on the example `stars.b09`:
+
+| Step | Keys | What happens
+| 1 | click `count` on line 18, `^T` | a breakpoint on line 18
+| 2 | `^W`, Enter | a watch on `count`, the word at the cursor
+| 3 | click `s` on line 13, `^W`, Enter | a watch on `s`
+| 4 | `^R` | Make, run; the program stops at line 18 with `count` 0 and `s` `*`
+| 5 | `^R`, `^R` | twice more round: `count` is 3 and `s` is `* * *`
+| 6 | `^E`, Enter | `count = 3`
+| 7 | `^T`, `^R` | the breakpoint off; the program runs to the end and prints `Stars drawn: 36`
+
+> Stopped programs and the text
+> Steps and evaluation use the code that is loaded, even if you have changed the text since. If you change a procedure while stopped, the next Make asks to reset the program first. Quitting while a program is stopped ends it.

@@ -344,10 +344,11 @@ $(MANUALPY):
 	build/manual/venv/bin/pip install -q reportlab==4.2.5 pillow
 
 # Screenshots of the editor for the video slides and the manual
-# (tools/shots/shots.sh; the scenarios editor and edit)
+# (tools/shots/shots.sh; the scenarios editor, edit and debug)
 shots: l2b09 tools pipes $(BASEIMG)
 	tools/shots/shots.sh
 	tools/shots/shots.sh edit
+	tools/shots/shots.sh debug
 
 langcheck: l2b09 subs tools
 	rm -rf $(BUILD)/lang
