@@ -1,0 +1,133 @@
+# 3 Editor, compiler and runtime
+
+## 3.1 Three programs, one conversation
+
+When you press `^B` (Make) or `^R` (Run), three programs work together. The editor holds the text. `l2b09run` holds the compiled program and runs it. `l2b09cc` turns source into the I-code that `l2b09run` runs. Each is a separate process with its own 64K, and they talk over pipes.
+
+@figure make
+
+The editor starts `l2b09run` on the first Make, and `l2b09run` starts `l2b09cc` straight away. Both keep running until you quit the editor, so later Makes only pay for what changed.
+
+| @widths 26 64 80
+| Program | Keeps | Does
+| `basic09-l2` | the text, the breakpoints, the messages | decides what to send; shows the results
+| `l2b09run` | the compiled procedures, the variables of a running program | loads, runs, stops at breakpoints, answers the debugger
+| `l2b09cc` | a copy of the procedures, for names and types | compiles procedures, and the debugger's expressions
+
+> Why the split
+> Basic09's compiler, editor and runtime used to share one 64K with your program. Each now has an address space of its own, which leaves the most room for your program, and lets the editor show source text that is much larger than 64K.
+
+## 3.2 Make
+
+Make (`^B`, Compile ▸ Make) brings `l2b09run` up to date with the text. Run does a Make first, so you seldom need Make on its own, but it is the quick way to check what you typed.
+
+A line `PROCEDURE <name>` starts a procedure, which runs to the next `PROCEDURE` line. Make compares each procedure with what it sent last time, and sends only:
+
+- a new procedure;
+- a procedure whose text changed;
+- a procedure that had errors last time.
+
+A procedure that is no longer in the text is killed in `l2b09run`. Undoing an edit makes its procedure unchanged again, so it is not sent.
+
+While `l2b09cc` compiles, the hint line says `Making...`. A clean Make closes the message window and says how many procedures it loaded, or `up to date`.
+
+> Text outside procedures
+> Text before the first `PROCEDURE` line is not sent, so a file can start with comments or notes of any kind. Basic09's own `.b09` files start with the first procedure.
+
+### When the program is stopped
+
+If the program is stopped in the debugger and the text has changed, Make asks `reset the program (Y/N)?`. `Y` ends the program and loads the changes; `N` loads nothing, so `^R` goes on with the old code; Esc does neither.
+
+## 3.3 Errors and the message window
+
+When Make finds errors, the message window opens under the text and the cursor goes to the first error's line.
+
+@image build/shots/errors-2x.png 112 Figure 3.3: a Make that found errors. Basic09 cannot read `NEXT row q`, so the FOR on line 5 has no NEXT either.
+
+Each message gives the file's line number, the procedure and the error:
+
+```
+Line 7, stars: Error 33 Missing GOTO
+Line 5, stars: Error 69 Unmatched Control Structure
+```
+
+| Key | Does
+| `^N` | goes to the next message's line (Compile ▸ Next error)
+| F6 | moves into the message window, and back (Compile ▸ Messages)
+| Up, Down | in the window: chooses a message
+| Enter | in the window: goes to that message's line
+| Esc | in the window: closes it
+
+With the mouse, click a message to select it and double-click it to go to its line. Up to 32 messages are kept.
+
+> One mistake, two messages
+> A mistake inside a structure often shows up twice: once where it is, and once at the start of the structure it broke. Fix the first message and Make again before reading the rest. F1 on an error number opens its help page.
+
+Errors while the program runs come to the same window: the message gives the line, the program stops there in the debugger, and you can look at its variables (Section 4).
+
+## 3.4 Run
+
+Run (`^R`, Run ▸ Run) makes, then runs the first procedure in the text. On the K2, Shift+RUN/STOP is Run too.
+
+The program runs on a screen of its own: a free window that the editor takes when it starts, cleared at the start of each run. The program's output never mixes with the editor's screen, and the program can use the whole screen however it likes.
+
+| What happens | The editor
+| The program ends | writes `Press any key` under its output, and comes back on a key
+| It stops in the debugger | comes back at once, with the line marked
+| It has a runtime error | adds the message, goes to the line, and stays stopped there
+| It ends `l2b09run` (`BYE`) | says so; the next Make starts a new `l2b09run`
+
+F5 (Run ▸ User screen) shows the program's screen at any time, until you press a key. Options ▸ Pause after run turns off the `Press any key`.
+
+### Stopping a program
+
+RUN/STOP on the K2, Esc on the Jr2, or `^C` stops the running program in the debugger, at the next statement. `^R` then goes on; `^P` (Run ▸ Program reset) ends it.
+
+### Arguments
+
+Run ▸ With arguments... asks for a procedure and its arguments, as you would type them after `RUN`:
+
+```
+drawrow(5,total)
+```
+
+The dialog starts with what you typed last time, or the first procedure's name.
+
+## 3.5 Memory
+
+`l2b09run` keeps the compiled procedures and the variables of the running program in its *workspace*. It is 16K at start, and can be up to 63K.
+
+You seldom need to set it. When a Make runs out of room (error 32, memory full), the editor makes the workspace 8K larger and loads again, up to 56K. To set it yourself, use Options ▸ Memory..., or start the editor with `-m=<kb>`.
+
+| To | Use
+| Set the size at start | `basic09-l2 -m=32 prog.b09`
+| Change it while editing | Options ▸ Memory... (not while a program is stopped)
+| Load a program larger than the workspace | `basic09-l2 -b=<kb> prog.b09`: procedure code is kept outside the workspace
+| Keep large arrays outside the workspace | `DIM a(20000):FAR REAL` (Section 6)
+
+> -b, code outside the workspace
+> With `-b=<kb>`, `l2b09run` keeps the procedures' code in that much memory outside its 64K, and maps each procedure in while it runs. Programs then load and run even when their code is far larger than the workspace, with nothing changed in the source. The debugger, LIST and SAVE work as before; PACK does not.
+
+## 3.6 l2b09run on its own
+
+`l2b09run` also runs without the editor, from the shell or a script. It is Basic09 without the line editor: it loads a source file, runs a procedure, then takes Basic09's commands.
+
+```
+l2b09run [#<mem>] [-b=<kb>] [-t=<term>] [<file> [<procedure>[(<arguments>)]]]
+```
+
+```
+OS9: l2b09run stars.b09
+OS9: l2b09run prog.b09 main(10,"test")
+OS9: l2b09run #40k -t=/w1 game.b09
+```
+
+It runs the file's first procedure, or the one named, then waits for commands such as `RUN`, `LIST`, `SAVE`, `KILL` and `PACK`, and `BYE` to leave. Packed modules run by name: `RUN mymod`.
+
+| Option | What it does
+| `#<mem>` | The workspace, as for any OS-9 program: `#40k`. It goes straight after the name.
+| `-b=<kb>` | Keep procedure code outside the workspace (Section 3.5).
+| `-t=<term>` | Run the program on that terminal; the commands stay on this one.
+
+> No EDIT
+> `l2b09run` has no line editor, so EDIT is not there. DIR and RENAME are not either: use the shell's `dir` and `rename`. Everything else works as in Basic09.

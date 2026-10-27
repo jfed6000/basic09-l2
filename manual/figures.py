@@ -133,3 +133,47 @@ def screen(width, st, top, shot='build/shots/plain.png'):
         label(d, lx, ty + 1, name, size=8, color=INK, anchor='start', font='Sans-Bold')
         label(d, lx, ty - 8.5, what, size=7, anchor='start')
     return [d, caption('Figure 1.5: the editor with a program loaded (80×30 screen).', st)]
+
+
+def make(width, st, top):
+    """What one Make does: a sequence diagram of the three programs."""
+    steps = [  # (from, to, text); from == to is a step inside one program
+        (0, 0, 'writes the changed procedures to basic09-l2.tmp'),
+        (0, 1, 'load basic09-l2.tmp'),
+        (1, 2, 'load basic09-l2.tmp'),
+        (2, 2, 'reads the file; compiles and binds each procedure'),
+        (2, 1, 'the compiled procedures'),
+        (2, 0, 'errors, as %CERR and %BERR lines'),
+        (1, 0, '%READY'),
+        (0, 0, 'messages; the cursor to the first error'),
+    ]
+    rowh = 21
+    head = 34
+    h = head + rowh * len(steps) + 12
+    d = Drawing(width, h)
+    xs = [width * 0.14, width * 0.5, width * 0.86]
+    names = [('basic09-l2', 'the editor'), ('l2b09run', 'runtime'), ('l2b09cc', 'compiler')]
+    bw = 100
+    for x, (n, what) in zip(xs, names):
+        d.add(Rect(x - bw / 2, h - 30, bw, 28, rx=4, ry=4, fillColor=PANEL,
+                   strokeColor=TEAL if n == 'basic09-l2' else INK, strokeWidth=1))
+        label(d, x, h - 15, n, size=8.5, color=INK, font='Mono-Bold')
+        label(d, x, h - 25, what, size=6.5)
+        d.add(Line(x, h - 31, x, 6, strokeColor=RULE, strokeWidth=1.2,
+                   strokeDashArray=[3, 2]))
+    for i, (a, b, text) in enumerate(steps):
+        y = h - head - rowh * i - 12
+        num = String(0, y - 1, str(i + 1), fontName='Sans-Bold', fontSize=7,
+                     fillColor=AMBER)
+        d.add(num)
+        if a == b:
+            d.add(Rect(xs[a] - 3, y - 4, 6, 12, fillColor=TEAL, strokeWidth=0))
+            anchor = 'start' if a < 2 else 'end'
+            tx = xs[a] + 8 if a < 2 else xs[a] - 8
+            label(d, tx, y - 1, text, size=7, color=INK, anchor=anchor)
+        else:
+            arrow(d, xs[a], y + 2, xs[b] + (6 if b < a else -6), y + 2)
+            label(d, (xs[a] + xs[b]) / 2, y + 6, text, size=7, color=INK,
+                  font='Mono' if text.startswith(('load', '%')) else 'Sans')
+    return [d, caption('Figure 3.1: one Make. With no errors, step 6 sends nothing, '
+                       'and the hint line says how many procedures were loaded.', st)]
