@@ -1,0 +1,15 @@
+# The basic09-l2 User's Manual: title lines (manual/build.py)
+file: basic09-l2-users-manual.pdf
+pdf-title: basic09-l2 User's Manual
+subject: The Basic09 IDE for NitrOS-9 Level 2 on the Wildbits F256 Jr2 and K2
+author: basic09-l2
+kicker: WILDBITS  /  F256 JR2 AND K2
+title: basic09-l2 / User's Manual
+subtitle: Editor  |  Compiler  |  Runtime and debugger / Basic09 for NitrOS-9 Level 2
+cover-image: build/shots/runmenu-2x.png
+cover-caption: The editor with the Run menu open
+cover-notes: How to write, run, debug and pack Basic09 programs with basic09-l2 / Numbered sections - key reference - glossary - index
+header: WILDBITS  /  BASIC09-L2 USER'S MANUAL
+footer: WildBits F256 Jr2 and K2
+revision: 0.1
+date: 2026-10-27

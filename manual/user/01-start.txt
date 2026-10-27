@@ -1,0 +1,108 @@
+# 1 Getting started
+
+## 1.1 What basic09-l2 is
+
+basic09-l2 is Basic09 for the Wildbits F256 Jr2 and K2. It is a complete development environment: a full-screen editor, a compiler, a runtime with a source-level debugger, and a help system, all running on the machine itself under NitrOS-9 Level 2.
+
+| Machine | What it is
+| F256 Jr2 | A board, with a PS/2 keyboard and mouse
+| F256 K2 | Keyboard and computer in one case, with a GPU
+
+Both machines have the same core, and basic09-l2 runs the same on either:
+
+| Part | Both machines
+| System | 6809 CPU at 6.29 MHz; 2 MB of RAM in 8K blocks; NitrOS-9 Level 2
+| Video | 80×30 or 80×60 text; 320×240 graphics; 3 bitmaps, 3 tilemaps, 128 sprites, 7 layers
+| Sound | 2 SIDs, OPL3, VS1053, SAM2695
+| Network | WizFi360 Wi-Fi
+
+### What you get
+
+- **A full-screen editor** with menus, the mouse, syntax colours, find and replace, undo and pretty print. It edits one whole `.b09` file, which can be larger than 64K.
+- **Make and run from the editor.** Make sends only the procedures you changed to the compiler; errors appear in a message window, and Enter takes you to the line.
+- **A source-level debugger:** breakpoints, stepping, run to the cursor, watches, and evaluate.
+- **PACK** into modules that run under RunB.
+- **FAR arrays** that keep their elements in memory beyond 64K, and **DEFUSE / USE**, for declarations shared between procedures.
+- **Help** for every keyword and error, on F1.
+
+basic09-l2 started from Microware's own Basic09 source, the source stock Basic09 and RunB are built from. Its copy was forked on October 20, 2026; the original in NitrOS-9 is unchanged.
+
+## 1.2 Built for Level 2
+
+Basic09 was designed for OS-9 Level 1, where the system, the editor, the compiler, the runtime and your program all share one 64K address space. Your program gets what is left.
+
+Under NitrOS-9 Level 2 every process has its own 64K, mapped from the machine's 2 MB. basic09-l2 uses that: it is split into separate programs, so the editor, the compiler and the runtime each have room to grow, and your program has a workspace of its own.
+
+@figure programs
+
+| Program | What it does
+| `basic09-l2` | The editor. You start this one; it starts the others.
+| `l2b09run` | The runtime and debugger. It loads procedures, runs the program and stops it at breakpoints. The editor drives it over two pipes.
+| `l2b09cc` | The compiler. `l2b09run` sends it the source and gets the compiled procedures back.
+| `l2b09help` | The help browser, started by F1. It also runs on its own: `l2b09help PRINT`.
+| `l2b09ovl` | Commands that are rarely used, PACK among them, loaded only while they run.
+| `runb` | On the basic09-l2 disk images, RunB that also runs programs with FAR arrays.
+
+> Limits
+> Each program still has 64K. The editor keeps the text in a swap file, so a source file can be larger than that. A program's own workspace is at most 63K, but its FAR arrays live outside it, and `-b` keeps procedure code outside it too (Section 4).
+
+## 1.3 Compatible with Basic09
+
+basic09-l2 keeps the language and the module formats of Basic09. Old programs run unchanged.
+
+| What you have | On basic09-l2
+| Basic09 source (`.b09`) | Loads, compiles and runs unchanged.
+| A module PACKed by stock Basic09 | Runs under `l2b09run`, by name and with arguments, and under RunB as before.
+| A program written in basic09-l2 | PACK writes a module for stock RunB, unless it uses FAR arrays.
+| A program with FAR arrays | PACK writes a module for the RunB on the basic09-l2 disk images.
+
+The new features stay out of the language where they can. DEFUSE and USE are handled by the editor, so the compiler sees plain Basic09. FAR is the one new word the compiler knows.
+
+> One difference
+> RUN/STOP on the K2, and Esc on the Jr2, stop a running program in the debugger, like Ctrl+C. In stock Basic09 that key ended the program with error 2, which `ON ERROR` could catch.
+
+## 1.4 Starting basic09-l2
+
+basic09-l2 is on the basic09-l2 disk images: `l2_basic09-l2jr2.dsk` for the Jr2 and `l2_basic09-l2k2.dsk` for the K2. Its programs are in `/dd/CMDS`, the help file in `/dd/SYS`, and the example programs in `/dd/L2B09`.
+
+To edit a program, give its file name:
+
+```
+OS9: chd /dd/L2B09
+OS9: basic09-l2 stars.b09
+```
+
+A file that does not exist yet starts empty, and is created when you first save it. With no name at all, the first save asks for one.
+
+| Option | What it does
+| `-m=<kb>` | The program's workspace in `l2b09run`, in K: at most 63, 16 by default. Make makes it larger by itself when a program needs more (Section 3), and Options ▸ Memory changes it.
+| `-b=<kb>` | Keep procedure code in that much memory outside the workspace, so programs larger than the workspace load and run (Section 4).
+| `-t=<term>` | The terminal the program runs on. By default the editor takes a free window, so your program's output never mixes with the editor's screen.
+| `-c=<pages>` | How many 2K pages of the text the editor keeps in memory: 3 to 24, 12 by default.
+| `-l=<file>` | Write what the editor and `l2b09run` say to each other to a file, for finding problems.
+
+```
+OS9: basic09-l2 -m=32 -b=64 bigprog.b09
+```
+
+> Leaving
+> `^Q` quits. If the text has changed, the editor asks whether to save it first. It also ends `l2b09run`, deletes its swap file and puts the screen back as it found it.
+
+## 1.5 The screen
+
+The editor fills the screen. Its layout comes from the Turbo C editor of DOS days: a menu bar at the top, the text in a framed window, and a line of hints at the bottom.
+
+@figure screen
+
+| Part | What it shows
+| Menu bar | File, Edit, Search, Run, Compile, Debug, Options and Help. Alt and the first letter opens one, or click it.
+| Title | The name of the file.
+| Text window | The text, with keywords, functions, strings, comments and numbers each in their own colour. A line wider than the window scrolls the whole window sideways.
+| Scroll bar | Click the arrows for a line, the track for a page, or drag the thumb.
+| Frame | The cursor's line and column, and `*` while there are unsaved changes. A dot in the left border marks a breakpoint.
+| Hint line | The most-used keys, or a message from the last command.
+
+Two more windows open when they are needed: the **message window** under the text, for errors from Make (Section 3), and the **watch window**, for the variables you are watching in the debugger (Section 4).
+
+> Screen size
+> Options ▸ 80x60 screen (`Ctrl+3`) switches between 80×30 and 80×60. Options ▸ Double spacing (`Ctrl+2`; `Ctrl+1` goes back) draws the text on every other row, which is easier to read on some screens.

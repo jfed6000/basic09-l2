@@ -1,0 +1,23 @@
+## - Preface
+
+**basic09-l2 User's Manual** describes basic09-l2, Basic09 for NitrOS-9 Level 2 on the Wildbits F256 Jr2 and K2: the editor, how it works with the compiler and the runtime, the debugger, packing programs, the new language features and the help system. Revision 0.1 is dated October 27, 2026.
+
+> Read this first
+> This book is about the tools, not the language. It assumes you know Basic09, or have Microware's Basic09 manual to hand. For the language itself, press F1 on any keyword or error number in the editor: the help system has a page for each one. A second book, *Learning Basic09 on basic09-l2*, will teach the language from the start.
+
+### Conventions
+
+| Written | Means
+| `^S` | Ctrl+S: hold Ctrl and press S
+| Alt+F | hold Alt and press F
+| Run ▸ Run to cursor | the Run menu, then its item Run to cursor
+| `stars.b09` | text you type, a file name or a program's output
+| Esc | Esc on the Jr2's PS/2 keyboard, RUN/STOP on the K2
+
+Every command has a key and a menu item, and most can also be reached with the mouse. Where the Jr2 and the K2 differ, the text says so.
+
+### How to use this book
+
+Start with Section 1 for what basic09-l2 is and how to start it, then Section 2 for the editor. Section 3 explains how the editor, the compiler and the runtime work together, and Section 4 covers running and debugging. Section 5 is packing programs for RunB, Section 6 the new language features, and Section 7 the help system. The key reference, the error messages, the glossary and the index are at the back.
+
+This book follows the order of the basic09-l2 video, so the two can be used together.
