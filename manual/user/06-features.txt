@@ -36,10 +36,10 @@ The program's 64K is mapped in 8K slots. A FAR array's elements live in 8K block
 
 Staying in the same block costs nothing extra: it is as fast as a normal array. Changing blocks costs two system calls. So work through a FAR array in order where you can.
 
-| Access pattern | 10,000 reads at 6.29 MHz
-| Normal array | about 3 s
-| FAR array, within one block | about 3 s
-| FAR array, alternating between two blocks | about 8 s
+| Access pattern | Time for the same reads
+| Normal array | 1×
+| FAR array, within one block | about 1×
+| FAR array, alternating between two blocks | about 2.5×
 
 > Loop order
 > Elements are stored with the first subscript changing fastest. For `grid(x,y)`, put the loop over `x` inside the loop over `y`, so that consecutive reads stay in the same block.

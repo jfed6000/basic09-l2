@@ -11,7 +11,7 @@ basic09-l2 is Basic09 for the Wildbits F256 Jr2 and K2. It is a complete develop
 Both machines have the same core, and basic09-l2 runs the same on either:
 
 | Part | Both machines
-| System | 6809 CPU at 6.29 MHz; 2 MB of RAM in 8K blocks; NitrOS-9 Level 2
+| System | 6809 CPU at 20 MHz; 2 MB of RAM in 8K blocks; NitrOS-9 Level 2
 | Video | 80×30 or 80×60 text; 320×240 graphics; 3 bitmaps, 3 tilemaps, 128 sprites, 7 layers
 | Sound | 2 SIDs, OPL3, VS1053, SAM2695
 | Network | WizFi360 Wi-Fi
