@@ -68,7 +68,7 @@ Typing, Enter or a paste replaces the selection, and Backspace removes it. A pla
 
 ## 2.4 Find and replace
 
-`^F` (Search ▸ Find) asks for the text to find. The dialog starts with the last search, and typing a character first replaces it. The search runs forward from the cursor; the match becomes the selection, so typing replaces it.
+`^F` (Search ▸ Find) asks for the text to find. The dialog starts with the last search, and typing a character first clears it for a new search. The search runs forward from the cursor; the match becomes the selection, so typing replaces it.
 
 @images 80 build/shots/find-2x.png build/shots/found-2x.png | Figure 2.4: Find, and the match it selects.
 
