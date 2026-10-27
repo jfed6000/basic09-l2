@@ -64,4 +64,4 @@
 | Swap file | `basic09-l2.swp`, where the editor keeps the text in 2K pages.
 | `USE` | A line that brings a `DEFUSE` block's lines into a procedure.
 | Watch | An expression shown each time the program stops (`^W`).
-| Workspace | The memory in `l2b09run` that holds the loaded procedures and the program's variables: 16K at start, up to 63K.
+| Workspace | The memory in `l2b09run` that holds the loaded procedures and the program's variables: 16K at start, up to 40K (32K with FAR arrays, `-b` or PACK). It shares `l2b09run`'s 64K with the runtime's code.

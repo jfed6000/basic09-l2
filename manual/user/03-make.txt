@@ -95,9 +95,11 @@ The dialog starts with what you typed last time, or the first procedure's name.
 
 ## 3.5 Memory
 
-`l2b09run` keeps the compiled procedures and the variables of the running program in its *workspace*. It is 16K at start, and can be up to 63K.
+`l2b09run` keeps the compiled procedures and the variables of the running program in its *workspace*. The workspace shares `l2b09run`'s 64K with the runtime's own code, about 20K, so it can be up to 40K. It is 16K at start.
 
-You seldom need to set it. When a Make runs out of room (error 32, memory full), the editor makes the workspace 8K larger and loads again, up to 56K. To set it yourself, use Options ▸ Memory..., or start the editor with `-m=<kb>`.
+FAR arrays, `-b` and PACK each need one 8K slot of the 64K free while they work, so a program that uses them can have a workspace of up to 32K.
+
+You seldom need to set it. When a Make runs out of room (error 32, memory full), the editor makes the workspace 8K larger and loads again, until it is as large as `l2b09run`'s 64K allows. To set it yourself, use Options ▸ Memory..., or start the editor with `-m=<kb>`.
 
 | To | Use
 | Set the size at start | `basic09-l2 -m=32 prog.b09`
