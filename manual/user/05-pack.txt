@@ -1,6 +1,6 @@
 # 5 Packing programs
 
-## 5.1 PACKing a Program
+## 5.1 PACKing a program
 
 PACK turns a program's procedures into I-code modules: the compiled form, without the source, the comments or the names of local variables. A packed program is smaller, starts at once because nothing needs compiling, and runs under RunB without the editor, the compiler or the runtime.
 
@@ -14,7 +14,7 @@ PACK turns a program's procedures into I-code modules: the compiled form, withou
 > Keep the source
 > A packed module cannot be turned back into readable source: its variable names and comments are gone. Always keep the `.b09` file you packed it from.
 
-## 5.2 PACKing from the Editor
+## 5.2 PACKing from the editor
 
 Compile ▸ Pack module... (Alt+C, then K) does a Make, then asks for a file name. It offers the source's name without `.b09`. PACK then writes every procedure in the text, in order, as modules in that one file.
 
@@ -35,7 +35,7 @@ PACK strips the procedures it packs out of `l2b09run`'s workspace, as Basic09's 
 | a program with errors | there is no code to pack | fix the errors first
 | a session started with `-b` | banked code cannot be packed | start the editor without `-b` to pack
 
-## 5.3 Running PACKed Programs
+## 5.3 Running PACKed programs
 
 A packed program runs from the shell by name, like any other command:
 
